@@ -1,9 +1,23 @@
+// phone-input.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/phone-input.tsx
+// 最后更新: 2025/7/23
+
+// phone-input.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 React 核心库
 import * as React from "react";
+// 导入 React 核心库
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
+// 导入 React 核心库
 import * as RPNInput from "react-phone-number-input";
+// 导入 React 核心库
 import flags from "react-phone-number-input/flags";
 
+// 导入本地模块
 import { Button } from "./button";
+// 导入模块
 import {
   Command,
   CommandEmpty,
@@ -12,12 +26,19 @@ import {
   CommandItem,
   CommandList,
 } from "./command";
+// 导入本地模块
 import { Input } from "./input";
+// 导入本地模块
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+// 导入本地模块
 import { ScrollArea } from "./scroll-area";
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
+// PhoneInputProps 类型定义
 type PhoneInputProps = Omit<
+  // React 类组件 - 基于类的组件
+
   React.ComponentProps<"input">,
   "onChange" | "value" | "ref"
 > &
@@ -25,6 +46,7 @@ type PhoneInputProps = Omit<
     onChange?: (value: RPNInput.Value) => void;
   };
 
+// 常量定义 - 模块内部使用的固定值
 const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
   React.forwardRef<React.ElementRef<typeof RPNInput.default>, PhoneInputProps>(
     ({ className, onChange, defaultCountry = "US", ...props }, ref) => {
@@ -56,8 +78,11 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
   );
 PhoneInput.displayName = "PhoneInput";
 
+// 常量定义 - 模块内部使用的固定值
 const InputComponent = React.forwardRef<
   HTMLInputElement,
+  // React 类组件 - 基于类的组件
+
   React.ComponentProps<"input">
 >(({ className, ...props }, ref) => (
   <Input
@@ -68,8 +93,10 @@ const InputComponent = React.forwardRef<
 ));
 InputComponent.displayName = "InputComponent";
 
+// CountryEntry 类型定义
 type CountryEntry = { label: string; value: RPNInput.Country | undefined };
 
+// CountrySelectProps 类型定义
 type CountrySelectProps = {
   disabled?: boolean;
   value: RPNInput.Country;
@@ -77,6 +104,7 @@ type CountrySelectProps = {
   onChange: (country: RPNInput.Country) => void;
 };
 
+// CountrySelect 函数
 const CountrySelect = ({
   disabled,
   value: selectedCountry,
@@ -131,11 +159,13 @@ const CountrySelect = ({
   );
 };
 
+// CountrySelectOptionProps 接口定义
 interface CountrySelectOptionProps extends RPNInput.FlagProps {
   selectedCountry: RPNInput.Country;
   onChange: (country: RPNInput.Country) => void;
 }
 
+// CountrySelectOption 函数
 const CountrySelectOption = ({
   country,
   countryName,
@@ -154,7 +184,9 @@ const CountrySelectOption = ({
   );
 };
 
+// FlagComponent 组件
 const FlagComponent = ({ country, countryName }: RPNInput.FlagProps) => {
+// 常量定义 - 模块内部使用的固定值
   const Flag = flags[country];
 
   return (

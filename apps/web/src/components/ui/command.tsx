@@ -1,15 +1,31 @@
+// command.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/command.tsx
+// 最后更新: 2025/7/23
+
+// command.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 React 核心库
 import { DialogProps } from "@radix-ui/react-dialog";
+// 导入 CMDK 命令面板组件
 import { Command as CommandPrimitive } from "cmdk";
+// 导入 React 核心库
 import { Search } from "lucide-react";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { Dialog, DialogContent } from "./dialog";
 
+// 常量定义 - 模块内部使用的固定值
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
 >(({ className, ...props }, ref) => (
   <CommandPrimitive
@@ -23,6 +39,7 @@ const Command = React.forwardRef<
 ));
 Command.displayName = CommandPrimitive.displayName;
 
+// CommandDialog 函数
 const CommandDialog = ({ children, ...props }: DialogProps) => {
   return (
     <Dialog {...props}>
@@ -35,8 +52,10 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
   );
 };
 
+// 常量定义 - 模块内部使用的固定值
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
   <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
@@ -54,8 +73,10 @@ const CommandInput = React.forwardRef<
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.List
@@ -67,8 +88,10 @@ const CommandList = React.forwardRef<
 
 CommandList.displayName = CommandPrimitive.List.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
 >((props, ref) => (
   <CommandPrimitive.Empty
@@ -80,8 +103,10 @@ const CommandEmpty = React.forwardRef<
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.Group
@@ -96,8 +121,10 @@ const CommandGroup = React.forwardRef<
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const CommandSeparator = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Separator>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.Separator
@@ -108,8 +135,10 @@ const CommandSeparator = React.forwardRef<
 ));
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.Item
@@ -124,6 +153,7 @@ const CommandItem = React.forwardRef<
 
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 
+// CommandShortcut 函数
 const CommandShortcut = ({
   className,
   ...props

@@ -1,13 +1,31 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/contributors/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 Next.js 相关模块
 import { Metadata } from "next";
+// 导入项目模块
 import { Header } from "@/components/header";
+// 导入项目模块
 import { Card, CardContent } from "@/components/ui/card";
+// 导入项目模块
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入 React 核心库
 import { ExternalLink } from "lucide-react";
+// 导入 Next.js 相关模块
 import Link from "next/link";
+// 导入项目模块
 import { GithubIcon } from "@/components/icons";
+// 导入项目模块
 import { Badge } from "@/components/ui/badge";
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const metadata: Metadata = {
   title: "Contributors - OpenCut",
   description:
@@ -20,6 +38,7 @@ export const metadata: Metadata = {
   },
 };
 
+// Contributor 接口定义
 interface Contributor {
   id: number;
   login: string;
@@ -29,8 +48,10 @@ interface Contributor {
   type: string;
 }
 
+// getContributors 函数
 async function getContributors(): Promise<Contributor[]> {
   try {
+// 常量定义 - 模块内部使用的固定值
     const response = await fetch(
       "https://api.github.com/repos/OpenCut-app/OpenCut/contributors?per_page=100",
       {
@@ -47,8 +68,10 @@ async function getContributors(): Promise<Contributor[]> {
       return [];
     }
 
+// contributors 函数
     const contributors = (await response.json()) as Contributor[];
 
+// 常量定义 - 模块内部使用的固定值
     const filteredContributors = contributors.filter(
       (contributor: Contributor) => contributor.type === "User"
     );
@@ -60,9 +83,13 @@ async function getContributors(): Promise<Contributor[]> {
   }
 }
 
+// ContributorsPage 组件
 export default async function ContributorsPage() {
+// 常量定义 - 模块内部使用的固定值
   const contributors = await getContributors();
+// 常量定义 - 模块内部使用的固定值
   const topContributors = contributors.slice(0, 2);
+// 常量定义 - 模块内部使用的固定值
   const otherContributors = contributors.slice(2);
 
   return (

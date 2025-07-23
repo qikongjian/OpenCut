@@ -1,22 +1,41 @@
+// dialog.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/dialog.tsx
+// 最后更新: 2025/7/23
+
+// dialog.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { Dialog as DialogPrimitive } from "radix-ui";
+// 导入 React 核心库
 import { X } from "lucide-react";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { ScrollArea } from "./scroll-area";
 
+// 常量定义 - 模块内部使用的固定值
 const Dialog = DialogPrimitive.Root;
 
+// 常量定义 - 模块内部使用的固定值
 const DialogTrigger = DialogPrimitive.Trigger;
 
+// 常量定义 - 模块内部使用的固定值
 const DialogPortal = DialogPrimitive.Portal;
 
+// 常量定义 - 模块内部使用的固定值
 const DialogClose = DialogPrimitive.Close;
 
+// 常量定义 - 模块内部使用的固定值
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
@@ -30,8 +49,10 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
@@ -64,6 +85,7 @@ const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
+// DialogHeader 函数
 const DialogHeader = ({
   className,
   ...props
@@ -78,6 +100,7 @@ const DialogHeader = ({
 );
 DialogHeader.displayName = "DialogHeader";
 
+// DialogFooter 函数
 const DialogFooter = ({
   className,
   ...props
@@ -92,8 +115,10 @@ const DialogFooter = ({
 );
 DialogFooter.displayName = "DialogFooter";
 
+// 常量定义 - 模块内部使用的固定值
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
@@ -107,8 +132,10 @@ const DialogTitle = React.forwardRef<
 ));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description

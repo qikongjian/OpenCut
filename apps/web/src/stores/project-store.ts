@@ -1,11 +1,27 @@
+// project-store.ts - Zustand 状态管理存储
+// 此文件包含 zustand 状态管理存储 的相关代码
+// 文件路径: stores/project-store.ts
+// 最后更新: 2025/7/23
+
+// project-store.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入项目模块
 import { TProject } from "@/types/project";
+// 导入 Zustand 状态管理库
 import { create } from "zustand";
+// 导入项目模块
 import { storageService } from "@/lib/storage/storage-service";
+// 导入 Sonner 通知组件
 import { toast } from "sonner";
+// 导入本地模块
 import { useMediaStore } from "./media-store";
+// 导入本地模块
 import { useTimelineStore } from "./timeline-store";
+// 导入项目模块
 import { generateUUID } from "@/lib/utils";
 
+// ProjectStore 接口定义
 interface ProjectStore {
   activeProject: TProject | null;
   savedProjects: TProject[];
@@ -34,6 +50,7 @@ interface ProjectStore {
   ) => TProject[];
 }
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   activeProject: null,
   savedProjects: [],
@@ -41,6 +58,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   isInitialized: false,
 
   createNewProject: async (name: string) => {
+// 常量定义 - 模块内部使用的固定值
     const newProject: TProject = {
       id: generateUUID(),
       name,
@@ -51,6 +69,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       backgroundType: "color",
       blurIntensity: 8,
     };
+
+    // 设置状态 - 更新状态值
+
 
     set({ activeProject: newProject });
 
@@ -67,18 +88,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   loadProject: async (id: string) => {
     if (!get().isInitialized) {
+      // 设置状态 - 更新状态值
+
       set({ isLoading: true });
     }
 
     // Clear media and timeline immediately to prevent flickering when switching projects
     const mediaStore = useMediaStore.getState();
+// 常量定义 - 模块内部使用的固定值
     const timelineStore = useTimelineStore.getState();
     mediaStore.clearAllMedia();
     timelineStore.clearTimeline();
 
     try {
+// 常量定义 - 模块内部使用的固定值
       const project = await storageService.loadProject(id);
       if (project) {
+        // 设置状态 - 更新状态值
+
         set({ activeProject: project });
 
         // Load project-specific data in parallel
@@ -93,11 +120,14 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       console.error("Failed to load project:", error);
       throw error; // Re-throw so the editor page can handle it
     } finally {
+      // 设置状态 - 更新状态值
+
       set({ isLoading: false });
     }
   },
 
   saveCurrentProject: async () => {
+// 常量定义 - 模块内部使用的固定值
     const { activeProject } = get();
     if (!activeProject) return;
 
@@ -116,15 +146,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   loadAllProjects: async () => {
     if (!get().isInitialized) {
+      // 设置状态 - 更新状态值
+
       set({ isLoading: true });
     }
 
     try {
+// 常量定义 - 模块内部使用的固定值
       const projects = await storageService.loadAllProjects();
+      // 设置状态 - 更新状态值
+
       set({ savedProjects: projects });
     } catch (error) {
       console.error("Failed to load projects:", error);
     } finally {
+      // 设置状态 - 更新状态值
+
       set({ isLoading: false, isInitialized: true });
     }
   },
@@ -142,8 +179,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       // If we deleted the active project, close it and clear data
       const { activeProject } = get();
       if (activeProject?.id === id) {
+        // 设置状态 - 更新状态值
+
         set({ activeProject: null });
+// 常量定义 - 模块内部使用的固定值
         const mediaStore = useMediaStore.getState();
+// 常量定义 - 模块内部使用的固定值
         const timelineStore = useTimelineStore.getState();
         mediaStore.clearAllMedia();
         timelineStore.clearTimeline();
@@ -154,16 +195,20 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   closeProject: () => {
+    // 设置状态 - 更新状态值
+
     set({ activeProject: null });
 
     // Clear data from stores when closing project
     const mediaStore = useMediaStore.getState();
+// 常量定义 - 模块内部使用的固定值
     const timelineStore = useTimelineStore.getState();
     mediaStore.clearAllMedia();
     timelineStore.clearTimeline();
   },
 
   renameProject: async (id: string, name: string) => {
+// 常量定义 - 模块内部使用的固定值
     const { savedProjects } = get();
 
     // Find the project to rename
@@ -175,6 +220,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return;
     }
 
+// 常量定义 - 模块内部使用的固定值
     const updatedProject = {
       ...projectToRename,
       name,
@@ -190,6 +236,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       // Update activeProject if it's the same project
       const { activeProject } = get();
       if (activeProject?.id === id) {
+        // 设置状态 - 更新状态值
+
         set({ activeProject: updatedProject });
       }
     } catch (error) {
@@ -203,6 +251,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   duplicateProject: async (projectId: string) => {
     try {
+// 常量定义 - 模块内部使用的固定值
       const project = await storageService.loadProject(projectId);
       if (!project) {
         toast.error("Project not found", {
@@ -211,24 +260,30 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         throw new Error("Project not found");
       }
 
+// 常量定义 - 模块内部使用的固定值
       const { savedProjects } = get();
 
       // Extract the base name (remove any existing numbering)
       const numberMatch = project.name.match(/^\((\d+)\)\s+(.+)$/);
+// 常量定义 - 模块内部使用的固定值
       const baseName = numberMatch ? numberMatch[2] : project.name;
+// 常量定义 - 模块内部使用的固定值
       const existingNumbers: number[] = [];
 
       // Check for pattern "(number) baseName" in existing projects
       savedProjects.forEach((p) => {
+// 常量定义 - 模块内部使用的固定值
         const match = p.name.match(/^\((\d+)\)\s+(.+)$/);
         if (match && match[2] === baseName) {
           existingNumbers.push(parseInt(match[1], 10));
         }
       });
 
+// 常量定义 - 模块内部使用的固定值
       const nextNumber =
         existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
 
+// 常量定义 - 模块内部使用的固定值
       const newProject: TProject = {
         id: generateUUID(),
         name: `(${nextNumber}) ${baseName}`,
@@ -251,9 +306,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   updateProjectBackground: async (backgroundColor: string) => {
+// 常量定义 - 模块内部使用的固定值
     const { activeProject } = get();
     if (!activeProject) return;
 
+// 常量定义 - 模块内部使用的固定值
     const updatedProject = {
       ...activeProject,
       backgroundColor,
@@ -262,6 +319,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
     try {
       await storageService.saveProject(updatedProject);
+      // 设置状态 - 更新状态值
+
       set({ activeProject: updatedProject });
       await get().loadAllProjects(); // Refresh the list
     } catch (error) {
@@ -276,9 +335,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     type: "color" | "blur",
     options?: { backgroundColor?: string; blurIntensity?: number }
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const { activeProject } = get();
     if (!activeProject) return;
 
+// 常量定义 - 模块内部使用的固定值
     const updatedProject = {
       ...activeProject,
       backgroundType: type,
@@ -291,6 +352,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
     try {
       await storageService.saveProject(updatedProject);
+      // 设置状态 - 更新状态值
+
       set({ activeProject: updatedProject });
       await get().loadAllProjects(); // Refresh the list
     } catch (error) {
@@ -302,9 +365,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   updateProjectFps: async (fps: number) => {
+// 常量定义 - 模块内部使用的固定值
     const { activeProject } = get();
     if (!activeProject) return;
 
+// 常量定义 - 模块内部使用的固定值
     const updatedProject = {
       ...activeProject,
       fps,
@@ -313,6 +378,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
     try {
       await storageService.saveProject(updatedProject);
+      // 设置状态 - 更新状态值
+
       set({ activeProject: updatedProject });
       await get().loadAllProjects(); // Refresh the list
     } catch (error) {
@@ -324,6 +391,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
 
   getFilteredAndSortedProjects: (searchQuery: string, sortOption: string) => {
+// 常量定义 - 模块内部使用的固定值
     const { savedProjects } = get();
 
     // Filter projects by search query
@@ -333,6 +401,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
     // Sort filtered projects
     const sortedProjects = [...filteredProjects].sort((a, b) => {
+// 常量定义 - 模块内部使用的固定值
       const [key, order] = sortOption.split("-");
 
       if (key !== "createdAt" && key !== "name") {
@@ -340,7 +409,9 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         return 0;
       }
 
+// 常量定义 - 模块内部使用的固定值
       const aValue = a[key];
+// 常量定义 - 模块内部使用的固定值
       const bValue = b[key];
 
       if (aValue === undefined || bValue === undefined) return 0;

@@ -1,23 +1,42 @@
+// menubar.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/menubar.tsx
+// 最后更新: 2025/7/23
+
+// menubar.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { Menubar as MenubarPrimitive } from "radix-ui";
+// 导入 React 核心库
 import { Check, ChevronRight, Circle } from "lucide-react";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarMenu = MenubarPrimitive.Menu;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarGroup = MenubarPrimitive.Group;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarPortal = MenubarPrimitive.Portal;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarSub = MenubarPrimitive.Sub;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarRadioGroup = MenubarPrimitive.RadioGroup;
 
+// 常量定义 - 模块内部使用的固定值
 const Menubar = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Root>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
 >(({ className, ...props }, ref) => (
   <MenubarPrimitive.Root
@@ -31,8 +50,10 @@ const Menubar = React.forwardRef<
 ));
 Menubar.displayName = MenubarPrimitive.Root.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Trigger>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
 >(({ className, ...props }, ref) => (
   <MenubarPrimitive.Trigger
@@ -46,8 +67,10 @@ const MenubarTrigger = React.forwardRef<
 ));
 MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarSubTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.SubTrigger>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
     inset?: boolean;
   }
@@ -67,8 +90,10 @@ const MenubarSubTrigger = React.forwardRef<
 ));
 MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarSubContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.SubContent>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent>
 >(({ className, ...props }, ref) => (
   <MenubarPrimitive.SubContent
@@ -82,8 +107,10 @@ const MenubarSubContent = React.forwardRef<
 ));
 MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>
 >(
   (
@@ -107,8 +134,10 @@ const MenubarContent = React.forwardRef<
 );
 MenubarContent.displayName = MenubarPrimitive.Content.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Item>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
     inset?: boolean;
   }
@@ -125,8 +154,10 @@ const MenubarItem = React.forwardRef<
 ));
 MenubarItem.displayName = MenubarPrimitive.Item.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarCheckboxItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.CheckboxItem>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem>
 >(({ className, children, checked, ...props }, ref) => (
   <MenubarPrimitive.CheckboxItem
@@ -148,8 +179,10 @@ const MenubarCheckboxItem = React.forwardRef<
 ));
 MenubarCheckboxItem.displayName = MenubarPrimitive.CheckboxItem.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarRadioItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.RadioItem>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem>
 >(({ className, children, ...props }, ref) => (
   <MenubarPrimitive.RadioItem
@@ -170,8 +203,10 @@ const MenubarRadioItem = React.forwardRef<
 ));
 MenubarRadioItem.displayName = MenubarPrimitive.RadioItem.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarLabel = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Label>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & {
     inset?: boolean;
   }
@@ -188,8 +223,10 @@ const MenubarLabel = React.forwardRef<
 ));
 MenubarLabel.displayName = MenubarPrimitive.Label.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const MenubarSeparator = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Separator>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator>
 >(({ className, ...props }, ref) => (
   <MenubarPrimitive.Separator
@@ -200,6 +237,7 @@ const MenubarSeparator = React.forwardRef<
 ));
 MenubarSeparator.displayName = MenubarPrimitive.Separator.displayName;
 
+// MenubarShortcut 函数
 const MenubarShortcut = ({
   className,
   ...props

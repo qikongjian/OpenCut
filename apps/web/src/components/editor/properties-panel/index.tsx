@@ -1,14 +1,32 @@
+// index.tsx - 视频编辑器组件
+// 此文件包含 视频编辑器组件 的相关代码
+// 文件路径: components/editor/properties-panel/index.tsx
+// 最后更新: 2025/7/23
+
+// index.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
+// 导入项目模块
 import { useAspectRatio } from "@/hooks/use-aspect-ratio";
+// 导入本地模块
 import { Label } from "../../ui/label";
+// 导入本地模块
 import { ScrollArea } from "../../ui/scroll-area";
+// 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
+// 导入项目模块
 import { useMediaStore } from "@/stores/media-store";
+// 导入本地模块
 import { AudioProperties } from "./audio-properties";
+// 导入本地模块
 import { MediaProperties } from "./media-properties";
+// 导入本地模块
 import { TextProperties } from "./text-properties";
+// 导入模块
 import {
   Select,
   SelectContent,
@@ -16,21 +34,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../ui/select";
+// 导入项目模块
 import { FPS_PRESETS } from "@/constants/timeline-constants";
 
+// PropertiesPanel 函数
+// 导出组件 - 可复用的 UI 组件
 export function PropertiesPanel() {
+// 常量定义 - 模块内部使用的固定值
   const { activeProject, updateProjectFps } = useProjectStore();
+// 常量定义 - 模块内部使用的固定值
   const { getDisplayName, canvasSize } = useAspectRatio();
+// 常量定义 - 模块内部使用的固定值
   const { selectedElements, tracks } = useTimelineStore();
+// 常量定义 - 模块内部使用的固定值
   const { mediaItems } = useMediaStore();
 
+// handleFpsChange 函数
   const handleFpsChange = (value: string) => {
+// 常量定义 - 模块内部使用的固定值
     const fps = parseFloat(value);
     if (!isNaN(fps) && fps > 0) {
       updateProjectFps(fps);
     }
   };
 
+// emptyView 函数
   const emptyView = (
     <div className="space-y-4 p-5">
       {/* Media Properties */}
@@ -67,7 +95,9 @@ export function PropertiesPanel() {
     <ScrollArea className="h-full bg-panel rounded-sm">
       {selectedElements.length > 0
         ? selectedElements.map(({ trackId, elementId }) => {
+// 常量定义 - 模块内部使用的固定值
             const track = tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
             const element = track?.elements.find((e) => e.id === elementId);
 
             if (element?.type === "text") {
@@ -78,6 +108,7 @@ export function PropertiesPanel() {
               );
             }
             if (element?.type === "media") {
+// 常量定义 - 模块内部使用的固定值
               const mediaItem = mediaItems.find(
                 (item) => item.id === element.mediaId
               );
@@ -99,6 +130,7 @@ export function PropertiesPanel() {
   );
 }
 
+// PropertyItem 函数
 function PropertyItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">

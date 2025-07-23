@@ -1,8 +1,19 @@
+// handlebars.tsx - 落地页组件
+// 此文件包含 落地页组件 的相关代码
+// 文件路径: components/landing/handlebars.tsx
+// 最后更新: 2025/7/23
+
+// handlebars.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import React, { useState, useRef, useEffect } from "react";
+// 导入 React 核心库
 import { motion, useMotionValue, useTransform, PanInfo } from "motion/react";
 
+// HandlebarsProps 接口定义
 interface HandlebarsProps {
   children: React.ReactNode;
   minWidth?: number;
@@ -10,35 +21,50 @@ interface HandlebarsProps {
   onRangeChange?: (left: number, right: number) => void;
 }
 
+// Handlebars 函数
+// 导出组件 - 可复用的 UI 组件
 export function Handlebars({
   children,
   minWidth = 50,
   maxWidth = 400,
   onRangeChange,
 }: HandlebarsProps) {
+// 状态管理 - 创建和管理组件内部状态
   const [leftHandle, setLeftHandle] = useState(0);
+// 状态管理 - 创建和管理组件内部状态
   const [rightHandle, setRightHandle] = useState(maxWidth);
+// 状态管理 - 创建和管理组件内部状态
   const [contentWidth, setContentWidth] = useState(maxWidth);
 
+// 常量定义 - 模块内部使用的固定值
   const leftHandleX = useMotionValue(0);
+// 常量定义 - 模块内部使用的固定值
   const rightHandleX = useMotionValue(maxWidth);
 
+// 常量定义 - 模块内部使用的固定值
   const visibleWidth = useTransform(
     [leftHandleX, rightHandleX],
     (values: number[]) => values[1] - values[0]
   );
 
+// 常量定义 - 模块内部使用的固定值
   const contentLeft = useTransform(leftHandleX, (left: number) => -left);
 
+// 常量定义 - 模块内部使用的固定值
   const containerRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const measureRef = useRef<HTMLDivElement>(null);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
     if (!measureRef.current) return;
 
+// measureContent 函数
     const measureContent = () => {
       if (measureRef.current) {
+// 常量定义 - 模块内部使用的固定值
         const width = measureRef.current.scrollWidth;
+// 常量定义 - 模块内部使用的固定值
         const paddedWidth = width + 32;
         setContentWidth(paddedWidth);
         setRightHandle(paddedWidth);
@@ -47,24 +73,30 @@ export function Handlebars({
     };
 
     measureContent();
+// 常量定义 - 模块内部使用的固定值
     const timer = setTimeout(measureContent, 50);
 
     return () => clearTimeout(timer);
   }, [children, rightHandleX]);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
     leftHandleX.set(leftHandle);
   }, [leftHandle, leftHandleX]);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
     rightHandleX.set(rightHandle);
   }, [rightHandle, rightHandleX]);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
     onRangeChange?.(leftHandle, rightHandle);
   }, [leftHandle, rightHandle, onRangeChange]);
 
+// handleLeftDrag 函数
   const handleLeftDrag = (event: any, info: PanInfo) => {
+// 常量定义 - 模块内部使用的固定值
     const newLeft = Math.max(
       0,
       Math.min(leftHandle + info.offset.x, rightHandle - minWidth)
@@ -72,7 +104,9 @@ export function Handlebars({
     setLeftHandle(newLeft);
   };
 
+// handleRightDrag 函数
   const handleRightDrag = (event: any, info: PanInfo) => {
+// 常量定义 - 模块内部使用的固定值
     const newRight = Math.max(
       leftHandle + minWidth,
       Math.min(contentWidth, rightHandle + info.offset.x)

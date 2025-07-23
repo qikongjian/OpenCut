@@ -1,8 +1,21 @@
+// use-timeline-element-resize.ts - 自定义 React Hook
+// 此文件包含 自定义 react hook 的相关代码
+// 文件路径: hooks/use-timeline-element-resize.ts
+// 最后更新: 2025/7/23
+
+// use-timeline-element-resize.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入 React 核心库
 import { useState, useEffect } from "react";
+// 导入项目模块
 import { ResizeState, TimelineElement, TimelineTrack } from "@/types/timeline";
+// 导入项目模块
 import { useMediaStore } from "@/stores/media-store";
+// 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
 
+// UseTimelineElementResizeProps 接口定义
 interface UseTimelineElementResizeProps {
   element: TimelineElement;
   track: TimelineTrack;
@@ -20,6 +33,8 @@ interface UseTimelineElementResizeProps {
   ) => void;
 }
 
+// useTimelineElementResize 自定义钩子
+// 自定义 Hook - 可复用的状态逻辑
 export function useTimelineElementResize({
   element,
   track,
@@ -27,8 +42,11 @@ export function useTimelineElementResize({
   onUpdateTrim,
   onUpdateDuration,
 }: UseTimelineElementResizeProps) {
+// 常量定义 - 模块内部使用的固定值
   const [resizing, setResizing] = useState<ResizeState | null>(null);
+// 常量定义 - 模块内部使用的固定值
   const { mediaItems } = useMediaStore();
+// 常量定义 - 模块内部使用的固定值
   const {
     updateElementStartTime,
     updateElementTrim,
@@ -37,13 +55,16 @@ export function useTimelineElementResize({
   } = useTimelineStore();
 
   // Set up document-level mouse listeners during resize (like proper drag behavior)
+  // 副作用 Hook - 处理副作用
   useEffect(() => {
     if (!resizing) return;
 
+// handleDocumentMouseMove 自定义钩子
     const handleDocumentMouseMove = (e: MouseEvent) => {
       updateTrimFromMouseMove({ clientX: e.clientX });
     };
 
+// handleDocumentMouseUp 自定义钩子
     const handleDocumentMouseUp = () => {
       handleResizeEnd();
     };
@@ -58,6 +79,7 @@ export function useTimelineElementResize({
     };
   }, [resizing]); // Re-run when resizing state changes
 
+// handleResizeStart 函数
   const handleResizeStart = (
     e: React.MouseEvent,
     elementId: string,
@@ -78,6 +100,7 @@ export function useTimelineElementResize({
     });
   };
 
+// canExtendElementDuration 函数
   const canExtendElementDuration = () => {
     // Text elements can always be extended
     if (element.type === "text") {
@@ -86,6 +109,7 @@ export function useTimelineElementResize({
 
     // Media elements - check the media type
     if (element.type === "media") {
+// 常量定义 - 模块内部使用的固定值
       const mediaItem = mediaItems.find((item) => item.id === element.mediaId);
       if (!mediaItem) return false;
 
@@ -102,9 +126,11 @@ export function useTimelineElementResize({
     return false;
   };
 
+// updateTrimFromMouseMove 自定义钩子
   const updateTrimFromMouseMove = (e: { clientX: number }) => {
     if (!resizing) return;
 
+// 常量定义 - 模块内部使用的固定值
     const deltaX = e.clientX - resizing.startX;
     // Reasonable sensitivity for resize operations - similar to timeline scale
     const deltaTime = deltaX / (50 * zoomLevel);
@@ -112,12 +138,15 @@ export function useTimelineElementResize({
     if (resizing.side === "left") {
       // Left resize - different behavior for media vs text/image elements
       const maxAllowed = element.duration - resizing.initialTrimEnd - 0.1;
+// 常量定义 - 模块内部使用的固定值
       const calculated = resizing.initialTrimStart + deltaTime;
 
       if (calculated >= 0) {
         // Normal trimming within available content
         const newTrimStart = Math.min(maxAllowed, calculated);
+// 常量定义 - 模块内部使用的固定值
         const trimDelta = newTrimStart - resizing.initialTrimStart;
+// 常量定义 - 模块内部使用的固定值
         const newStartTime = element.startTime + trimDelta;
 
         updateElementTrim(
@@ -133,7 +162,9 @@ export function useTimelineElementResize({
         if (canExtendElementDuration()) {
           // Text/Image: extend element to the left by moving startTime and increasing duration
           const extensionAmount = Math.abs(calculated);
+// 常量定义 - 模块内部使用的固定值
           const newStartTime = element.startTime - extensionAmount;
+// 常量定义 - 模块内部使用的固定值
           const newDuration = element.duration + extensionAmount;
 
           // Keep trimStart at 0 and extend the element
@@ -149,7 +180,9 @@ export function useTimelineElementResize({
         } else {
           // Video/Audio: can't extend beyond original content - limit to trimStart = 0
           const newTrimStart = 0;
+// 常量定义 - 模块内部使用的固定值
           const trimDelta = newTrimStart - resizing.initialTrimStart;
+// 常量定义 - 模块内部使用的固定值
           const newStartTime = element.startTime + trimDelta;
 
           updateElementTrim(
@@ -171,7 +204,9 @@ export function useTimelineElementResize({
         if (canExtendElementDuration()) {
           // Extend the duration instead of reducing trimEnd further
           const extensionNeeded = Math.abs(calculated);
+// 常量定义 - 模块内部使用的固定值
           const newDuration = element.duration + extensionNeeded;
+// 常量定义 - 模块内部使用的固定值
           const newTrimEnd = 0; // Reset trimEnd to 0 since we're extending
 
           // Update duration first, then trim
@@ -196,6 +231,7 @@ export function useTimelineElementResize({
       } else {
         // Normal trimming within original duration
         const maxTrimEnd = element.duration - resizing.initialTrimStart - 0.1; // Leave at least 0.1s visible
+// 常量定义 - 模块内部使用的固定值
         const newTrimEnd = Math.max(0, Math.min(maxTrimEnd, calculated));
 
         updateElementTrim(
@@ -209,6 +245,7 @@ export function useTimelineElementResize({
     }
   };
 
+// handleResizeEnd 函数
   const handleResizeEnd = () => {
     setResizing(null);
   };

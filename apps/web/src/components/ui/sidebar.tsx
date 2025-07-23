@@ -1,17 +1,37 @@
+// sidebar.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/sidebar.tsx
+// 最后更新: 2025/7/23
+
+// sidebar.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { Slot as SlotPrimitive } from "radix-ui";
+// 导入 CVA 类名变体工具
 import { VariantProps, cva } from "class-variance-authority";
+// 导入 React 核心库
 import { PanelLeft } from "lucide-react";
 
+// 导入本地模块
 import { useIsMobile } from "../../hooks/use-mobile";
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { Button } from "./button";
+// 导入本地模块
 import { Input } from "./input";
+// 导入本地模块
 import { Separator } from "./separator";
+// 导入本地模块
 import { Sheet, SheetContent, SheetTitle } from "./sheet";
+// 导入本地模块
 import { Skeleton } from "./skeleton";
+// 导入模块
 import {
   Tooltip,
   TooltipContent,
@@ -19,13 +39,20 @@ import {
   TooltipTrigger,
 } from "./tooltip";
 
+// 常量定义 - 模块内部使用的固定值
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
+// 常量定义 - 模块内部使用的固定值
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+// 常量定义 - 模块内部使用的固定值
 const SIDEBAR_WIDTH = "16rem";
+// 常量定义 - 模块内部使用的固定值
 const SIDEBAR_WIDTH_MOBILE = "18rem";
+// 常量定义 - 模块内部使用的固定值
 const SIDEBAR_WIDTH_ICON = "3rem";
+// 常量定义 - 模块内部使用的固定值
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
+// SidebarContext 类型定义
 type SidebarContext = {
   state: "expanded" | "collapsed";
   open: boolean;
@@ -36,9 +63,12 @@ type SidebarContext = {
   toggleSidebar: () => void;
 };
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarContext = React.createContext<SidebarContext | null>(null);
 
+// useSidebar 自定义钩子
 function useSidebar() {
+// 上下文消费 - 消费 React 上下文中的值
   const context = React.useContext(SidebarContext);
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.");
@@ -47,8 +77,10 @@ function useSidebar() {
   return context;
 }
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div"> & {
     defaultOpen?: boolean;
     open?: boolean;
@@ -67,15 +99,20 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const isMobile = useIsMobile();
+// 状态管理 - 创建和管理组件内部状态
     const [openMobile, setOpenMobile] = React.useState(false);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
     const [_open, _setOpen] = React.useState(defaultOpen);
+// 常量定义 - 模块内部使用的固定值
     const open = openProp ?? _open;
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
+// 常量定义 - 模块内部使用的固定值
         const openState = typeof value === "function" ? value(open) : value;
         if (setOpenProp) {
           setOpenProp(openState);
@@ -98,6 +135,7 @@ const SidebarProvider = React.forwardRef<
 
     // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
+// handleKeyDown 函数
       const handleKeyDown = (event: KeyboardEvent) => {
         if (
           event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
@@ -116,6 +154,7 @@ const SidebarProvider = React.forwardRef<
     // This makes it easier to style the sidebar with Tailwind classes.
     const state = open ? "expanded" : "collapsed";
 
+// 常量定义 - 模块内部使用的固定值
     const contextValue = React.useMemo<SidebarContext>(
       () => ({
         state,
@@ -156,8 +195,10 @@ const SidebarProvider = React.forwardRef<
 );
 SidebarProvider.displayName = "SidebarProvider";
 
+// 常量定义 - 模块内部使用的固定值
 const Sidebar = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div"> & {
     side?: "left" | "right";
     variant?: "sidebar" | "floating" | "inset";
@@ -175,6 +216,7 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
     if (collapsible === "none") {
@@ -259,10 +301,13 @@ const Sidebar = React.forwardRef<
 );
 Sidebar.displayName = "Sidebar";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -285,10 +330,13 @@ const SidebarTrigger = React.forwardRef<
 });
 SidebarTrigger.displayName = "SidebarTrigger";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarRail = React.forwardRef<
   HTMLButtonElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"button">
 >(({ className, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -314,8 +362,10 @@ const SidebarRail = React.forwardRef<
 });
 SidebarRail.displayName = "SidebarRail";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarInset = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"main">
 >(({ className, ...props }, ref) => {
   return (
@@ -332,8 +382,10 @@ const SidebarInset = React.forwardRef<
 });
 SidebarInset.displayName = "SidebarInset";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarInput = React.forwardRef<
   React.ElementRef<typeof Input>,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<typeof Input>
 >(({ className, ...props }, ref) => {
   return (
@@ -350,8 +402,10 @@ const SidebarInput = React.forwardRef<
 });
 SidebarInput.displayName = "SidebarInput";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarHeader = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   return (
@@ -365,8 +419,10 @@ const SidebarHeader = React.forwardRef<
 });
 SidebarHeader.displayName = "SidebarHeader";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarFooter = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   return (
@@ -380,8 +436,10 @@ const SidebarFooter = React.forwardRef<
 });
 SidebarFooter.displayName = "SidebarFooter";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarSeparator = React.forwardRef<
   React.ElementRef<typeof Separator>,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<typeof Separator>
 >(({ className, ...props }, ref) => {
   return (
@@ -395,8 +453,10 @@ const SidebarSeparator = React.forwardRef<
 });
 SidebarSeparator.displayName = "SidebarSeparator";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarContent = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   return (
@@ -413,8 +473,10 @@ const SidebarContent = React.forwardRef<
 });
 SidebarContent.displayName = "SidebarContent";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarGroup = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
   return (
@@ -428,10 +490,13 @@ const SidebarGroup = React.forwardRef<
 });
 SidebarGroup.displayName = "SidebarGroup";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarGroupLabel = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const Comp = asChild ? SlotPrimitive.Slot : "div";
 
   return (
@@ -449,10 +514,13 @@ const SidebarGroupLabel = React.forwardRef<
 });
 SidebarGroupLabel.displayName = "SidebarGroupLabel";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"button"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const Comp = asChild ? SlotPrimitive.Slot : "button";
 
   return (
@@ -472,8 +540,10 @@ const SidebarGroupAction = React.forwardRef<
 });
 SidebarGroupAction.displayName = "SidebarGroupAction";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarGroupContent = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => (
   <div
@@ -485,8 +555,10 @@ const SidebarGroupContent = React.forwardRef<
 ));
 SidebarGroupContent.displayName = "SidebarGroupContent";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenu = React.forwardRef<
   HTMLUListElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"ul">
 >(({ className, ...props }, ref) => (
   <ul
@@ -498,8 +570,10 @@ const SidebarMenu = React.forwardRef<
 ));
 SidebarMenu.displayName = "SidebarMenu";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuItem = React.forwardRef<
   HTMLLIElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"li">
 >(({ className, ...props }, ref) => (
   <li
@@ -511,6 +585,7 @@ const SidebarMenuItem = React.forwardRef<
 ));
 SidebarMenuItem.displayName = "SidebarMenuItem";
 
+// 常量定义 - 模块内部使用的固定值
 const sidebarMenuButtonVariants = cva(
   "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
@@ -533,8 +608,10 @@ const sidebarMenuButtonVariants = cva(
   }
 );
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"button"> & {
     asChild?: boolean;
     isActive?: boolean;
@@ -553,9 +630,12 @@ const SidebarMenuButton = React.forwardRef<
     },
     ref
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const Comp = asChild ? SlotPrimitive.Slot : "button";
+// 常量定义 - 模块内部使用的固定值
     const { isMobile, state } = useSidebar();
 
+// button 函数
     const button = (
       <Comp
         ref={ref as any}
@@ -592,13 +672,16 @@ const SidebarMenuButton = React.forwardRef<
 );
 SidebarMenuButton.displayName = "SidebarMenuButton";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"button"> & {
     asChild?: boolean;
     showOnHover?: boolean;
   }
 >(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const Comp = asChild ? SlotPrimitive.Slot : "button";
 
   return (
@@ -623,8 +706,10 @@ const SidebarMenuAction = React.forwardRef<
 });
 SidebarMenuAction.displayName = "SidebarMenuAction";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuBadge = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => (
   <div
@@ -644,8 +729,10 @@ const SidebarMenuBadge = React.forwardRef<
 ));
 SidebarMenuBadge.displayName = "SidebarMenuBadge";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuSkeleton = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div"> & {
     showIcon?: boolean;
   }
@@ -682,8 +769,10 @@ const SidebarMenuSkeleton = React.forwardRef<
 });
 SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuSub = React.forwardRef<
   HTMLUListElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"ul">
 >(({ className, ...props }, ref) => (
   <ul
@@ -699,20 +788,25 @@ const SidebarMenuSub = React.forwardRef<
 ));
 SidebarMenuSub.displayName = "SidebarMenuSub";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuSubItem = React.forwardRef<
   HTMLLIElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"li">
 >(({ ...props }, ref) => <li ref={ref} {...props} />);
 SidebarMenuSubItem.displayName = "SidebarMenuSubItem";
 
+// 常量定义 - 模块内部使用的固定值
 const SidebarMenuSubButton = React.forwardRef<
   HTMLAnchorElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"a"> & {
     asChild?: boolean;
     size?: "sm" | "md";
     isActive?: boolean;
   }
 >(({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const Comp = asChild ? SlotPrimitive.Slot : "a";
 
   return (

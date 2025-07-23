@@ -1,6 +1,17 @@
+// sponsor-button.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/sponsor-button.tsx
+// 最后更新: 2025/7/23
+
+// sponsor-button.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 React 核心库
 import { motion } from "motion/react";
+// 导入 React 核心库
 import { ComponentType } from "react";
 
+// SponsorButtonProps 接口定义
 interface SponsorButtonProps {
   href: string;
   logo: ComponentType<{ className?: string }>;
@@ -8,6 +19,8 @@ interface SponsorButtonProps {
   className?: string;
 }
 
+// SponsorButton 函数
+// 导出组件 - 可复用的 UI 组件
 export function SponsorButton({
   href,
   logo: Logo,

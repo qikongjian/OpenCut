@@ -1,12 +1,27 @@
+// navigation-menu.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/navigation-menu.tsx
+// 最后更新: 2025/7/23
+
+// navigation-menu.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { NavigationMenu as NavigationMenuPrimitive } from "radix-ui";
+// 导入 CVA 类名变体工具
 import { cva } from "class-variance-authority";
+// 导入 React 核心库
 import { ChevronDown } from "lucide-react";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenu = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Root>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
   <NavigationMenuPrimitive.Root
@@ -23,8 +38,10 @@ const NavigationMenu = React.forwardRef<
 ));
 NavigationMenu.displayName = NavigationMenuPrimitive.Root.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuList = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.List>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.List>
 >(({ className, ...props }, ref) => (
   <NavigationMenuPrimitive.List
@@ -38,14 +55,18 @@ const NavigationMenuList = React.forwardRef<
 ));
 NavigationMenuList.displayName = NavigationMenuPrimitive.List.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuItem = NavigationMenuPrimitive.Item;
 
+// 常量定义 - 模块内部使用的固定值
 const navigationMenuTriggerStyle = cva(
   "group inline-flex h-9 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
 );
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuTrigger = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Trigger>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
   <NavigationMenuPrimitive.Trigger
@@ -62,8 +83,10 @@ const NavigationMenuTrigger = React.forwardRef<
 ));
 NavigationMenuTrigger.displayName = NavigationMenuPrimitive.Trigger.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuContent = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Content>
 >(({ className, ...props }, ref) => (
   <NavigationMenuPrimitive.Content
@@ -77,10 +100,13 @@ const NavigationMenuContent = React.forwardRef<
 ));
 NavigationMenuContent.displayName = NavigationMenuPrimitive.Content.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuLink = NavigationMenuPrimitive.Link;
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuViewport = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Viewport>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Viewport>
 >(({ className, ...props }, ref) => (
   <div className={cn("absolute left-0 top-full flex justify-center")}>
@@ -97,8 +123,10 @@ const NavigationMenuViewport = React.forwardRef<
 NavigationMenuViewport.displayName =
   NavigationMenuPrimitive.Viewport.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const NavigationMenuIndicator = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Indicator>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof NavigationMenuPrimitive.Indicator>
 >(({ className, ...props }, ref) => (
   <NavigationMenuPrimitive.Indicator

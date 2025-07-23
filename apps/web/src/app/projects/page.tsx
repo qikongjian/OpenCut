@@ -1,5 +1,14 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/projects/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入模块
 import {
   Calendar,
   ChevronLeft,
@@ -11,15 +20,25 @@ import {
   Video,
   X,
 } from "lucide-react";
+// 导入 Next.js 相关模块
 import Image from "next/image";
+// 导入 Next.js 相关模块
 import Link from "next/link";
+// 导入 Next.js 相关模块
 import { useRouter } from "next/navigation";
+// 导入 React 核心库
 import { useCallback, useEffect, useState } from "react";
+// 导入项目模块
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
+// 导入项目模块
 import { RenameProjectDialog } from "@/components/rename-project-dialog";
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入项目模块
 import { Card, CardContent } from "@/components/ui/card";
+// 导入项目模块
 import { Checkbox } from "@/components/ui/checkbox";
+// 导入模块
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +46,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+// 导入项目模块
 import { Input } from "@/components/ui/input";
+// 导入模块
 import {
   Select,
   SelectContent,
@@ -35,12 +56,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// 导入项目模块
 import { Skeleton } from "@/components/ui/skeleton";
+// 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
+// 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
+// 导入项目模块
 import type { TProject } from "@/types/project";
 
+// ProjectsPage 组件
+// 默认导出组件 - 页面或主要组件
 export default function ProjectsPage() {
+// 常量定义 - 模块内部使用的固定值
   const {
     savedProjects,
     isLoading,
@@ -49,21 +77,30 @@ export default function ProjectsPage() {
     createNewProject,
     getFilteredAndSortedProjects,
   } = useProjectStore();
+// 常量定义 - 模块内部使用的固定值
   const [thumbnailCache, setThumbnailCache] = useState<
     Record<string, string | null>
   >({});
+// 常量定义 - 模块内部使用的固定值
   const [_loadingThumbnails, setLoadingThumbnails] = useState<Set<string>>(
     new Set()
   );
+// 状态管理 - 创建和管理组件内部状态
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+// 常量定义 - 模块内部使用的固定值
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(
     new Set()
   );
+// 状态管理 - 创建和管理组件内部状态
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+// 状态管理 - 创建和管理组件内部状态
   const [searchQuery, setSearchQuery] = useState("");
+// 状态管理 - 创建和管理组件内部状态
   const [sortOption, setSortOption] = useState("createdAt-desc");
+// 常量定义 - 模块内部使用的固定值
   const router = useRouter();
 
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
   const getProjectThumbnail = useCallback(
     async (projectId: string): Promise<string | null> => {
       if (thumbnailCache[projectId] !== undefined) {
@@ -73,6 +110,7 @@ export default function ProjectsPage() {
       setLoadingThumbnails((prev) => new Set(prev).add(projectId));
 
       try {
+// 常量定义 - 模块内部使用的固定值
         const thumbnail = await useTimelineStore
           .getState()
           .getProjectThumbnail(projectId);
@@ -80,6 +118,7 @@ export default function ProjectsPage() {
         return thumbnail;
       } finally {
         setLoadingThumbnails((prev) => {
+// 常量定义 - 模块内部使用的固定值
           const newSet = new Set(prev);
           newSet.delete(projectId);
           return newSet;
@@ -89,13 +128,17 @@ export default function ProjectsPage() {
     [thumbnailCache]
   );
 
+// 常量定义 - 模块内部使用的固定值
   const handleCreateProject = async () => {
+// 常量定义 - 模块内部使用的固定值
     const projectId = await createNewProject("New Project");
     console.log("projectId", projectId);
     router.push(`/editor/${projectId}`);
   };
 
+// handleSelectProject 函数
   const handleSelectProject = (projectId: string, checked: boolean) => {
+// 常量定义 - 模块内部使用的固定值
     const newSelected = new Set(selectedProjects);
     if (checked) {
       newSelected.add(projectId);
@@ -105,6 +148,7 @@ export default function ProjectsPage() {
     setSelectedProjects(newSelected);
   };
 
+// handleSelectAll 函数
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedProjects(new Set(sortedProjects.map((p) => p.id)));
@@ -113,11 +157,13 @@ export default function ProjectsPage() {
     }
   };
 
+// handleCancelSelection 函数
   const handleCancelSelection = () => {
     setIsSelectionMode(false);
     setSelectedProjects(new Set());
   };
 
+// 常量定义 - 模块内部使用的固定值
   const handleBulkDelete = async () => {
     await Promise.all(
       Array.from(selectedProjects).map((projectId) => deleteProject(projectId))
@@ -127,11 +173,14 @@ export default function ProjectsPage() {
     setIsBulkDeleteDialogOpen(false);
   };
 
+// 常量定义 - 模块内部使用的固定值
   const sortedProjects = getFilteredAndSortedProjects(searchQuery, sortOption);
 
+// 常量定义 - 模块内部使用的固定值
   const allSelected =
     sortedProjects.length > 0 &&
     selectedProjects.size === sortedProjects.length;
+// 常量定义 - 模块内部使用的固定值
   const someSelected =
     selectedProjects.size > 0 && selectedProjects.size < sortedProjects.length;
 
@@ -314,6 +363,7 @@ export default function ProjectsPage() {
   );
 }
 
+// ProjectCardProps 接口定义
 interface ProjectCardProps {
   project: TProject;
   isSelectionMode?: boolean;
@@ -322,6 +372,7 @@ interface ProjectCardProps {
   getProjectThumbnail: (projectId: string) => Promise<string | null>;
 }
 
+// ProjectCard 函数
 function ProjectCard({
   project,
   isSelectionMode = false,
@@ -329,17 +380,26 @@ function ProjectCard({
   onSelect,
   getProjectThumbnail,
 }: ProjectCardProps) {
+// 状态管理 - 创建和管理组件内部状态
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+// 状态管理 - 创建和管理组件内部状态
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+// 状态管理 - 创建和管理组件内部状态
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+// 常量定义 - 模块内部使用的固定值
   const [dynamicThumbnail, setDynamicThumbnail] = useState<string | null>(null);
+// 状态管理 - 创建和管理组件内部状态
   const [isLoadingThumbnail, setIsLoadingThumbnail] = useState(true);
+// 常量定义 - 模块内部使用的固定值
   const { deleteProject, renameProject, duplicateProject } = useProjectStore();
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const loadThumbnail = async () => {
       setIsLoadingThumbnail(true);
       try {
+// 常量定义 - 模块内部使用的固定值
         const thumbnail = await getProjectThumbnail(project.id);
         setDynamicThumbnail(thumbnail);
       } finally {
@@ -349,6 +409,7 @@ function ProjectCard({
     loadThumbnail();
   }, [project.id, getProjectThumbnail]);
 
+// formatDate 函数
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -357,21 +418,25 @@ function ProjectCard({
     });
   };
 
+// 常量定义 - 模块内部使用的固定值
   const handleDeleteProject = async () => {
     await deleteProject(project.id);
     setIsDropdownOpen(false);
   };
 
+// 常量定义 - 模块内部使用的固定值
   const handleRenameProject = async (newName: string) => {
     await renameProject(project.id, newName);
     setIsRenameDialogOpen(false);
   };
 
+// 常量定义 - 模块内部使用的固定值
   const handleDuplicateProject = async () => {
     setIsDropdownOpen(false);
     await duplicateProject(project.id);
   };
 
+// handleCardClick 函数
   const handleCardClick = (e: React.MouseEvent) => {
     if (isSelectionMode) {
       e.preventDefault();
@@ -379,6 +444,7 @@ function ProjectCard({
     }
   };
 
+// handleCardKeyDown 函数
   const handleCardKeyDown = (e: React.KeyboardEvent) => {
     if (isSelectionMode && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
@@ -386,6 +452,7 @@ function ProjectCard({
     }
   };
 
+// cardContent 函数
   const cardContent = (
     <Card
       className={`overflow-hidden bg-background border-none p-0 transition-all ${
@@ -540,6 +607,7 @@ function ProjectCard({
   );
 }
 
+// CreateButton 函数
 function CreateButton({ onClick }: { onClick?: () => void }) {
   return (
     <Button className="flex" onClick={onClick}>
@@ -549,6 +617,7 @@ function CreateButton({ onClick }: { onClick?: () => void }) {
   );
 }
 
+// NoProjects 函数
 function NoProjects({ onCreateProject }: { onCreateProject: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -568,6 +637,7 @@ function NoProjects({ onCreateProject }: { onCreateProject: () => void }) {
   );
 }
 
+// NoResults 函数
 function NoResults({
   searchQuery,
   onClearSearch,

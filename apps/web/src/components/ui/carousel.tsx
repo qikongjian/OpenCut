@@ -1,19 +1,38 @@
+// carousel.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/carousel.tsx
+// 最后更新: 2025/7/23
+
+// carousel.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入模块
 import useEmblaCarousel, {
+// UseEmblaCarouselType 类型定义
   type UseEmblaCarouselType,
 } from "embla-carousel-react";
+// 导入 React 核心库
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { Button } from "./button";
 
+// CarouselApi 类型定义
 type CarouselApi = UseEmblaCarouselType[1];
+// UseCarouselParameters 类型定义
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>;
+// CarouselOptions 类型定义
 type CarouselOptions = UseCarouselParameters[0];
+// CarouselPlugin 类型定义
 type CarouselPlugin = UseCarouselParameters[1];
 
+// CarouselProps 类型定义
 type CarouselProps = {
   opts?: CarouselOptions;
   plugins?: CarouselPlugin;
@@ -21,6 +40,7 @@ type CarouselProps = {
   setApi?: (api: CarouselApi) => void;
 };
 
+// CarouselContextProps 类型定义
 type CarouselContextProps = {
   carouselRef: ReturnType<typeof useEmblaCarousel>[0];
   api: ReturnType<typeof useEmblaCarousel>[1];
@@ -30,9 +50,12 @@ type CarouselContextProps = {
   canScrollNext: boolean;
 } & CarouselProps;
 
+// 常量定义 - 模块内部使用的固定值
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
+// useCarousel 自定义钩子
 function useCarousel() {
+// 上下文消费 - 消费 React 上下文中的值
   const context = React.useContext(CarouselContext);
 
   if (!context) {
@@ -42,6 +65,7 @@ function useCarousel() {
   return context;
 }
 
+// 常量定义 - 模块内部使用的固定值
 const Carousel = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & CarouselProps
@@ -58,6 +82,7 @@ const Carousel = React.forwardRef<
     },
     ref
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const [carouselRef, api] = useEmblaCarousel(
       {
         ...opts,
@@ -65,9 +90,12 @@ const Carousel = React.forwardRef<
       },
       plugins
     );
+// 状态管理 - 创建和管理组件内部状态
     const [canScrollPrev, setCanScrollPrev] = React.useState(false);
+// 状态管理 - 创建和管理组件内部状态
     const [canScrollNext, setCanScrollNext] = React.useState(false);
 
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
     const onSelect = React.useCallback((api: CarouselApi) => {
       if (!api) {
         return;
@@ -77,14 +105,17 @@ const Carousel = React.forwardRef<
       setCanScrollNext(api.canScrollNext());
     }, []);
 
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
     const scrollPrev = React.useCallback(() => {
       api?.scrollPrev();
     }, [api]);
 
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
     const scrollNext = React.useCallback(() => {
       api?.scrollNext();
     }, [api]);
 
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
     const handleKeyDown = React.useCallback(
       (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === "ArrowLeft") {
@@ -98,6 +129,7 @@ const Carousel = React.forwardRef<
       [scrollPrev, scrollNext]
     );
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
     React.useEffect(() => {
       if (!api || !setApi) {
         return;
@@ -106,6 +138,7 @@ const Carousel = React.forwardRef<
       setApi(api);
     }, [api, setApi]);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
     React.useEffect(() => {
       if (!api) {
         return;
@@ -150,10 +183,12 @@ const Carousel = React.forwardRef<
 );
 Carousel.displayName = "Carousel";
 
+// 常量定义 - 模块内部使用的固定值
 const CarouselContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const { carouselRef, orientation } = useCarousel();
 
   return (
@@ -172,10 +207,12 @@ const CarouselContent = React.forwardRef<
 });
 CarouselContent.displayName = "CarouselContent";
 
+// 常量定义 - 模块内部使用的固定值
 const CarouselItem = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const { orientation } = useCarousel();
 
   return (
@@ -194,10 +231,13 @@ const CarouselItem = React.forwardRef<
 });
 CarouselItem.displayName = "CarouselItem";
 
+// 常量定义 - 模块内部使用的固定值
 const CarouselPrevious = React.forwardRef<
   HTMLButtonElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const { orientation, scrollPrev, canScrollPrev } = useCarousel();
 
   return (
@@ -223,10 +263,13 @@ const CarouselPrevious = React.forwardRef<
 });
 CarouselPrevious.displayName = "CarouselPrevious";
 
+// 常量定义 - 模块内部使用的固定值
 const CarouselNext = React.forwardRef<
   HTMLButtonElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<typeof Button>
 >(({ className, variant = "outline", size = "icon", ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const { orientation, scrollNext, canScrollNext } = useCarousel();
 
   return (
@@ -253,6 +296,7 @@ const CarouselNext = React.forwardRef<
 CarouselNext.displayName = "CarouselNext";
 
 export {
+// CarouselApi 类型定义
   type CarouselApi,
   Carousel,
   CarouselContent,

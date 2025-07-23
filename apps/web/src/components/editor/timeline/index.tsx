@@ -1,99 +1,144 @@
+// index.tsx - 视频编辑器组件
+// 此文件包含 视频编辑器组件 的相关代码
+// 文件路径: components/editor/timeline/index.tsx
+// 最后更新: 2025/7/23
+
+// index.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入滚动区域组件，用于时间线的滚动容器
 import { ScrollArea } from "../../ui/scroll-area";
+// 导入按钮组件，用于工具栏操作
 import { Button } from "../../ui/button";
+// 导入各种图标，用于工具栏和轨道标识
 import {
-  Scissors,
-  ArrowLeftToLine,
-  ArrowRightToLine,
-  Trash2,
-  Snowflake,
-  Copy,
-  SplitSquareHorizontal,
-  Pause,
-  Play,
-  Video,
-  Music,
-  TypeIcon,
-  Magnet,
-  Link,
-  ZoomIn,
-  ZoomOut,
+  Scissors, // 剪刀图标 - 分割功能
+  ArrowLeftToLine, // 左对齐图标 - 对齐功能
+  ArrowRightToLine, // 右对齐图标 - 对齐功能
+  Trash2, // 垃圾桶图标 - 删除功能
+  Snowflake, // 雪花图标 - 冻结功能
+  Copy, // 复制图标 - 复制功能
+  SplitSquareHorizontal, // 分割图标 - 分割功能
+  Pause, // 暂停图标 - 播放控制
+  Play, // 播放图标 - 播放控制
+  Video, // 视频图标 - 视频轨道标识
+  Music, // 音乐图标 - 音频轨道标识
+  TypeIcon, // 文本图标 - 文本轨道标识
+  Magnet, // 磁铁图标 - 吸附功能
+  Link, // 链接图标 - 链接功能
+  ZoomIn, // 放大图标 - 缩放功能
+  ZoomOut, // 缩小图标 - 缩放功能
 } from "lucide-react";
+// 导入工具提示组件，用于显示操作提示
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
 } from "../../ui/tooltip";
+// 导入右键菜单组件，用于上下文菜单
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "../../ui/context-menu";
-import { useTimelineStore } from "@/stores/timeline-store";
-import { useMediaStore } from "@/stores/media-store";
-import { usePlaybackStore } from "@/stores/playback-store";
-import { useProjectStore } from "@/stores/project-store";
-import { useTimelineZoom } from "@/hooks/use-timeline-zoom";
-import { processMediaFiles } from "@/lib/media-processing";
-import { toast } from "sonner";
+// 导入状态管理钩子
+import { useTimelineStore } from "@/stores/timeline-store"; // 时间线状态
+// 导入项目模块
+import { useMediaStore } from "@/stores/media-store"; // 媒体状态
+// 导入项目模块
+import { usePlaybackStore } from "@/stores/playback-store"; // 播放状态
+// 导入项目模块
+import { useProjectStore } from "@/stores/project-store"; // 项目状态
+// 导入自定义钩子
+import { useTimelineZoom } from "@/hooks/use-timeline-zoom"; // 时间线缩放
+// 导入工具函数
+import { processMediaFiles } from "@/lib/media-processing"; // 媒体文件处理
+// 导入 Sonner 通知组件
+import { toast } from "sonner"; // 通知提示
+// 导入 React 钩子
 import { useState, useRef, useEffect, useCallback } from "react";
-import { TimelineTrackContent } from "./timeline-track";
+// 导入子组件
+import { TimelineTrackContent } from "./timeline-track"; // 轨道内容组件
+// 导入模块
 import {
-  TimelinePlayhead,
-  useTimelinePlayheadRuler,
+  TimelinePlayhead, // 播放头组件
+  useTimelinePlayheadRuler, // 播放头标尺钩子
 } from "./timeline-playhead";
-import { SelectionBox } from "../selection-box";
-import { useSelectionBox } from "@/hooks/use-selection-box";
-import { SnapIndicator } from "../snap-indicator";
-import { SnapPoint } from "@/hooks/use-timeline-snapping";
+// 导入本地模块
+import { SelectionBox } from "../selection-box"; // 选择框组件
+// 导入项目模块
+import { useSelectionBox } from "@/hooks/use-selection-box"; // 选择框钩子
+// 导入本地模块
+import { SnapIndicator } from "../snap-indicator"; // 吸附指示器
+// 导入项目模块
+import { SnapPoint } from "@/hooks/use-timeline-snapping"; // 吸附点类型
+// 导入类型定义
 import type { DragData, TimelineTrack } from "@/types/timeline";
+// 导入常量
 import {
-  getTrackHeight,
-  getCumulativeHeightBefore,
-  getTotalTracksHeight,
-  TIMELINE_CONSTANTS,
-  snapTimeToFrame,
+  getTrackHeight, // 获取轨道高度
+  getCumulativeHeightBefore, // 获取累积高度
+  getTotalTracksHeight, // 获取总轨道高度
+  TIMELINE_CONSTANTS, // 时间线常量
+  snapTimeToFrame, // 时间吸附到帧
 } from "@/constants/timeline-constants";
+// 导入滑块组件，用于缩放控制
 import { Slider } from "@/components/ui/slider";
 
+// 时间线组件 - 显示所有轨道（视频、音频、特效）及其元素
+// 用户可以拖拽媒体文件到这里添加到项目中
+// 元素可以被裁剪、删除和移动
+// 导出组件 - 可复用的 UI 组件
 export function Timeline() {
-  // Timeline shows all tracks (video, audio, effects) and their elements.
-  // You can drag media here to add it to your project.
-  // elements can be trimmed, deleted, and moved.
-
+  // 从时间线状态获取数据和方法
   const {
-    tracks,
-    getTotalDuration,
-    clearSelectedElements,
-    snappingEnabled,
-    setSelectedElements,
-    toggleTrackMute,
-    dragState,
+    tracks, // 轨道列表
+    getTotalDuration, // 获取总时长
+    clearSelectedElements, // 清除选中元素
+    snappingEnabled, // 吸附功能是否启用
+    setSelectedElements, // 设置选中元素
+    toggleTrackMute, // 切换轨道静音
+    dragState, // 拖拽状态
   } = useTimelineStore();
+  
+  // 从媒体状态获取数据和方法
   const { mediaItems, addMediaItem } = useMediaStore();
+  
+  // 从项目状态获取当前项目
   const { activeProject } = useProjectStore();
+  
+  // 从播放状态获取播放控制数据和方法
   const { currentTime, duration, seek, setDuration, isPlaying, toggle } =
     usePlaybackStore();
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const dragCounterRef = useRef(0);
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const rulerRef = useRef<HTMLDivElement>(null);
-  const [isInTimeline, setIsInTimeline] = useState(false);
+  
+  // 本地状态管理
+  const [isDragOver, setIsDragOver] = useState(false); // 是否正在拖拽
+// 状态管理 - 创建和管理组件内部状态
+  const [isProcessing, setIsProcessing] = useState(false); // 是否正在处理文件
+// 状态管理 - 创建和管理组件内部状态
+  const [progress, setProgress] = useState(0); // 处理进度
+// 引用管理 - 保存可变值或直接访问 DOM 元素
+  const dragCounterRef = useRef(0); // 拖拽计数器引用
+// 常量定义 - 模块内部使用的固定值
+  const timelineRef = useRef<HTMLDivElement>(null); // 时间线容器引用
+// 常量定义 - 模块内部使用的固定值
+  const rulerRef = useRef<HTMLDivElement>(null); // 标尺引用
+// 状态管理 - 创建和管理组件内部状态
+  const [isInTimeline, setIsInTimeline] = useState(false); // 是否在时间线区域内
 
-  // Track mouse down/up for distinguishing clicks from drag/resize ends
+  // 鼠标跟踪引用 - 用于区分点击和拖拽/调整大小操作
   const mouseTrackingRef = useRef({
-    isMouseDown: false,
-    downX: 0,
-    downY: 0,
-    downTime: 0,
+    isMouseDown: false, // 鼠标是否按下
+    downX: 0, // 按下时的X坐标
+    downY: 0, // 按下时的Y坐标
+    downTime: 0, // 按下的时间戳
   });
 
-  // Timeline zoom functionality
+  // 时间线缩放功能
   const { zoomLevel, setZoomLevel, handleWheel } = useTimelineZoom({
     containerRef: timelineRef,
     isInTimeline,
@@ -110,13 +155,21 @@ export function Timeline() {
 
   // Scroll synchronization and auto-scroll to playhead
   const rulerScrollRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const tracksScrollRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const trackLabelsRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const playheadRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const trackLabelsScrollRef = useRef<HTMLDivElement>(null);
+// 引用管理 - 保存可变值或直接访问 DOM 元素
   const isUpdatingRef = useRef(false);
+// 引用管理 - 保存可变值或直接访问 DOM 元素
   const lastRulerSync = useRef(0);
+// 引用管理 - 保存可变值或直接访问 DOM 元素
   const lastTracksSync = useRef(0);
+// 引用管理 - 保存可变值或直接访问 DOM 元素
   const lastVerticalSync = useRef(0);
 
   // Timeline playhead ruler handlers
@@ -133,6 +186,7 @@ export function Timeline() {
 
   // Selection box functionality
   const tracksContainerRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const {
     selectionBox,
     handleMouseDown: handleSelectionMouseDown,
@@ -151,6 +205,7 @@ export function Timeline() {
   const [currentSnapPoint, setCurrentSnapPoint] = useState<SnapPoint | null>(
     null
   );
+// 常量定义 - 模块内部使用的固定值
   const showSnapIndicator =
     dragState.isDragging && snappingEnabled && currentSnapPoint !== null;
 
@@ -163,6 +218,7 @@ export function Timeline() {
   const handleTimelineMouseDown = useCallback((e: React.MouseEvent) => {
     // Only track mouse down on timeline background areas (not elements)
     const target = e.target as HTMLElement;
+// 常量定义 - 模块内部使用的固定值
     const isTimelineBackground =
       !target.closest(".timeline-element") &&
       !playheadRef.current?.contains(target) &&
@@ -181,6 +237,7 @@ export function Timeline() {
   // Timeline content click to seek handler
   const handleTimelineContentClick = useCallback(
     (e: React.MouseEvent) => {
+// 常量定义 - 模块内部使用的固定值
       const { isMouseDown, downX, downY, downTime } = mouseTrackingRef.current;
 
       // Reset mouse tracking
@@ -204,7 +261,9 @@ export function Timeline() {
 
       // Check if mouse moved significantly (indicates drag, not click)
       const deltaX = Math.abs(e.clientX - downX);
+// 常量定义 - 模块内部使用的固定值
       const deltaY = Math.abs(e.clientY - downY);
+// 常量定义 - 模块内部使用的固定值
       const deltaTime = e.timeStamp - downTime;
 
       if (deltaX > 5 || deltaY > 5 || deltaTime > 500) {
@@ -259,6 +318,7 @@ export function Timeline() {
           "[data-radix-scroll-area-viewport]"
         ) as HTMLElement;
         if (!rulerContent) return;
+// 常量定义 - 模块内部使用的固定值
         const rect = rulerContent.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
         scrollLeft = rulerContent.scrollLeft;
@@ -268,11 +328,13 @@ export function Timeline() {
           "[data-radix-scroll-area-viewport]"
         ) as HTMLElement;
         if (!tracksContent) return;
+// 常量定义 - 模块内部使用的固定值
         const rect = tracksContent.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
         scrollLeft = tracksContent.scrollLeft;
       }
 
+// 常量定义 - 模块内部使用的固定值
       const rawTime = Math.max(
         0,
         Math.min(
@@ -284,6 +346,7 @@ export function Timeline() {
 
       // Use frame snapping for timeline clicking
       const projectFps = activeProject?.fps || 30;
+// 常量定义 - 模块内部使用的固定值
       const time = snapTimeToFrame(rawTime, projectFps);
 
       seek(time);
@@ -302,12 +365,14 @@ export function Timeline() {
 
   // Update timeline duration when tracks change
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const totalDuration = getTotalDuration();
     setDuration(Math.max(totalDuration, 10)); // Minimum 10 seconds for empty timeline
   }, [tracks, setDuration, getTotalDuration]);
 
   // Old marquee system removed - using new SelectionBox component instead
 
+// handleDragEnter 函数
   const handleDragEnter = (e: React.DragEvent) => {
     // When something is dragged over the timeline, show overlay
     e.preventDefault();
@@ -321,10 +386,12 @@ export function Timeline() {
     }
   };
 
+// handleDragOver 函数
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
 
+// handleDragLeave 函数
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
 
@@ -339,6 +406,7 @@ export function Timeline() {
     }
   };
 
+// 常量定义 - 模块内部使用的固定值
   const handleDrop = async (e: React.DragEvent) => {
     // When media is dropped, add it as a new track/element
     e.preventDefault();
@@ -353,9 +421,11 @@ export function Timeline() {
       return;
     }
 
+// 常量定义 - 模块内部使用的固定值
     const itemData = e.dataTransfer.getData("application/x-media-item");
     if (itemData) {
       try {
+// 常量定义 - 模块内部使用的固定值
         const dragData: DragData = JSON.parse(itemData);
 
         if (dragData.type === "text") {
@@ -387,13 +457,16 @@ export function Timeline() {
       setIsProcessing(true);
       setProgress(0);
       try {
+// 常量定义 - 模块内部使用的固定值
         const processedItems = await processMediaFiles(
           e.dataTransfer.files,
           (p) => setProgress(p)
         );
         for (const processedItem of processedItems) {
           await addMediaItem(activeProject.id, processedItem);
+// 常量定义 - 模块内部使用的固定值
           const currentMediaItems = useMediaStore.getState().mediaItems;
+// 常量定义 - 模块内部使用的固定值
           const addedItem = currentMediaItems.find(
             (item) =>
               item.name === processedItem.name && item.url === processedItem.url
@@ -413,6 +486,7 @@ export function Timeline() {
     }
   };
 
+// 常量定义 - 模块内部使用的固定值
   const dragProps = {
     onDragEnter: handleDragEnter,
     onDragOver: handleDragOver,
@@ -422,12 +496,15 @@ export function Timeline() {
 
   // --- Scroll synchronization effect ---
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const rulerViewport = rulerScrollRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     ) as HTMLElement;
+// 常量定义 - 模块内部使用的固定值
     const tracksViewport = tracksScrollRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     ) as HTMLElement;
+// 常量定义 - 模块内部使用的固定值
     const trackLabelsViewport = trackLabelsScrollRef.current?.querySelector(
       "[data-radix-scroll-area-viewport]"
     ) as HTMLElement;
@@ -436,6 +513,7 @@ export function Timeline() {
 
     // Horizontal scroll synchronization between ruler and tracks
     const handleRulerScroll = () => {
+// 常量定义 - 模块内部使用的固定值
       const now = Date.now();
       if (isUpdatingRef.current || now - lastRulerSync.current < 16) return;
       lastRulerSync.current = now;
@@ -443,7 +521,9 @@ export function Timeline() {
       tracksViewport.scrollLeft = rulerViewport.scrollLeft;
       isUpdatingRef.current = false;
     };
+// handleTracksScroll 函数
     const handleTracksScroll = () => {
+// 常量定义 - 模块内部使用的固定值
       const now = Date.now();
       if (isUpdatingRef.current || now - lastTracksSync.current < 16) return;
       lastTracksSync.current = now;
@@ -457,7 +537,9 @@ export function Timeline() {
 
     // Vertical scroll synchronization between track labels and tracks content
     if (trackLabelsViewport) {
+// handleTrackLabelsScroll 函数
       const handleTrackLabelsScroll = () => {
+// 常量定义 - 模块内部使用的固定值
         const now = Date.now();
         if (isUpdatingRef.current || now - lastVerticalSync.current < 16)
           return;
@@ -466,7 +548,9 @@ export function Timeline() {
         tracksViewport.scrollTop = trackLabelsViewport.scrollTop;
         isUpdatingRef.current = false;
       };
+// handleTracksVerticalScroll 函数
       const handleTracksVerticalScroll = () => {
+// 常量定义 - 模块内部使用的固定值
         const now = Date.now();
         if (isUpdatingRef.current || now - lastVerticalSync.current < 16)
           return;
@@ -574,6 +658,7 @@ export function Timeline() {
                 {(() => {
                   // Calculate appropriate time interval based on zoom level
                   const getTimeInterval = (zoom: number) => {
+// 常量定义 - 模块内部使用的固定值
                     const pixelsPerSecond =
                       TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoom;
                     if (pixelsPerSecond >= 200) return 0.1; // Every 0.1s when very zoomed in
@@ -585,13 +670,17 @@ export function Timeline() {
                     return 30; // Every 30s when extremely zoomed out
                   };
 
+// 常量定义 - 模块内部使用的固定值
                   const interval = getTimeInterval(zoomLevel);
+// 常量定义 - 模块内部使用的固定值
                   const markerCount = Math.ceil(duration / interval) + 1;
 
                   return Array.from({ length: markerCount }, (_, i) => {
+// 常量定义 - 模块内部使用的固定值
                     const time = i * interval;
                     if (time > duration) return null;
 
+// 常量定义 - 模块内部使用的固定值
                     const isMainMarker =
                       time % (interval >= 1 ? Math.max(1, interval) : 1) === 0;
 
@@ -613,9 +702,13 @@ export function Timeline() {
                             }`}
                         >
                           {(() => {
+// formatTime 函数
                             const formatTime = (seconds: number) => {
+// 常量定义 - 模块内部使用的固定值
                               const hours = Math.floor(seconds / 3600);
+// 常量定义 - 模块内部使用的固定值
                               const minutes = Math.floor((seconds % 3600) / 60);
+// 常量定义 - 模块内部使用的固定值
                               const secs = seconds % 60;
 
                               if (hours > 0) {
@@ -762,6 +855,7 @@ export function Timeline() {
   );
 }
 
+// TrackIcon 函数
 function TrackIcon({ track }: { track: TimelineTrack }) {
   return (
     <>
@@ -778,6 +872,7 @@ function TrackIcon({ track }: { track: TimelineTrack }) {
   );
 }
 
+// TimelineToolbar 函数
 function TimelineToolbar({
   zoomLevel,
   setZoomLevel,
@@ -785,6 +880,7 @@ function TimelineToolbar({
   zoomLevel: number;
   setZoomLevel: (zoom: number) => void;
 }) {
+// 常量定义 - 模块内部使用的固定值
   const {
     tracks,
     addTrack,
@@ -802,6 +898,7 @@ function TimelineToolbar({
     rippleEditingEnabled,
     toggleRippleEditing,
   } = useTimelineStore();
+// 常量定义 - 模块内部使用的固定值
   const { currentTime, duration, isPlaying, toggle } = usePlaybackStore();
 
   // Action handlers
@@ -809,14 +906,19 @@ function TimelineToolbar({
     if (selectedElements.length === 0) return;
     let splitCount = 0;
     selectedElements.forEach(({ trackId, elementId }) => {
+// 常量定义 - 模块内部使用的固定值
       const track = tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((c) => c.id === elementId);
       if (element && track) {
+// 常量定义 - 模块内部使用的固定值
         const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
         const effectiveEnd =
           element.startTime +
           (element.duration - element.trimStart - element.trimEnd);
         if (currentTime > effectiveStart && currentTime < effectiveEnd) {
+// 常量定义 - 模块内部使用的固定值
           const newElementId = splitElement(trackId, elementId, currentTime);
           if (newElementId) splitCount++;
         }
@@ -827,19 +929,25 @@ function TimelineToolbar({
     }
   };
 
+// handleDuplicateSelected 函数
   const handleDuplicateSelected = () => {
     if (selectedElements.length === 0) return;
+// 常量定义 - 模块内部使用的固定值
     const canDuplicate = selectedElements.length === 1;
     if (!canDuplicate) return;
 
     selectedElements.forEach(({ trackId, elementId }) => {
+// 常量定义 - 模块内部使用的固定值
       const track = tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((el) => el.id === elementId);
       if (element) {
+// 常量定义 - 模块内部使用的固定值
         const newStartTime =
           element.startTime +
           (element.duration - element.trimStart - element.trimEnd) +
           0.1;
+// 常量定义 - 模块内部使用的固定值
         const { id, ...elementWithoutId } = element;
         addElementToTrack(trackId, {
           ...elementWithoutId,
@@ -850,20 +958,27 @@ function TimelineToolbar({
     clearSelectedElements();
   };
 
+// handleFreezeSelected 函数
   const handleFreezeSelected = () => {
     toast.info("Freeze frame functionality coming soon!");
   };
 
+// handleSplitAndKeepLeft 函数
   const handleSplitAndKeepLeft = () => {
     if (selectedElements.length !== 1) {
       toast.error("Select exactly one element");
       return;
     }
+// 常量定义 - 模块内部使用的固定值
     const { trackId, elementId } = selectedElements[0];
+// 常量定义 - 模块内部使用的固定值
     const track = tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
     const element = track?.elements.find((c) => c.id === elementId);
     if (!element) return;
+// 常量定义 - 模块内部使用的固定值
     const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
     const effectiveEnd =
       element.startTime +
       (element.duration - element.trimStart - element.trimEnd);
@@ -874,16 +989,22 @@ function TimelineToolbar({
     splitAndKeepLeft(trackId, elementId, currentTime);
   };
 
+// handleSplitAndKeepRight 函数
   const handleSplitAndKeepRight = () => {
     if (selectedElements.length !== 1) {
       toast.error("Select exactly one element");
       return;
     }
+// 常量定义 - 模块内部使用的固定值
     const { trackId, elementId } = selectedElements[0];
+// 常量定义 - 模块内部使用的固定值
     const track = tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
     const element = track?.elements.find((c) => c.id === elementId);
     if (!element) return;
+// 常量定义 - 模块内部使用的固定值
     const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
     const effectiveEnd =
       element.startTime +
       (element.duration - element.trimStart - element.trimEnd);
@@ -894,12 +1015,15 @@ function TimelineToolbar({
     splitAndKeepRight(trackId, elementId, currentTime);
   };
 
+// handleSeparateAudio 函数
   const handleSeparateAudio = () => {
     if (selectedElements.length !== 1) {
       toast.error("Select exactly one media element to separate audio");
       return;
     }
+// 常量定义 - 模块内部使用的固定值
     const { trackId, elementId } = selectedElements[0];
+// 常量定义 - 模块内部使用的固定值
     const track = tracks.find((t) => t.id === trackId);
     if (!track || track.type !== "media") {
       toast.error("Select a media element to separate audio");
@@ -908,6 +1032,7 @@ function TimelineToolbar({
     separateAudio(trackId, elementId);
   };
 
+// handleDeleteSelected 函数
   const handleDeleteSelected = () => {
     if (selectedElements.length === 0) return;
     selectedElements.forEach(({ trackId, elementId }) => {
@@ -925,10 +1050,12 @@ function TimelineToolbar({
     setZoomLevel(Math.min(4, zoomLevel + 0.25));
   };
 
+// handleZoomOut 函数
   const handleZoomOut = () => {
     setZoomLevel(Math.max(0.25, zoomLevel - 0.25));
   };
 
+// handleZoomSliderChange 函数
   const handleZoomSliderChange = (values: number[]) => {
     setZoomLevel(values[0]);
   };
@@ -974,6 +1101,7 @@ function TimelineToolbar({
                     variant="outline"
                     size="sm"
                     onClick={() => {
+// 常量定义 - 模块内部使用的固定值
                       const trackId = addTrack("media");
                       addElementToTrack(trackId, {
                         type: "media",

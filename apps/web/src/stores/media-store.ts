@@ -1,10 +1,24 @@
+// media-store.ts - Zustand 状态管理存储
+// 此文件包含 zustand 状态管理存储 的相关代码
+// 文件路径: stores/media-store.ts
+// 最后更新: 2025/7/23
+
+// media-store.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入 Zustand 状态管理库
 import { create } from "zustand";
+// 导入项目模块
 import { storageService } from "@/lib/storage/storage-service";
+// 导入本地模块
 import { useTimelineStore } from "./timeline-store";
+// 导入项目模块
 import { generateUUID } from "@/lib/utils";
 
+// 类型定义 - 创建类型别名或联合类型
 export type MediaType = "image" | "video" | "audio";
 
+// 接口定义 - 定义对象的结构和属性类型
 export interface MediaItem {
   id: string;
   name: string;
@@ -25,6 +39,7 @@ export interface MediaItem {
   textAlign?: "left" | "center" | "right"; // Text alignment
 }
 
+// MediaStore 接口定义
 interface MediaStore {
   mediaItems: MediaItem[];
   isLoading: boolean;
@@ -40,8 +55,10 @@ interface MediaStore {
   clearAllMedia: () => void; // Clear local state only
 }
 
+// to 函数
 // Helper function to determine file type
 export const getFileType = (file: File): MediaType | null => {
+// 常量定义 - 模块内部使用的固定值
   const { type } = file;
 
   if (type.startsWith("image/")) {
@@ -57,15 +74,19 @@ export const getFileType = (file: File): MediaType | null => {
   return null;
 };
 
+// to 函数
 // Helper function to get image dimensions
 export const getImageDimensions = (
   file: File
 ): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {
+// 常量定义 - 模块内部使用的固定值
     const img = new window.Image();
 
     img.addEventListener("load", () => {
+// 常量定义 - 模块内部使用的固定值
       const width = img.naturalWidth;
+// 常量定义 - 模块内部使用的固定值
       const height = img.naturalHeight;
       resolve({ width, height });
       img.remove();
@@ -80,13 +101,17 @@ export const getImageDimensions = (
   });
 };
 
+// to 函数
 // Helper function to generate video thumbnail and get dimensions
 export const generateVideoThumbnail = (
   file: File
 ): Promise<{ thumbnailUrl: string; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
+// 常量定义 - 模块内部使用的固定值
     const video = document.createElement("video") as HTMLVideoElement;
+// 常量定义 - 模块内部使用的固定值
     const canvas = document.createElement("canvas") as HTMLCanvasElement;
+// 常量定义 - 模块内部使用的固定值
     const ctx = canvas.getContext("2d");
 
     if (!ctx) {
@@ -104,8 +129,11 @@ export const generateVideoThumbnail = (
 
     video.addEventListener("seeked", () => {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+// 常量定义 - 模块内部使用的固定值
       const thumbnailUrl = canvas.toDataURL("image/jpeg", 0.8);
+// 常量定义 - 模块内部使用的固定值
       const width = video.videoWidth;
+// 常量定义 - 模块内部使用的固定值
       const height = video.videoHeight;
 
       resolve({ thumbnailUrl, width, height });
@@ -126,9 +154,11 @@ export const generateVideoThumbnail = (
   });
 };
 
+// to 函数
 // Helper function to get media duration
 export const getMediaDuration = (file: File): Promise<number> => {
   return new Promise((resolve, reject) => {
+// 常量定义 - 模块内部使用的固定值
     const element = document.createElement(
       file.type.startsWith("video/") ? "video" : "audio"
     ) as HTMLVideoElement;
@@ -156,17 +186,20 @@ export const getMediaAspectRatio = (item: MediaItem): number => {
   return 16 / 9; // Default aspect ratio
 };
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const useMediaStore = create<MediaStore>((set, get) => ({
   mediaItems: [],
   isLoading: false,
 
   addMediaItem: async (projectId, item) => {
+// 常量定义 - 模块内部使用的固定值
     const newItem: MediaItem = {
       ...item,
       id: generateUUID(),
     };
 
     // Add to local state immediately for UI responsiveness
+    // 设置状态 - 更新状态值
     set((state) => ({
       mediaItems: [...state.mediaItems, newItem],
     }));
@@ -177,6 +210,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     } catch (error) {
       console.error("Failed to save media item:", error);
       // Remove from local state if save failed
+      // 设置状态 - 更新状态值
       set((state) => ({
         mediaItems: state.mediaItems.filter((media) => media.id !== newItem.id),
       }));
@@ -184,7 +218,9 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   },
 
   removeMediaItem: async (projectId, id: string) => {
+// 常量定义 - 模块内部使用的固定值
     const state = get();
+// 常量定义 - 模块内部使用的固定值
     const item = state.mediaItems.find((media) => media.id === id);
 
     // Cleanup object URLs to prevent memory leaks
@@ -196,6 +232,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     }
 
     // Remove from local state immediately
+    // 设置状态 - 更新状态值
     set((state) => ({
       mediaItems: state.mediaItems.filter((media) => media.id !== id),
     }));
@@ -209,9 +246,11 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   },
 
   loadProjectMedia: async (projectId) => {
+    // 设置状态 - 更新状态值
     set({ isLoading: true });
 
     try {
+// 常量定义 - 模块内部使用的固定值
       const mediaItems = await storageService.loadAllMediaItems(projectId);
 
       // Regenerate thumbnails for video items
@@ -219,6 +258,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
         mediaItems.map(async (item) => {
           if (item.type === "video" && item.file) {
             try {
+// 常量定义 - 模块内部使用的固定值
               const { thumbnailUrl, width, height } = await generateVideoThumbnail(item.file);
               return {
                 ...item,
@@ -235,15 +275,19 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
         })
       );
 
+      // 设置状态 - 更新状态值
+
       set({ mediaItems: updatedMediaItems });
     } catch (error) {
       console.error("Failed to load media items:", error);
     } finally {
+      // 设置状态 - 更新状态值
       set({ isLoading: false });
     }
   },
 
   clearProjectMedia: async (projectId) => {
+// 常量定义 - 模块内部使用的固定值
     const state = get();
 
     // Cleanup all object URLs
@@ -257,10 +301,12 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     });
 
     // Clear local state
+    // 设置状态 - 更新状态值
     set({ mediaItems: [] });
 
     // Clear persistent storage
     try {
+// 常量定义 - 模块内部使用的固定值
       const mediaIds = state.mediaItems.map((item) => item.id);
       await Promise.all(
         mediaIds.map((id) => storageService.deleteMediaItem(projectId, id))
@@ -271,6 +317,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   },
 
   clearAllMedia: () => {
+// 常量定义 - 模块内部使用的固定值
     const state = get();
 
     // Cleanup all object URLs
@@ -284,6 +331,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     });
 
     // Clear local state
+    // 设置状态 - 更新状态值
     set({ mediaItems: [] });
   },
 }));

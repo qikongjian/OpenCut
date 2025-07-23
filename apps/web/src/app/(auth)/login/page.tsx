@@ -1,7 +1,18 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/(auth)/login/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 Next.js 相关模块
 import { useRouter } from "next/navigation";
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入模块
 import {
   Card,
   CardContent,
@@ -9,18 +20,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+// 导入 React 核心库
 import { memo, Suspense } from "react";
+// 导入项目模块
 import { Input } from "@/components/ui/input";
+// 导入项目模块
 import { Label } from "@/components/ui/label";
+// 导入项目模块
 import { Separator } from "@/components/ui/separator";
+// 导入 Next.js 相关模块
 import Link from "next/link";
+// 导入项目模块
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+// 导入 React 核心库
 import { ArrowLeft, Loader2 } from "lucide-react";
+// 导入项目模块
 import { GoogleIcon } from "@/components/icons";
+// 导入项目模块
 import { useLogin } from "@/hooks/auth/useLogin";
 
+// LoginPage 组件
 const LoginPage = () => {
+// 常量定义 - 模块内部使用的固定值
   const router = useRouter();
+// 常量定义 - 模块内部使用的固定值
   const {
     email,
     setEmail,

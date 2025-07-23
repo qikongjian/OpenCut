@@ -1,20 +1,39 @@
+// media.tsx - 视频编辑器组件
+// 此文件包含 视频编辑器组件 的相关代码
+// 文件路径: components/editor/media-panel/views/media.tsx
+// 最后更新: 2025/7/23
+
+// media.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入项目模块
 import { useDragDrop } from "@/hooks/use-drag-drop";
+// 导入项目模块
 import { processMediaFiles } from "@/lib/media-processing";
+// 导入项目模块
 import { useMediaStore, type MediaItem } from "@/stores/media-store";
+// 导入 React 核心库
 import { Image, Loader2, Music, Plus, Video } from "lucide-react";
+// 导入 React 核心库
 import { useEffect, useRef, useState } from "react";
+// 导入 Sonner 通知组件
 import { toast } from "sonner";
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入项目模块
 import { MediaDragOverlay } from "@/components/editor/media-panel/drag-overlay";
+// 导入模块
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+// 导入项目模块
 import { Input } from "@/components/ui/input";
+// 导入模块
 import {
   Select,
   SelectContent,
@@ -22,19 +41,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// 导入项目模块
 import { DraggableMediaItem } from "@/components/ui/draggable-item";
+// 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
+// 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
 
+// MediaView 函数
+// 导出组件 - 可复用的 UI 组件
 export function MediaView() {
+// 常量定义 - 模块内部使用的固定值
   const { mediaItems, addMediaItem, removeMediaItem } = useMediaStore();
+// 常量定义 - 模块内部使用的固定值
   const { activeProject } = useProjectStore();
+// 常量定义 - 模块内部使用的固定值
   const fileInputRef = useRef<HTMLInputElement>(null);
+// 状态管理 - 创建和管理组件内部状态
   const [isProcessing, setIsProcessing] = useState(false);
+// 状态管理 - 创建和管理组件内部状态
   const [progress, setProgress] = useState(0);
+// 状态管理 - 创建和管理组件内部状态
   const [searchQuery, setSearchQuery] = useState("");
+// 状态管理 - 创建和管理组件内部状态
   const [mediaFilter, setMediaFilter] = useState("all");
 
+// 常量定义 - 模块内部使用的固定值
   const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     if (!activeProject) {
@@ -63,19 +95,23 @@ export function MediaView() {
     }
   };
 
+// 常量定义 - 模块内部使用的固定值
   const { isDragOver, dragProps } = useDragDrop({
     // When files are dropped, process them
     onDrop: processFiles,
   });
 
+// handleFileSelect 函数
   const handleFileSelect = () => fileInputRef.current?.click(); // Open file picker
 
+// handleFileChange 函数
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // When files are selected via file picker, process them
     if (e.target.files) processFiles(e.target.files);
     e.target.value = ""; // Reset input
   };
 
+// 常量定义 - 模块内部使用的固定值
   const handleRemove = async (e: React.MouseEvent, id: string) => {
     // Remove a media item from the store
     e.stopPropagation();
@@ -89,16 +125,21 @@ export function MediaView() {
     await removeMediaItem(activeProject.id, id);
   };
 
+// formatDuration 函数
   const formatDuration = (duration: number) => {
     // Format seconds as mm:ss
     const min = Math.floor(duration / 60);
+// 常量定义 - 模块内部使用的固定值
     const sec = Math.floor(duration % 60);
     return `${min}:${sec.toString().padStart(2, "0")}`;
   };
 
+// 状态管理 - 创建和管理组件内部状态
   const [filteredMediaItems, setFilteredMediaItems] = useState(mediaItems);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const filtered = mediaItems.filter((item) => {
       if (mediaFilter && mediaFilter !== "all" && item.type !== mediaFilter) {
         return false;
@@ -117,6 +158,7 @@ export function MediaView() {
     setFilteredMediaItems(filtered);
   }, [mediaItems, mediaFilter, searchQuery]);
 
+// renderPreview 函数
   const renderPreview = (item: MediaItem) => {
     // Render a preview for each media type (image, video, audio, unknown)
     if (item.type === "image") {

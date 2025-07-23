@@ -1,21 +1,40 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/blog/[slug]/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入项目模块
 import { Header } from "@/components/header";
+// 导入项目模块
 import Prose from "@/components/ui/prose";
+// 导入项目模块
 import { Separator } from "@/components/ui/separator";
+// 导入项目模块
 import { getPosts, getSinglePost, processHtmlContent } from "@/lib/blog-query";
+// 导入 Next.js 相关模块
 import { Metadata } from "next";
+// 导入 Next.js 相关模块
 import Image from "next/image";
+// 导入 Next.js 相关模块
 import { notFound } from "next/navigation";
 
+// PageProps 类型定义
 type PageProps = {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
+// generateMetadata 函数
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
+// slug 函数
   const slug = (await params).slug;
 
+// 常量定义 - 模块内部使用的固定值
   const data = await getSinglePost(slug);
 
   if (!data || !data.post) return {};
@@ -56,7 +75,9 @@ export async function generateMetadata({
   };
 }
 
+// generateStaticParams 函数
 export async function generateStaticParams() {
+// 常量定义 - 模块内部使用的固定值
   const data = await getPosts();
   if (!data || !data.posts.length) return [];
 
@@ -65,13 +86,18 @@ export async function generateStaticParams() {
   }));
 }
 
+// Page 组件
 async function Page({ params }: PageProps) {
+// slug 函数
   const slug = (await params).slug;
+// 常量定义 - 模块内部使用的固定值
   const data = await getSinglePost(slug);
   if (!data || !data.post) return notFound();
 
+// 常量定义 - 模块内部使用的固定值
   const html = await processHtmlContent(data.post.content);
 
+// 常量定义 - 模块内部使用的固定值
   const formattedDate = new Date(data.post.publishedAt).toLocaleDateString(
     "en-US",
     {

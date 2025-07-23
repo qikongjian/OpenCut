@@ -1,11 +1,25 @@
+// metadata.ts - Next.js 元数据配置
+// 此文件包含 next.js 元数据配置 的相关代码
+// 文件路径: app/metadata.ts
+// 最后更新: 2025/7/23
+
+// metadata.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入 Next.js 相关模块
 import { Metadata } from "next";
 
+// 常量定义 - 模块内部使用的固定值
 const title = "OpenCut";
+// 常量定义 - 模块内部使用的固定值
 const description =
   "A simple but powerful video editor that gets the job done. In your browser.";
+// 常量定义 - 模块内部使用的固定值
 const openGraphImageUrl = "https://opencut.app/open-graph/default.jpg";
+// 常量定义 - 模块内部使用的固定值
 const twitterImageUrl = "/open-graph/default.jpg";
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const baseMetaData: Metadata = {
   metadataBase: new URL("https://opencut.app"),
   title: title,

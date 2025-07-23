@@ -1,24 +1,48 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/editor/[project_id]/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import { useEffect, useRef } from "react";
+// 导入 Next.js 相关模块
 import { useParams, useRouter } from "next/navigation";
+// 导入模块
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "../../../components/ui/resizable";
+// 导入本地模块
 import { MediaPanel } from "../../../components/editor/media-panel";
+// 导入本地模块
 import { PropertiesPanel } from "../../../components/editor/properties-panel";
+// 导入本地模块
 import { Timeline } from "../../../components/editor/timeline";
+// 导入本地模块
 import { PreviewPanel } from "../../../components/editor/preview-panel";
+// 导入项目模块
 import { EditorHeader } from "@/components/editor-header";
+// 导入项目模块
 import { usePanelStore } from "@/stores/panel-store";
+// 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
+// 导入项目模块
 import { EditorProvider } from "@/components/editor-provider";
+// 导入项目模块
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
+// 导入项目模块
 import { Onboarding } from "@/components/onboarding";
 
+// Editor 函数
+// 默认导出组件 - 页面或主要组件
 export default function Editor() {
+// 常量定义 - 模块内部使用的固定值
   const {
     toolsPanel,
     previewPanel,
@@ -32,15 +56,22 @@ export default function Editor() {
     setPropertiesPanel,
   } = usePanelStore();
 
+// 常量定义 - 模块内部使用的固定值
   const { activeProject, loadProject, createNewProject } = useProjectStore();
+// 常量定义 - 模块内部使用的固定值
   const params = useParams();
+// 常量定义 - 模块内部使用的固定值
   const router = useRouter();
+// 常量定义 - 模块内部使用的固定值
   const projectId = params.project_id as string;
+// 常量定义 - 模块内部使用的固定值
   const handledProjectIds = useRef<Set<string>>(new Set());
 
   usePlaybackControls();
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const initProject = async () => {
       if (!projectId) return;
 
@@ -57,6 +88,7 @@ export default function Editor() {
       } catch (error) {
         handledProjectIds.current.add(projectId);
 
+// 常量定义 - 模块内部使用的固定值
         const newProjectId = await createNewProject("Untitled Project");
         router.replace(`/editor/${newProjectId}`);
         return;

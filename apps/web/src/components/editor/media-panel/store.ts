@@ -1,3 +1,12 @@
+// store.ts - 视频编辑器组件
+// 此文件包含 视频编辑器组件 的相关代码
+// 文件路径: components/editor/media-panel/store.ts
+// 最后更新: 2025/7/23
+
+// store.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入模块
 import {
   CaptionsIcon,
   ArrowLeftRightIcon,
@@ -10,8 +19,10 @@ import {
   LucideIcon,
   TypeIcon,
 } from "lucide-react";
+// 导入 Zustand 状态管理库
 import { create } from "zustand";
 
+// 类型定义 - 创建类型别名或联合类型
 export type Tab =
   | "media"
   | "audio"
@@ -23,6 +34,7 @@ export type Tab =
   | "filters"
   | "adjustment";
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const tabs: { [key in Tab]: { icon: LucideIcon; label: string } } = {
   media: {
     icon: VideoIcon,
@@ -62,11 +74,13 @@ export const tabs: { [key in Tab]: { icon: LucideIcon; label: string } } = {
   },
 };
 
+// MediaPanelStore 接口定义
 interface MediaPanelStore {
   activeTab: Tab;
   setActiveTab: (tab: Tab) => void;
 }
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const useMediaPanelStore = create<MediaPanelStore>((set) => ({
   activeTab: "media",
   setActiveTab: (tab) => set({ activeTab: tab }),

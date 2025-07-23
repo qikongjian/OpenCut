@@ -1,4 +1,14 @@
+// rename-project-dialog.tsx - React 组件
+// 此文件包含 react 组件 的相关代码
+// 文件路径: components/rename-project-dialog.tsx
+// 最后更新: 2025/7/23
+
+// rename-project-dialog.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入模块
 import {
   Dialog,
   DialogContent,
@@ -7,9 +17,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+// 导入项目模块
 import { Input } from "@/components/ui/input";
+// 导入 React 核心库
 import { useState } from "react";
 
+// RenameProjectDialog 函数
+// 导出组件 - 可复用的 UI 组件
 export function RenameProjectDialog({
   isOpen,
   onOpenChange,
@@ -21,6 +35,7 @@ export function RenameProjectDialog({
   onConfirm: (name: string) => void;
   projectName: string;
 }) {
+// 状态管理 - 创建和管理组件内部状态
   const [name, setName] = useState(projectName);
 
   // Reset the name when dialog opens - this is better UX than syncing with every prop change

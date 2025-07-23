@@ -1,18 +1,31 @@
+// chart.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/chart.tsx
+// 最后更新: 2025/7/23
+
+// chart.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Recharts 图表库
 import * as RechartsPrimitive from "recharts";
+// 导入模块
 import {
   NameType,
   Payload,
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
 
+// 类型定义 - 创建类型别名或联合类型
 export type ChartConfig = {
   [k in string]: {
     label?: React.ReactNode;
@@ -23,13 +36,17 @@ export type ChartConfig = {
   );
 };
 
+// ChartContextProps 类型定义
 type ChartContextProps = {
   config: ChartConfig;
 };
 
+// 常量定义 - 模块内部使用的固定值
 const ChartContext = React.createContext<ChartContextProps | null>(null);
 
+// useChart 自定义钩子
 function useChart() {
+// 上下文消费 - 消费 React 上下文中的值
   const context = React.useContext(ChartContext);
 
   if (!context) {
@@ -39,8 +56,10 @@ function useChart() {
   return context;
 }
 
+// 常量定义 - 模块内部使用的固定值
 const ChartContainer = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div"> & {
     config: ChartConfig;
     children: React.ComponentProps<
@@ -48,7 +67,9 @@ const ChartContainer = React.forwardRef<
     >["children"];
   }
 >(({ id, className, children, config, ...props }, ref) => {
+// 常量定义 - 模块内部使用的固定值
   const uniqueId = React.useId();
+// 常量定义 - 模块内部使用的固定值
   const chartId = `chart-${id || uniqueId.replace(/:/g, "")}`;
 
   return (
@@ -72,7 +93,9 @@ const ChartContainer = React.forwardRef<
 });
 ChartContainer.displayName = "Chart";
 
+// ChartStyle 函数
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+// 常量定义 - 模块内部使用的固定值
   const colorConfig = Object.entries(config).filter(
     ([_, config]) => config.theme || config.color
   );
@@ -90,6 +113,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
+// 常量定义 - 模块内部使用的固定值
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color;
@@ -105,11 +129,15 @@ ${colorConfig
   );
 };
 
+// 常量定义 - 模块内部使用的固定值
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
+// 常量定义 - 模块内部使用的固定值
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+    // React 类组件 - 基于类的组件
     React.ComponentProps<"div"> & {
       hideLabel?: boolean;
       hideIndicator?: boolean;
@@ -136,16 +164,22 @@ const ChartTooltipContent = React.forwardRef<
     },
     ref
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const { config } = useChart();
 
+// 值记忆化 - 缓存计算结果，优化性能
     const tooltipLabel = React.useMemo(() => {
       if (hideLabel || !payload?.length) {
         return null;
       }
 
+// 常量定义 - 模块内部使用的固定值
       const [item] = payload;
+// 常量定义 - 模块内部使用的固定值
       const key = `${labelKey || item.dataKey || item.name || "value"}`;
+// 常量定义 - 模块内部使用的固定值
       const itemConfig = getPayloadConfigFromPayload(config, item, key);
+// 常量定义 - 模块内部使用的固定值
       const value =
         !labelKey && typeof label === "string"
           ? config[label as keyof typeof config]?.label || label
@@ -178,6 +212,7 @@ const ChartTooltipContent = React.forwardRef<
       return null;
     }
 
+// 常量定义 - 模块内部使用的固定值
     const nestLabel = payload.length === 1 && indicator !== "dot";
 
     return (
@@ -191,8 +226,11 @@ const ChartTooltipContent = React.forwardRef<
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
           {payload.map((item, index) => {
+// 常量定义 - 模块内部使用的固定值
             const key = `${nameKey || item.name || item.dataKey || "value"}`;
+// 常量定义 - 模块内部使用的固定值
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
+// 常量定义 - 模块内部使用的固定值
             const indicatorColor = color || item.payload.fill || item.color;
 
             return (
@@ -261,10 +299,13 @@ const ChartTooltipContent = React.forwardRef<
 );
 ChartTooltipContent.displayName = "ChartTooltip";
 
+// 常量定义 - 模块内部使用的固定值
 const ChartLegend = RechartsPrimitive.Legend;
 
+// 常量定义 - 模块内部使用的固定值
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"div"> &
     Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
       hideIcon?: boolean;
@@ -275,6 +316,7 @@ const ChartLegendContent = React.forwardRef<
     { className, hideIcon = false, payload, verticalAlign = "bottom", nameKey },
     ref
   ) => {
+// 常量定义 - 模块内部使用的固定值
     const { config } = useChart();
 
     if (!payload?.length) {
@@ -291,7 +333,9 @@ const ChartLegendContent = React.forwardRef<
         )}
       >
         {payload.map((item) => {
+// 常量定义 - 模块内部使用的固定值
           const key = `${nameKey || item.dataKey || "value"}`;
+// 常量定义 - 模块内部使用的固定值
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 
           return (
@@ -331,6 +375,7 @@ function getPayloadConfigFromPayload(
     return undefined;
   }
 
+// 常量定义 - 模块内部使用的固定值
   const payloadPayload =
     "payload" in payload &&
     typeof payload.payload === "object" &&

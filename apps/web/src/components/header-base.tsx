@@ -1,8 +1,19 @@
+// header-base.tsx - React 组件
+// 此文件包含 react 组件 的相关代码
+// 文件路径: components/header-base.tsx
+// 最后更新: 2025/7/23
+
+// header-base.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入项目模块
 import { cn } from "@/lib/utils";
+// 导入 React 核心库
 import { ReactNode } from "react";
 
+// HeaderBaseProps 接口定义
 interface HeaderBaseProps {
   leftContent?: ReactNode;
   centerContent?: ReactNode;
@@ -11,6 +22,8 @@ interface HeaderBaseProps {
   children?: ReactNode;
 }
 
+// HeaderBase 函数
+// 导出组件 - 可复用的 UI 组件
 export function HeaderBase({
   leftContent,
   centerContent,

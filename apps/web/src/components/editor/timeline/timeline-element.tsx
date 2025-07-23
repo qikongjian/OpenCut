@@ -1,7 +1,18 @@
+// timeline-element.tsx - 视频编辑器组件
+// 此文件包含 视频编辑器组件 的相关代码
+// 文件路径: components/editor/timeline/timeline-element.tsx
+// 最后更新: 2025/7/23
+
+// timeline-element.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import { useState } from "react";
+// 导入本地模块
 import { Button } from "../../ui/button";
+// 导入模块
 import {
   MoreVertical,
   Scissors,
@@ -14,18 +25,27 @@ import {
   Copy,
   RefreshCw,
 } from "lucide-react";
+// 导入项目模块
 import { useMediaStore } from "@/stores/media-store";
+// 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
+// 导入项目模块
 import { usePlaybackStore } from "@/stores/playback-store";
+// 导入本地模块
 import AudioWaveform from "../audio-waveform";
+// 导入 Sonner 通知组件
 import { toast } from "sonner";
+// 导入项目模块
 import { TimelineElementProps, TrackType } from "@/types/timeline";
+// 导入项目模块
 import { useTimelineElementResize } from "@/hooks/use-timeline-element-resize";
+// 导入模块
 import {
   getTrackElementClasses,
   TIMELINE_CONSTANTS,
   getTrackHeight,
 } from "@/constants/timeline-constants";
+// 导入模块
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +56,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "../../ui/dropdown-menu";
+// 导入模块
 import {
   ContextMenu,
   ContextMenuContent,
@@ -44,6 +65,8 @@ import {
   ContextMenuTrigger,
 } from "../../ui/context-menu";
 
+// TimelineElement 函数
+// 导出组件 - 可复用的 UI 组件
 export function TimelineElement({
   element,
   track,
@@ -52,7 +75,9 @@ export function TimelineElement({
   onElementMouseDown,
   onElementClick,
 }: TimelineElementProps) {
+// 常量定义 - 模块内部使用的固定值
   const { mediaItems } = useMediaStore();
+// 常量定义 - 模块内部使用的固定值
   const {
     updateElementTrim,
     updateElementDuration,
@@ -67,10 +92,13 @@ export function TimelineElement({
     replaceElementMedia,
     rippleEditingEnabled,
   } = useTimelineStore();
+// 常量定义 - 模块内部使用的固定值
   const { currentTime } = usePlaybackStore();
 
+// 状态管理 - 创建和管理组件内部状态
   const [elementMenuOpen, setElementMenuOpen] = useState(false);
 
+// 常量定义 - 模块内部使用的固定值
   const {
     resizing,
     isResizing,
@@ -85,8 +113,10 @@ export function TimelineElement({
     onUpdateDuration: updateElementDuration,
   });
 
+// 常量定义 - 模块内部使用的固定值
   const effectiveDuration =
     element.duration - element.trimStart - element.trimEnd;
+// 常量定义 - 模块内部使用的固定值
   const elementWidth = Math.max(
     TIMELINE_CONSTANTS.ELEMENT_MIN_WIDTH,
     effectiveDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel
@@ -94,6 +124,7 @@ export function TimelineElement({
 
   // Use real-time position during drag, otherwise use stored position
   const isBeingDragged = dragState.elementId === element.id;
+// 常量定义 - 模块内部使用的固定值
   const elementStartTime =
     isBeingDragged && dragState.isDragging
       ? dragState.currentTime
@@ -102,13 +133,17 @@ export function TimelineElement({
   // Element should always be positioned at startTime - trimStart only affects content, not position
   const elementLeft = elementStartTime * 50 * zoomLevel;
 
+// handleElementSplitContext 函数
   const handleElementSplitContext = () => {
+// 常量定义 - 模块内部使用的固定值
     const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
     const effectiveEnd =
       element.startTime +
       (element.duration - element.trimStart - element.trimEnd);
 
     if (currentTime > effectiveStart && currentTime < effectiveEnd) {
+// 常量定义 - 模块内部使用的固定值
       const secondElementId = splitElement(track.id, element.id, currentTime);
       if (!secondElementId) {
         toast.error("Failed to split element");
@@ -118,7 +153,9 @@ export function TimelineElement({
     }
   };
 
+// handleElementDuplicateContext 函数
   const handleElementDuplicateContext = () => {
+// 常量定义 - 模块内部使用的固定值
     const { id, ...elementWithoutId } = element;
     addElementToTrack(track.id, {
       ...elementWithoutId,
@@ -130,6 +167,7 @@ export function TimelineElement({
     });
   };
 
+// handleElementDeleteContext 函数
   const handleElementDeleteContext = () => {
     if (rippleEditingEnabled) {
       removeElementFromTrackWithRipple(track.id, element.id);
@@ -138,6 +176,7 @@ export function TimelineElement({
     }
   };
 
+// handleReplaceClip 函数
   const handleReplaceClip = () => {
     if (element.type !== "media") {
       toast.error("Replace is only available for media clips");
@@ -149,10 +188,12 @@ export function TimelineElement({
     input.type = "file";
     input.accept = "video/*,audio/*,image/*";
     input.onchange = async (e) => {
+// file 函数
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
       try {
+// 常量定义 - 模块内部使用的固定值
         const success = await replaceElementMedia(track.id, element.id, file);
         if (success) {
           toast.success("Clip replaced successfully");
@@ -169,6 +210,7 @@ export function TimelineElement({
     input.click();
   };
 
+// renderElementContent 函数
   const renderElementContent = () => {
     if (element.type === "text") {
       return (
@@ -190,12 +232,15 @@ export function TimelineElement({
       );
     }
 
+// 常量定义 - 模块内部使用的固定值
     const TILE_ASPECT_RATIO = 16 / 9;
 
     if (mediaItem.type === "image") {
       // Calculate tile size based on 16:9 aspect ratio
       const trackHeight = getTrackHeight(track.type);
+// 常量定义 - 模块内部使用的固定值
       const tileHeight = trackHeight - 8; // Account for padding
+// 常量定义 - 模块内部使用的固定值
       const tileWidth = tileHeight * TILE_ASPECT_RATIO;
 
       return (
@@ -234,12 +279,17 @@ export function TimelineElement({
       );
     }
 
+// 常量定义 - 模块内部使用的固定值
     const VIDEO_TILE_PADDING = 16;
+// 常量定义 - 模块内部使用的固定值
     const OVERLAY_SPACE_MULTIPLIER = 1.5;
 
     if (mediaItem.type === "video" && mediaItem.thumbnailUrl) {
+// 常量定义 - 模块内部使用的固定值
       const trackHeight = getTrackHeight(track.type);
+// 常量定义 - 模块内部使用的固定值
       const tileHeight = trackHeight - 8; // Match image padding
+// 常量定义 - 模块内部使用的固定值
       const tileWidth = tileHeight * TILE_ASPECT_RATIO;
 
       return (
@@ -300,6 +350,7 @@ export function TimelineElement({
     );
   };
 
+// handleElementMouseDown 自定义钩子
   const handleElementMouseDown = (e: React.MouseEvent) => {
     if (onElementMouseDown) {
       onElementMouseDown(e, element);

@@ -1,31 +1,64 @@
+// ffmpeg-utils.ts - 工具库和辅助函数
+// 此文件包含 工具库和辅助函数 的相关代码
+// 文件路径: lib/ffmpeg-utils.ts
+// 最后更新: 2025/7/23
+
+// ffmpeg-utils.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入 FFmpeg 视频处理库
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+// 导入 FFmpeg 视频处理库
 import { toBlobURL } from '@ffmpeg/util';
+
+// 变量定义 - 可修改的值
 
 let ffmpeg: FFmpeg | null = null;
 
+// 导出常量 - 固定的配置值
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const initFFmpeg = async (): Promise<FFmpeg> => {
   if (ffmpeg) return ffmpeg;
 
-  ffmpeg = new FFmpeg();
-  
-  // Use locally hosted files instead of CDN
-  const baseURL = '/ffmpeg';
-  
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-  });
-
-  return ffmpeg;
+  try {
+    console.log('Initializing FFmpeg...');
+    ffmpeg = new FFmpeg();
+    
+    // Use locally hosted files instead of CDN
+    // 常量定义 - 不可变的值
+    const baseURL = '/ffmpeg';
+    
+    console.log('Loading FFmpeg core files...');
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    
+    console.log('FFmpeg initialized successfully');
+    return ffmpeg;
+  } catch (error) {
+    console.error('Failed to initialize FFmpeg:', error);
+    ffmpeg = null;
+    throw new Error(`FFmpeg initialization failed: ${error}`);
+  }
 };
 
+// 导出常量 - 固定的配置值
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const generateThumbnail = async (
   videoFile: File,
   timeInSeconds: number = 1
 ): Promise<string> => {
+  // 常量定义 - 不可变的值
   const ffmpeg = await initFFmpeg();
   
+  // 常量定义 - 不可变的值
+  
+// 常量定义 - 模块内部使用的固定值
   const inputName = 'input.mp4';
+  // 常量定义 - 不可变的值
   const outputName = 'thumbnail.jpg';
   
   // Write input file
@@ -42,7 +75,9 @@ export const generateThumbnail = async (
   ]);
   
   // Read output file
+  // 常量定义 - 不可变的值
   const data = await ffmpeg.readFile(outputName);
+  // 常量定义 - 不可变的值
   const blob = new Blob([data], { type: 'image/jpeg' });
   
   // Cleanup
@@ -52,15 +87,23 @@ export const generateThumbnail = async (
   return URL.createObjectURL(blob);
 };
 
+// 导出常量 - 固定的配置值
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const trimVideo = async (
   videoFile: File,
   startTime: number,
   endTime: number,
   onProgress?: (progress: number) => void
 ): Promise<Blob> => {
+  // 常量定义 - 不可变的值
   const ffmpeg = await initFFmpeg();
   
+  // 常量定义 - 不可变的值
+  
+// 常量定义 - 模块内部使用的固定值
   const inputName = 'input.mp4';
+  // 常量定义 - 不可变的值
   const outputName = 'output.mp4';
   
   // Set up progress callback
@@ -73,6 +116,9 @@ export const trimVideo = async (
   // Write input file
   await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
   
+  // 常量定义 - 不可变的值
+  
+// 常量定义 - 模块内部使用的固定值
   const duration = endTime - startTime;
   
   // Trim video
@@ -85,7 +131,9 @@ export const trimVideo = async (
   ]);
   
   // Read output file
+  // 常量定义 - 不可变的值
   const data = await ffmpeg.readFile(outputName);
+  // 常量定义 - 不可变的值
   const blob = new Blob([data], { type: 'video/mp4' });
   
   // Cleanup
@@ -95,22 +143,33 @@ export const trimVideo = async (
   return blob;
 };
 
+// 导出常量 - 固定的配置值
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const getVideoInfo = async (videoFile: File): Promise<{
   duration: number;
   width: number;
   height: number;
   fps: number;
 }> => {
+  // 常量定义 - 不可变的值
   const ffmpeg = await initFFmpeg();
 
+  // 常量定义 - 不可变的值
+
+// 常量定义 - 模块内部使用的固定值
   const inputName = 'input.mp4';
 
   // Write input file
   await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
 
   // Capture FFmpeg stderr output with a one-time listener pattern
+  // 变量定义 - 可修改的值
   let ffmpegOutput = '';
+  // 变量定义 - 可修改的值
   let listening = true;
+// listener 函数
+  // 常量定义 - 不可变的值
   const listener = (data: string) => {
     if (listening) ffmpegOutput += data;
   };
@@ -136,14 +195,23 @@ export const getVideoInfo = async (videoFile: File): Promise<{
   // Example: Duration: 00:00:10.00, start: 0.000000, bitrate: 1234 kb/s
   // Example: Stream #0:0: Video: h264 (High), yuv420p(progressive), 1920x1080 [SAR 1:1 DAR 16:9], 30 fps, 30 tbr, 90k tbn, 60 tbc
 
+  // 常量定义 - 不可变的值
+
+// 常量定义 - 模块内部使用的固定值
   const durationMatch = ffmpegOutput.match(/Duration: (\d+):(\d+):([\d.]+)/);
+  // 变量定义 - 可修改的值
   let duration = 0;
   if (durationMatch) {
+    // 常量定义 - 不可变的值
     const [, h, m, s] = durationMatch;
     duration = parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
   }
 
+  // 常量定义 - 不可变的值
+
+// 常量定义 - 模块内部使用的固定值
   const videoStreamMatch = ffmpegOutput.match(/Video:.* (\d+)x(\d+)[^,]*, ([\d.]+) fps/);
+  // 变量定义 - 可修改的值
   let width = 0, height = 0, fps = 0;
   if (videoStreamMatch) {
     width = parseInt(videoStreamMatch[1]);
@@ -159,13 +227,21 @@ export const getVideoInfo = async (videoFile: File): Promise<{
   };
 };
 
+// 导出常量 - 固定的配置值
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const convertToWebM = async (
   videoFile: File,
   onProgress?: (progress: number) => void
 ): Promise<Blob> => {
+  // 常量定义 - 不可变的值
   const ffmpeg = await initFFmpeg();
   
+  // 常量定义 - 不可变的值
+  
+// 常量定义 - 模块内部使用的固定值
   const inputName = 'input.mp4';
+  // 常量定义 - 不可变的值
   const outputName = 'output.webm';
   
   // Set up progress callback
@@ -189,7 +265,9 @@ export const convertToWebM = async (
   ]);
   
   // Read output file
+  // 常量定义 - 不可变的值
   const data = await ffmpeg.readFile(outputName);
+  // 常量定义 - 不可变的值
   const blob = new Blob([data], { type: 'video/webm' });
   
   // Cleanup
@@ -199,13 +277,21 @@ export const convertToWebM = async (
   return blob;
 };
 
+// 导出常量 - 固定的配置值
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const extractAudio = async (
   videoFile: File,
   format: 'mp3' | 'wav' = 'mp3'
 ): Promise<Blob> => {
+  // 常量定义 - 不可变的值
   const ffmpeg = await initFFmpeg();
   
+  // 常量定义 - 不可变的值
+  
+// 常量定义 - 模块内部使用的固定值
   const inputName = 'input.mp4';
+  // 常量定义 - 不可变的值
   const outputName = `output.${format}`;
   
   // Write input file
@@ -220,7 +306,9 @@ export const extractAudio = async (
   ]);
   
   // Read output file
+  // 常量定义 - 不可变的值
   const data = await ffmpeg.readFile(outputName);
+  // 常量定义 - 不可变的值
   const blob = new Blob([data], { type: `audio/${format}` });
   
   // Cleanup

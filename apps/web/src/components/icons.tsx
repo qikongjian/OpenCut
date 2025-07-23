@@ -1,3 +1,13 @@
+// icons.tsx - React 组件
+// 此文件包含 react 组件 的相关代码
+// 文件路径: components/icons.tsx
+// 最后更新: 2025/7/23
+
+// icons.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// GoogleIcon 函数
+// 导出组件 - 可复用的 UI 组件
 export function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24">
@@ -21,6 +31,8 @@ export function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
+// GithubIcon 函数
+// 导出组件 - 可复用的 UI 组件
 export function GithubIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -38,6 +50,8 @@ export function GithubIcon({ className }: { className?: string }) {
   );
 }
 
+// VercelIcon 函数
+// 导出组件 - 可复用的 UI 组件
 export function VercelIcon({ className }: { className?: string }) {
   return (
     <svg className={className} width="20" height="18" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -46,6 +60,8 @@ export function VercelIcon({ className }: { className?: string }) {
   );
 }
 
+// BackgroundIcon 函数
+// 导出组件 - 可复用的 UI 组件
 export function BackgroundIcon({ className }: { className?: string }) {
   return (
     <svg

@@ -1,19 +1,40 @@
+// footer.tsx - React 组件
+// 此文件包含 react 组件 的相关代码
+// 文件路径: components/footer.tsx
+// 最后更新: 2025/7/23
+
+// footer.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import { motion } from "motion/react";
+// 导入 Next.js 相关模块
 import Link from "next/link";
+// 导入 React 核心库
 import { useEffect, useState } from "react";
+// 导入 React 核心库
 import { RiDiscordFill, RiTwitterXLine } from "react-icons/ri";
+// 导入 React 核心库
 import { FaGithub } from "react-icons/fa6";
+// 导入项目模块
 import { getStars } from "@/lib/fetch-github-stars";
+// 导入 Next.js 相关模块
 import Image from "next/image";
 
+// Footer 函数
+// 导出组件 - 可复用的 UI 组件
 export function Footer() {
+// 常量定义 - 模块内部使用的固定值
   const [star, setStar] = useState<string>();
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const fetchStars = async () => {
       try {
+// 常量定义 - 模块内部使用的固定值
         const data = await getStars();
         setStar(data);
       } catch (err) {

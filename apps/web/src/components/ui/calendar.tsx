@@ -1,14 +1,29 @@
+// calendar.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/calendar.tsx
+// 最后更新: 2025/7/23
+
+// calendar.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 React 核心库
 import { ChevronLeft, ChevronRight } from "lucide-react";
+// 导入 React 核心库
 import { DayPicker } from "react-day-picker";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { buttonVariants } from "./button";
 
+// 类型定义 - 创建类型别名或联合类型
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
+// Calendar 函数
 function Calendar({
   className,
   classNames,

@@ -1,28 +1,51 @@
+// background-settings.tsx - React 组件
+// 此文件包含 react 组件 的相关代码
+// 文件路径: components/background-settings.tsx
+// 最后更新: 2025/7/23
+
+// background-settings.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入本地模块
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+// 导入本地模块
 import { Button } from "./ui/button";
+// 导入本地模块
 import { BackgroundIcon } from "./icons";
+// 导入项目模块
 import { cn } from "@/lib/utils";
+// 导入 Next.js 相关模块
 import Image from "next/image";
+// 导入项目模块
 import { colors } from "@/data/colors";
+// 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
+// 导入 React 核心库
 import { PipetteIcon } from "lucide-react";
 
+// BackgroundTab 类型定义
 type BackgroundTab = "color" | "blur";
 
+// BackgroundSettings 函数
+// 导出组件 - 可复用的 UI 组件
 export function BackgroundSettings() {
+// 常量定义 - 模块内部使用的固定值
   const { activeProject, updateBackgroundType } = useProjectStore();
 
   // ✅ Good: derive activeTab from activeProject during rendering
   const activeTab = activeProject?.backgroundType || "color";
 
+// handleColorSelect 函数
   const handleColorSelect = (color: string) => {
     updateBackgroundType("color", { backgroundColor: color });
   };
 
+// handleBlurSelect 函数
   const handleBlurSelect = (blurIntensity: number) => {
     updateBackgroundType("blur", { blurIntensity });
   };
 
+// 常量定义 - 模块内部使用的固定值
   const tabs = [
     {
       label: "Color",
@@ -91,6 +114,7 @@ export function BackgroundSettings() {
   );
 }
 
+// ColorView 函数
 function ColorView({
   selectedColor,
   onColorSelect,
@@ -118,6 +142,7 @@ function ColorView({
   );
 }
 
+// ColorItem 函数
 function ColorItem({
   color,
   isSelected,
@@ -139,6 +164,7 @@ function ColorItem({
   );
 }
 
+// BlurView 函数
 function BlurView({
   selectedBlur,
   onBlurSelect,
@@ -146,11 +172,13 @@ function BlurView({
   selectedBlur: number;
   onBlurSelect: (blurIntensity: number) => void;
 }) {
+// 常量定义 - 模块内部使用的固定值
   const blurLevels = [
     { label: "Light", value: 4 },
     { label: "Medium", value: 8 },
     { label: "Heavy", value: 18 },
   ];
+// 常量定义 - 模块内部使用的固定值
   const blurImage =
     "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 

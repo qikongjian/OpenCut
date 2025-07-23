@@ -1,24 +1,44 @@
+// context-menu.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/context-menu.tsx
+// 最后更新: 2025/7/23
+
+// context-menu.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { ContextMenu as ContextMenuPrimitive } from "radix-ui";
+// 导入 React 核心库
 import { Check, ChevronRight, Circle } from "lucide-react";
+// 导入 CVA 类名变体工具
 import { cva, type VariantProps } from "class-variance-authority";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenu = ContextMenuPrimitive.Root;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuGroup = ContextMenuPrimitive.Group;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuPortal = ContextMenuPrimitive.Portal;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuSub = ContextMenuPrimitive.Sub;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuRadioGroup = ContextMenuPrimitive.RadioGroup;
 
+// 常量定义 - 模块内部使用的固定值
 const contextMenuItemVariants = cva(
   "relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 text-sm outline-none transition-opacity data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
   {
@@ -34,8 +54,10 @@ const contextMenuItemVariants = cva(
   }
 );
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & {
     inset?: boolean;
     variant?: VariantProps<typeof contextMenuItemVariants>["variant"];
@@ -57,8 +79,10 @@ const ContextMenuSubTrigger = React.forwardRef<
 ));
 ContextMenuSubTrigger.displayName = ContextMenuPrimitive.SubTrigger.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuSubContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubContent>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>
 >(({ className, ...props }, ref) => (
   <ContextMenuPrimitive.SubContent
@@ -72,8 +96,10 @@ const ContextMenuSubContent = React.forwardRef<
 ));
 ContextMenuSubContent.displayName = ContextMenuPrimitive.SubContent.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content>
 >(({ className, ...props }, ref) => (
   <ContextMenuPrimitive.Portal>
@@ -90,8 +116,10 @@ const ContextMenuContent = React.forwardRef<
 ));
 ContextMenuContent.displayName = ContextMenuPrimitive.Content.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Item>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Item> & {
     inset?: boolean;
     variant?: VariantProps<typeof contextMenuItemVariants>["variant"];
@@ -109,8 +137,10 @@ const ContextMenuItem = React.forwardRef<
 ));
 ContextMenuItem.displayName = ContextMenuPrimitive.Item.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.CheckboxItem>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem> & {
     variant?: VariantProps<typeof contextMenuItemVariants>["variant"];
   }
@@ -132,8 +162,10 @@ const ContextMenuCheckboxItem = React.forwardRef<
 ContextMenuCheckboxItem.displayName =
   ContextMenuPrimitive.CheckboxItem.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.RadioItem>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem> & {
     variant?: VariantProps<typeof contextMenuItemVariants>["variant"];
   }
@@ -153,8 +185,10 @@ const ContextMenuRadioItem = React.forwardRef<
 ));
 ContextMenuRadioItem.displayName = ContextMenuPrimitive.RadioItem.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuLabel = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Label>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Label> & {
     inset?: boolean;
   }
@@ -171,8 +205,10 @@ const ContextMenuLabel = React.forwardRef<
 ));
 ContextMenuLabel.displayName = ContextMenuPrimitive.Label.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const ContextMenuSeparator = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Separator>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => (
   <ContextMenuPrimitive.Separator
@@ -183,6 +219,7 @@ const ContextMenuSeparator = React.forwardRef<
 ));
 ContextMenuSeparator.displayName = ContextMenuPrimitive.Separator.displayName;
 
+// ContextMenuShortcut 函数
 const ContextMenuShortcut = ({
   className,
   ...props

@@ -1,9 +1,21 @@
+// use-keyboard-shortcuts-help.ts - 自定义 React Hook
+// 此文件包含 自定义 react hook 的相关代码
+// 文件路径: hooks/use-keyboard-shortcuts-help.ts
+// 最后更新: 2025/7/23
+
+// use-keyboard-shortcuts-help.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import { useMemo } from "react";
+// 导入项目模块
 import { useKeybindingsStore } from "@/stores/keybindings-store";
+// 导入项目模块
 import { Action } from "@/constants/actions";
 
+// 接口定义 - 定义对象的结构和属性类型
 export interface KeyboardShortcut {
   id: string;
   keys: string[];
@@ -82,10 +94,14 @@ const formatKey = (key: string): string => {
     .replace("-", "+");
 };
 
+// useKeyboardShortcutsHelp 自定义钩子
 export const useKeyboardShortcutsHelp = () => {
+// 常量定义 - 模块内部使用的固定值
   const { keybindings } = useKeybindingsStore();
 
+// 值记忆化 - 缓存计算结果，优化性能
   const shortcuts = useMemo(() => {
+// 常量定义 - 模块内部使用的固定值
     const result: KeyboardShortcut[] = [];
 
     // Group keybindings by action
@@ -102,6 +118,7 @@ export const useKeyboardShortcutsHelp = () => {
 
     // Convert to shortcuts format
     Object.entries(actionToKeys).forEach(([action, keys]) => {
+// 常量定义 - 模块内部使用的固定值
       const actionInfo = actionDescriptions[action as Action];
       if (actionInfo) {
         result.push({

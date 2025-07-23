@@ -1,18 +1,35 @@
+// select.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/select.tsx
+// 最后更新: 2025/7/23
+
+// select.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { Select as SelectPrimitive } from "radix-ui";
+// 导入 React 核心库
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
+// 导入 CVA 类名变体工具
 import { cva, type VariantProps } from "class-variance-authority";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
+// 常量定义 - 模块内部使用的固定值
 const Select = SelectPrimitive.Root;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectGroup = SelectPrimitive.Group;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectValue = SelectPrimitive.Value;
 
+// 常量定义 - 模块内部使用的固定值
 const selectItemVariants = cva(
   "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none transition-opacity data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
   {
@@ -28,8 +45,10 @@ const selectItemVariants = cva(
   }
 );
 
+// 常量定义 - 模块内部使用的固定值
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
@@ -48,8 +67,10 @@ const SelectTrigger = React.forwardRef<
 ));
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectScrollUpButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollUpButton>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollUpButton
@@ -65,8 +86,10 @@ const SelectScrollUpButton = React.forwardRef<
 ));
 SelectScrollUpButton.displayName = SelectPrimitive.ScrollUpButton.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectScrollDownButton = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.ScrollDownButton>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.ScrollDownButton
@@ -83,8 +106,10 @@ const SelectScrollDownButton = React.forwardRef<
 SelectScrollDownButton.displayName =
   SelectPrimitive.ScrollDownButton.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, position = "popper", ...props }, ref) => (
   <SelectPrimitive.Portal>
@@ -119,8 +144,10 @@ const SelectContent = React.forwardRef<
 ));
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Label>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
@@ -131,8 +158,10 @@ const SelectLabel = React.forwardRef<
 ));
 SelectLabel.displayName = SelectPrimitive.Label.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & {
     variant?: VariantProps<typeof selectItemVariants>["variant"];
   }
@@ -152,8 +181,10 @@ const SelectItem = React.forwardRef<
 ));
 SelectItem.displayName = SelectPrimitive.Item.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const SelectSeparator = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Separator>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Separator

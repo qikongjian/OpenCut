@@ -1,4 +1,14 @@
+// timeline-store.ts - Zustand 状态管理存储
+// 此文件包含 zustand 状态管理存储 的相关代码
+// 文件路径: stores/timeline-store.ts
+// 最后更新: 2025/7/23
+
+// timeline-store.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导入 Zustand 状态管理库
 import { create } from "zustand";
+// 导入模块
 import {
   TrackType,
   TimelineElement,
@@ -10,19 +20,29 @@ import {
   ensureMainTrack,
   validateElementTrackCompatibility,
 } from "@/types/timeline";
+// 导入本地模块
 import { useEditorStore } from "./editor-store";
+// 导入模块
 import {
   useMediaStore,
   getMediaAspectRatio,
+// MediaItem 类型定义
   type MediaItem,
 } from "./media-store";
+// 导入项目模块
 import { storageService } from "@/lib/storage/storage-service";
+// 导入本地模块
 import { useProjectStore } from "./project-store";
+// 导入项目模块
 import { generateUUID } from "@/lib/utils";
+// 导入项目模块
 import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
+// 导入 Sonner 通知组件
 import { toast } from "sonner";
+// 导入项目模块
 import { checkElementOverlaps, resolveElementOverlaps } from "@/lib/timeline";
 
+// to 函数
 // Helper function to manage element naming with suffixes
 const getElementNameWithSuffix = (
   originalName: string,
@@ -38,6 +58,7 @@ const getElementNameWithSuffix = (
   return `${baseName} (${suffix})`;
 };
 
+// TimelineStore 接口定义
 interface TimelineStore {
   // Private track storage
   _tracks: TimelineTrack[];
@@ -207,11 +228,15 @@ interface TimelineStore {
   addTextToNewTrack: (item: TextElement | DragData) => boolean;
 }
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const useTimelineStore = create<TimelineStore>((set, get) => {
   // Helper to update tracks and maintain ordering
   const updateTracks = (newTracks: TimelineTrack[]) => {
+// 常量定义 - 模块内部使用的固定值
     const tracksWithMain = ensureMainTrack(newTracks);
+// 常量定义 - 模块内部使用的固定值
     const sortedTracks = sortTracksByOrder(tracksWithMain);
+    // 设置状态 - 更新状态值
     set({
       _tracks: tracksWithMain,
       tracks: sortedTracks,
@@ -220,6 +245,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
   // Helper to auto-save timeline changes
   const autoSaveTimeline = async () => {
+// 常量定义 - 模块内部使用的固定值
     const activeProject = useProjectStore.getState().activeProject;
     if (activeProject) {
       try {
@@ -239,6 +265,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
   // Initialize with proper track ordering
   const initialTracks = ensureMainTrack([]);
+// 常量定义 - 模块内部使用的固定值
   const sortedInitialTracks = sortTracksByOrder(initialTracks);
 
   return {
@@ -253,13 +280,17 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     snappingEnabled: true,
 
     getSortedTracks: () => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const tracksWithMain = ensureMainTrack(_tracks);
       return sortTracksByOrder(tracksWithMain);
     },
 
     pushHistory: () => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks, history } = get();
+      // 设置状态 - 更新状态值
       set({
         history: [...history, JSON.parse(JSON.stringify(_tracks))],
         redoStack: [],
@@ -267,10 +298,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     undo: () => {
+// 常量定义 - 模块内部使用的固定值
       const { history, redoStack, _tracks } = get();
       if (history.length === 0) return;
+// 常量定义 - 模块内部使用的固定值
       const prev = history[history.length - 1];
       updateTracksAndSave(prev);
+      // 设置状态 - 更新状态值
       set({
         history: history.slice(0, -1),
         redoStack: [...redoStack, JSON.parse(JSON.stringify(_tracks))],
@@ -278,7 +312,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     selectElement: (trackId, elementId, multi = false) => {
+      // 设置状态 - 更新状态值
       set((state) => {
+// 常量定义 - 模块内部使用的固定值
         const exists = state.selectedElements.some(
           (c) => c.trackId === trackId && c.elementId === elementId
         );
@@ -302,6 +338,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     deselectElement: (trackId, elementId) => {
+      // 设置状态 - 更新状态值
       set((state) => ({
         selectedElements: state.selectedElements.filter(
           (c) => !(c.trackId === trackId && c.elementId === elementId)
@@ -310,16 +347,19 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     clearSelectedElements: () => {
+      // 设置状态 - 更新状态值
       set({ selectedElements: [] });
     },
 
     setSelectedElements: (elements) => set({ selectedElements: elements }),
 
     addTrack: (type) => {
+      // 获取状态 - 读取状态值
       get().pushHistory();
 
       // Generate proper track name based on type
       const trackName =
+// 类型定义
         type === "media"
           ? "Media Track"
           : type === "text"
@@ -328,6 +368,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
               ? "Audio Track"
               : "Track";
 
+// 常量定义 - 模块内部使用的固定值
       const newTrack: TimelineTrack = {
         id: generateUUID(),
         name: trackName,
@@ -341,10 +382,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     insertTrackAt: (type, index) => {
+      // 获取状态 - 读取状态值
       get().pushHistory();
 
       // Generate proper track name based on type
       const trackName =
+// 类型定义
         type === "media"
           ? "Media Track"
           : type === "text"
@@ -353,6 +396,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
               ? "Audio Track"
               : "Track";
 
+// 常量定义 - 模块内部使用的固定值
       const newTrack: TimelineTrack = {
         id: generateUUID(),
         name: trackName,
@@ -361,6 +405,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         muted: false,
       };
 
+// 常量定义 - 模块内部使用的固定值
       const newTracks = [...get()._tracks];
       newTracks.splice(index, 0, newTrack);
       updateTracksAndSave(newTracks);
@@ -368,23 +413,31 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     removeTrack: (trackId) => {
+// 常量定义 - 模块内部使用的固定值
       const { rippleEditingEnabled } = get();
 
       if (rippleEditingEnabled) {
+        // 获取状态 - 读取状态值
         get().removeTrackWithRipple(trackId);
       } else {
+        // 获取状态 - 读取状态值
         get().pushHistory();
         updateTracksAndSave(
+          // 获取状态 - 读取状态值
           get()._tracks.filter((track) => track.id !== trackId)
         );
       }
     },
 
     removeTrackWithRipple: (trackId) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const trackToRemove = _tracks.find((t) => t.id === trackId);
 
       if (!trackToRemove) return;
+
+      // 获取状态 - 读取状态值
 
       get().pushHistory();
 
@@ -420,6 +473,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
             duration: range.endTime - range.startTime,
           });
         } else {
+// 常量定义 - 模块内部使用的固定值
           const lastRange = mergedRanges[mergedRanges.length - 1];
           if (range.startTime <= lastRange.endTime) {
             // Overlapping or adjacent ranges, merge them
@@ -440,11 +494,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       const updatedTracks = _tracks
         .filter((track) => track.id !== trackId)
         .map((track) => {
+// 常量定义 - 模块内部使用的固定值
           const updatedElements = track.elements.map((element) => {
             let newStartTime = element.startTime;
 
             // Process gaps from right to left (latest to earliest) to avoid cumulative shifts
             for (let i = mergedRanges.length - 1; i >= 0; i--) {
+// 常量定义 - 模块内部使用的固定值
               const gap = mergedRanges[i];
               // If this element starts after the gap, shift it left by the gap duration
               if (newStartTime >= gap.endTime) {
@@ -461,6 +517,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           // Check for overlaps and resolve them if necessary
           const hasOverlaps = checkElementOverlaps(updatedElements);
           if (hasOverlaps) {
+// 常量定义 - 模块内部使用的固定值
             const resolvedElements = resolveElementOverlaps(updatedElements);
             return { ...track, elements: resolvedElements };
           }
@@ -472,6 +529,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     addElementToTrack: (trackId, elementData) => {
+      // 获取状态 - 读取状态值
       get().pushHistory();
 
       // Validate element type matches track type
@@ -481,6 +539,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         return;
       }
 
+// for 函数
       // Use utility function for validation
       const validation = validateElementTrackCompatibility(elementData, track);
       if (!validation.isValid) {
@@ -502,12 +561,15 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
       // Check if this is the first element being added to the timeline
       const currentState = get();
+// 常量定义 - 模块内部使用的固定值
       const totalElementsInTimeline = currentState._tracks.reduce(
         (total, track) => total + track.elements.length,
         0
       );
+// 常量定义 - 模块内部使用的固定值
       const isFirstElement = totalElementsInTimeline === 0;
 
+// 常量定义 - 模块内部使用的固定值
       const newElement: TimelineElement = {
         ...elementData,
         id: generateUUID(),
@@ -519,7 +581,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       // If this is the first element and it's a media element, automatically set the project canvas size
       // to match the media's aspect ratio and FPS (for videos)
       if (isFirstElement && newElement.type === "media") {
+// 常量定义 - 模块内部使用的固定值
         const mediaStore = useMediaStore.getState();
+// 常量定义 - 模块内部使用的固定值
         const mediaItem = mediaStore.mediaItems.find(
           (item) => item.id === newElement.mediaId
         );
@@ -528,6 +592,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           mediaItem &&
           (mediaItem.type === "image" || mediaItem.type === "video")
         ) {
+// 常量定义 - 模块内部使用的固定值
           const editorStore = useEditorStore.getState();
           editorStore.setCanvasSizeFromAspectRatio(
             getMediaAspectRatio(mediaItem)
@@ -536,6 +601,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
         // Set project FPS from the first video element
         if (mediaItem && mediaItem.type === "video" && mediaItem.fps) {
+// 常量定义 - 模块内部使用的固定值
           const projectStore = useProjectStore.getState();
           if (projectStore.activeProject) {
             projectStore.updateProjectFps(mediaItem.fps);
@@ -544,6 +610,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       }
 
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? { ...track, elements: [...track.elements, newElement] }
@@ -551,17 +618,23 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         )
       );
 
+      // 获取状态 - 读取状态值
+
       get().selectElement(trackId, newElement.id);
     },
 
     removeElementFromTrack: (trackId, elementId) => {
+// 常量定义 - 模块内部使用的固定值
       const { rippleEditingEnabled } = get();
 
       if (rippleEditingEnabled) {
+        // 获取状态 - 读取状态值
         get().removeElementFromTrackWithRipple(trackId, elementId);
       } else {
+        // 获取状态 - 读取状态值
         get().pushHistory();
         updateTracksAndSave(
+          // 获取状态 - 读取状态值
           get()
             ._tracks.map((track) =>
               track.id === trackId
@@ -579,24 +652,33 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     removeElementFromTrackWithRipple: (trackId, elementId) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks, rippleEditingEnabled } = get();
 
       if (!rippleEditingEnabled) {
         // If ripple editing is disabled, use regular removal
+        // 获取状态 - 读取状态值
         get().removeElementFromTrack(trackId, elementId);
         return;
       }
 
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((e) => e.id === elementId);
 
       if (!element || !track) return;
 
+      // 获取状态 - 读取状态值
+
       get().pushHistory();
 
+// 常量定义 - 模块内部使用的固定值
       const elementStartTime = element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const elementDuration =
         element.duration - element.trimStart - element.trimEnd;
+// 常量定义 - 模块内部使用的固定值
       const elementEndTime = elementStartTime + elementDuration;
 
       // Remove the element and shift all elements that come after it
@@ -605,6 +687,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           // Only apply ripple effects to the same track unless multi-track ripple is enabled
           const shouldApplyRipple = currentTrack.id === trackId;
 
+// 常量定义 - 模块内部使用的固定值
           const updatedElements = currentTrack.elements
             .filter((currentElement) => {
               // Remove the target element
@@ -651,10 +734,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     moveElementToTrack: (fromTrackId, toTrackId, elementId) => {
+      // 获取状态 - 读取状态值
       get().pushHistory();
 
+// 常量定义 - 模块内部使用的固定值
       const fromTrack = get()._tracks.find((track) => track.id === fromTrackId);
+// 常量定义 - 模块内部使用的固定值
       const toTrack = get()._tracks.find((track) => track.id === toTrackId);
+// 常量定义 - 模块内部使用的固定值
       const elementToMove = fromTrack?.elements.find(
         (element) => element.id === elementId
       );
@@ -671,6 +758,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         return;
       }
 
+// 常量定义 - 模块内部使用的固定值
       const newTracks = get()
         ._tracks.map((track) => {
           if (track.id === fromTrackId) {
@@ -702,6 +790,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     ) => {
       if (pushHistory) get().pushHistory();
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -725,6 +814,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     ) => {
       if (pushHistory) get().pushHistory();
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -746,6 +836,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     ) => {
       if (pushHistory) get().pushHistory();
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -760,27 +851,37 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     updateElementStartTimeWithRipple: (trackId, elementId, newStartTime) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks, rippleEditingEnabled } = get();
 
       if (!rippleEditingEnabled) {
         // If ripple editing is disabled, use regular update
+        // 获取状态 - 读取状态值
         get().updateElementStartTime(trackId, elementId, newStartTime);
         return;
       }
 
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((e) => e.id === elementId);
 
       if (!element || !track) return;
 
+      // 获取状态 - 读取状态值
+
       get().pushHistory();
 
+// 常量定义 - 模块内部使用的固定值
       const oldStartTime = element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const oldEndTime =
         element.startTime +
         (element.duration - element.trimStart - element.trimEnd);
+// 常量定义 - 模块内部使用的固定值
       const newEndTime =
         newStartTime + (element.duration - element.trimStart - element.trimEnd);
+// 常量定义 - 模块内部使用的固定值
       const timeDelta = newStartTime - oldStartTime;
 
       // Update tracks based on multi-track ripple setting
@@ -788,6 +889,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         // Only apply ripple effects to the same track unless multi-track ripple is enabled
         const shouldApplyRipple = currentTrack.id === trackId;
 
+// 常量定义 - 模块内部使用的固定值
         const updatedElements = currentTrack.elements.map((currentElement) => {
           if (currentElement.id === elementId && currentTrack.id === trackId) {
             // Update the moved element
@@ -801,6 +903,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
           // For ripple editing, we need to move elements that come after the moved element
           const currentElementStart = currentElement.startTime;
+// 常量定义 - 模块内部使用的固定值
           const currentElementEnd =
             currentElement.startTime +
             (currentElement.duration -
@@ -849,8 +952,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     toggleTrackMute: (trackId) => {
+      // 获取状态 - 读取状态值
       get().pushHistory();
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId ? { ...track, muted: !track.muted } : track
         )
@@ -858,8 +963,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     updateTextElement: (trackId, elementId, updates) => {
+      // 获取状态 - 读取状态值
       get().pushHistory();
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -876,29 +983,41 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     splitElement: (trackId, elementId, splitTime) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((c) => c.id === elementId);
 
       if (!element) return null;
 
+// 常量定义 - 模块内部使用的固定值
       const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const effectiveEnd =
         element.startTime +
         (element.duration - element.trimStart - element.trimEnd);
 
       if (splitTime <= effectiveStart || splitTime >= effectiveEnd) return null;
 
+      // 获取状态 - 读取状态值
+
       get().pushHistory();
 
+// 常量定义 - 模块内部使用的固定值
       const relativeTime = splitTime - element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const firstDuration = relativeTime;
+// 常量定义 - 模块内部使用的固定值
       const secondDuration =
         element.duration - element.trimStart - element.trimEnd - relativeTime;
 
+// 常量定义 - 模块内部使用的固定值
       const secondElementId = generateUUID();
 
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -931,26 +1050,36 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     // Split element and keep only the left portion
     splitAndKeepLeft: (trackId, elementId, splitTime) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((c) => c.id === elementId);
 
       if (!element) return;
 
+// 常量定义 - 模块内部使用的固定值
       const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const effectiveEnd =
         element.startTime +
         (element.duration - element.trimStart - element.trimEnd);
 
       if (splitTime <= effectiveStart || splitTime >= effectiveEnd) return;
 
+      // 获取状态 - 读取状态值
+
       get().pushHistory();
 
+// 常量定义 - 模块内部使用的固定值
       const relativeTime = splitTime - element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const durationToRemove =
         element.duration - element.trimStart - element.trimEnd - relativeTime;
 
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -972,24 +1101,33 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     // Split element and keep only the right portion
     splitAndKeepRight: (trackId, elementId, splitTime) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((c) => c.id === elementId);
 
       if (!element) return;
 
+// 常量定义 - 模块内部使用的固定值
       const effectiveStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
       const effectiveEnd =
         element.startTime +
         (element.duration - element.trimStart - element.trimEnd);
 
       if (splitTime <= effectiveStart || splitTime >= effectiveEnd) return;
 
+      // 获取状态 - 读取状态值
+
       get().pushHistory();
 
+// 常量定义 - 模块内部使用的固定值
       const relativeTime = splitTime - element.startTime;
 
       updateTracksAndSave(
+        // 获取状态 - 读取状态值
         get()._tracks.map((track) =>
           track.id === trackId
             ? {
@@ -1012,21 +1150,28 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     // Extract audio from video element to an audio track
     separateAudio: (trackId, elementId) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((c) => c.id === elementId);
 
       if (!element || track?.type !== "media") return null;
+
+      // 获取状态 - 读取状态值
 
       get().pushHistory();
 
       // Find existing audio track or prepare to create one
       const existingAudioTrack = _tracks.find((t) => t.type === "audio");
+// 常量定义 - 模块内部使用的固定值
       const audioElementId = generateUUID();
 
       if (existingAudioTrack) {
         // Add audio element to existing audio track
         updateTracksAndSave(
+          // 获取状态 - 读取状态值
           get()._tracks.map((track) =>
             track.id === existingAudioTrack.id
               ? {
@@ -1067,14 +1212,19 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     // Replace media for an element
     replaceElementMedia: async (trackId, elementId, newFile) => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
+// 常量定义 - 模块内部使用的固定值
       const track = _tracks.find((t) => t.id === trackId);
+// 常量定义 - 模块内部使用的固定值
       const element = track?.elements.find((c) => c.id === elementId);
 
       if (!element || element.type !== "media") return false;
 
       try {
+// 常量定义 - 模块内部使用的固定值
         const mediaStore = useMediaStore.getState();
+// 常量定义 - 模块内部使用的固定值
         const projectStore = useProjectStore.getState();
 
         if (!projectStore.activeProject) return false;
@@ -1087,6 +1237,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           getMediaDuration,
         } = await import("./media-store");
 
+// 常量定义 - 模块内部使用的固定值
         const fileType = getFileType(newFile);
         if (!fileType) return false;
 
@@ -1100,10 +1251,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
         // Get media-specific metadata
         if (fileType === "image") {
+// 常量定义 - 模块内部使用的固定值
           const { width, height } = await getImageDimensions(newFile);
           mediaData.width = width;
           mediaData.height = height;
         } else if (fileType === "video") {
+// 常量定义 - 模块内部使用的固定值
           const [duration, { thumbnailUrl, width, height }] = await Promise.all(
             [getMediaDuration(newFile), generateVideoThumbnail(newFile)]
           );
@@ -1124,6 +1277,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         );
 
         if (!newMediaItem) return false;
+
+        // 获取状态 - 读取状态值
 
         get().pushHistory();
 
@@ -1162,11 +1317,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     getTotalDuration: () => {
+// 常量定义 - 模块内部使用的固定值
       const { _tracks } = get();
       if (_tracks.length === 0) return 0;
 
+// 常量定义 - 模块内部使用的固定值
       const trackEndTimes = _tracks.map((track) =>
         track.elements.reduce((maxEnd, element) => {
+// 常量定义 - 模块内部使用的固定值
           const elementEnd =
             element.startTime +
             element.duration -
@@ -1181,11 +1339,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     getProjectThumbnail: async (projectId) => {
       try {
+// 常量定义 - 模块内部使用的固定值
         const tracks = await storageService.loadTimeline(projectId);
+// 常量定义 - 模块内部使用的固定值
         const mediaItems = await storageService.loadAllMediaItems(projectId);
 
         if (!tracks || !mediaItems.length) return null;
 
+// 常量定义 - 模块内部使用的固定值
         const firstMediaElement = tracks
           .flatMap((track) => track.elements)
           .filter((element) => element.type === "media")
@@ -1193,15 +1354,18 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
         if (!firstMediaElement) return null;
 
+// 常量定义 - 模块内部使用的固定值
         const mediaItem = mediaItems.find(
           (item) => item.id === firstMediaElement.mediaId
         );
         if (!mediaItem) return null;
 
         if (mediaItem.type === "video" && mediaItem.file) {
+// 常量定义 - 模块内部使用的固定值
           const { generateVideoThumbnail } = await import(
             "@/stores/media-store"
           );
+// 常量定义 - 模块内部使用的固定值
           const { thumbnailUrl } = await generateVideoThumbnail(mediaItem.file);
           return thumbnailUrl;
         } else if (mediaItem.type === "image" && mediaItem.url) {
@@ -1216,10 +1380,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     redo: () => {
+// 常量定义 - 模块内部使用的固定值
       const { redoStack } = get();
       if (redoStack.length === 0) return;
+// 常量定义 - 模块内部使用的固定值
       const next = redoStack[redoStack.length - 1];
       updateTracksAndSave(next);
+      // 设置状态 - 更新状态值
       set({ redoStack: redoStack.slice(0, -1) });
     },
 
@@ -1234,6 +1401,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     setDragState: (dragState) =>
+      // 设置状态 - 更新状态值
       set((state) => ({
         dragState: { ...state.dragState, ...dragState },
       })),
@@ -1245,6 +1413,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       startElementTime,
       clickOffsetTime
     ) => {
+      // 设置状态 - 更新状态值
       set({
         dragState: {
           isDragging: true,
@@ -1259,6 +1428,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     updateDragTime: (currentTime) => {
+      // 设置状态 - 更新状态值
       set((state) => ({
         dragState: {
           ...state.dragState,
@@ -1268,6 +1438,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     endDrag: () => {
+      // 设置状态 - 更新状态值
       set({
         dragState: {
           isDragging: false,
@@ -1284,6 +1455,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     // Persistence methods
     loadProjectTimeline: async (projectId) => {
       try {
+// 常量定义 - 模块内部使用的固定值
         const tracks = await storageService.loadTimeline(projectId);
         if (tracks) {
           updateTracks(tracks);
@@ -1293,12 +1465,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           updateTracks(defaultTracks);
         }
         // Clear history when loading a project
+        // 设置状态 - 更新状态值
         set({ history: [], redoStack: [] });
       } catch (error) {
         console.error("Failed to load timeline:", error);
         // Initialize with default on error
         const defaultTracks = ensureMainTrack([]);
         updateTracks(defaultTracks);
+        // 设置状态 - 更新状态值
         set({ history: [], redoStack: [] });
       }
     },
@@ -1312,28 +1486,35 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     clearTimeline: () => {
+// 常量定义 - 模块内部使用的固定值
       const defaultTracks = ensureMainTrack([]);
       updateTracks(defaultTracks);
+      // 设置状态 - 更新状态值
       set({ history: [], redoStack: [], selectedElements: [] });
     },
 
     // Snapping actions
     toggleSnapping: () => {
+      // 设置状态 - 更新状态值
       set((state) => ({ snappingEnabled: !state.snappingEnabled }));
     },
 
     // Ripple editing functions
     toggleRippleEditing: () => {
+      // 设置状态 - 更新状态值
       set((state) => ({
         rippleEditingEnabled: !state.rippleEditingEnabled,
       }));
     },
 
     checkElementOverlap: (trackId, startTime, duration, excludeElementId) => {
+// 常量定义 - 模块内部使用的固定值
       const track = get()._tracks.find((t) => t.id === trackId);
       if (!track) return false;
 
+// 常量定义 - 模块内部使用的固定值
       const overlap = track.elements.some((element) => {
+// 常量定义 - 模块内部使用的固定值
         const elementEnd =
           element.startTime +
           element.duration -
@@ -1361,6 +1542,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         return get().insertTrackAt(trackType, 0);
       }
 
+// 常量定义 - 模块内部使用的固定值
       const existingTrack = get()._tracks.find((t) => t.type === trackType);
       if (existingTrack) {
         return existingTrack.id;
@@ -1370,9 +1552,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     addMediaAtTime: (item, currentTime = 0) => {
+// 常量定义 - 模块内部使用的固定值
       const trackType = item.type === "audio" ? "audio" : "media";
+// 常量定义 - 模块内部使用的固定值
       const targetTrackId = get().findOrCreateTrack(trackType);
 
+// 常量定义 - 模块内部使用的固定值
       const duration =
         item.duration || TIMELINE_CONSTANTS.DEFAULT_IMAGE_DURATION;
 
@@ -1382,6 +1567,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         );
         return false;
       }
+
+      // 获取状态 - 读取状态值
 
       get().addElementToTrack(targetTrackId, {
         type: "media",
@@ -1396,7 +1583,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     addTextAtTime: (item, currentTime = 0) => {
+// 常量定义 - 模块内部使用的固定值
       const targetTrackId = get().insertTrackAt("text", 0); // Always create new text track at the top
+
+      // 获取状态 - 读取状态值
 
       get().addElementToTrack(targetTrackId, {
         type: "text",
@@ -1423,8 +1613,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     addMediaToNewTrack: (item) => {
+// 常量定义 - 模块内部使用的固定值
       const trackType = item.type === "audio" ? "audio" : "media";
+// 常量定义 - 模块内部使用的固定值
       const targetTrackId = get().findOrCreateTrack(trackType);
+
+      // 获取状态 - 读取状态值
 
       get().addElementToTrack(targetTrackId, {
         type: "media",
@@ -1439,7 +1633,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     },
 
     addTextToNewTrack: (item) => {
+// 常量定义 - 模块内部使用的固定值
       const targetTrackId = get().insertTrackAt("text", 0); // Always create new text track at the top
+
+      // 获取状态 - 读取状态值
 
       get().addElementToTrack(targetTrackId, {
         type: "text",

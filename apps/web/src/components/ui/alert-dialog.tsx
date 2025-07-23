@@ -1,19 +1,36 @@
+// alert-dialog.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/alert-dialog.tsx
+// 最后更新: 2025/7/23
+
+// alert-dialog.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { buttonVariants } from "./button";
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialog = AlertDialogPrimitive.Root;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogPortal = AlertDialogPrimitive.Portal;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
@@ -27,8 +44,10 @@ const AlertDialogOverlay = React.forwardRef<
 ));
 AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
 >(({ className, ...props }, ref) => (
   <AlertDialogPortal>
@@ -45,6 +64,7 @@ const AlertDialogContent = React.forwardRef<
 ));
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
+// AlertDialogHeader 函数
 const AlertDialogHeader = ({
   className,
   ...props
@@ -59,6 +79,7 @@ const AlertDialogHeader = ({
 );
 AlertDialogHeader.displayName = "AlertDialogHeader";
 
+// AlertDialogFooter 函数
 const AlertDialogFooter = ({
   className,
   ...props
@@ -73,8 +94,10 @@ const AlertDialogFooter = ({
 );
 AlertDialogFooter.displayName = "AlertDialogFooter";
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Title
@@ -85,8 +108,10 @@ const AlertDialogTitle = React.forwardRef<
 ));
 AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogDescription = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Description>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Description>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Description
@@ -98,8 +123,10 @@ const AlertDialogDescription = React.forwardRef<
 AlertDialogDescription.displayName =
   AlertDialogPrimitive.Description.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Action
@@ -110,8 +137,10 @@ const AlertDialogAction = React.forwardRef<
 ));
 AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const AlertDialogCancel = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Cancel>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Cancel>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Cancel

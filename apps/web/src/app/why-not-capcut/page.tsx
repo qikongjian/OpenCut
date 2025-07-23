@@ -1,5 +1,16 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/why-not-capcut/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入项目模块
 import { Header } from "@/components/header";
 
+// WhyNotCapcut 函数
+// 默认导出组件 - 页面或主要组件
 export default function WhyNotCapcut() {
   return (
     <div className="min-h-screen bg-background px-5">

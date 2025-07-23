@@ -1,14 +1,32 @@
+// preview-panel.tsx - 视频编辑器组件
+// 此文件包含 视频编辑器组件 的相关代码
+// 文件路径: components/editor/preview-panel.tsx
+// 最后更新: 2025/7/23
+
+// preview-panel.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
+// 导入项目模块
 import { TimelineElement, TimelineTrack } from "@/types/timeline";
+// 导入项目模块
 import { useMediaStore, type MediaItem } from "@/stores/media-store";
+// 导入项目模块
 import { usePlaybackStore } from "@/stores/playback-store";
+// 导入项目模块
 import { useEditorStore } from "@/stores/editor-store";
+// 导入项目模块
 import { useAspectRatio } from "@/hooks/use-aspect-ratio";
+// 导入项目模块
 import { VideoPlayer } from "@/components/ui/video-player";
+// 导入项目模块
 import { AudioPlayer } from "@/components/ui/audio-player";
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入模块
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,54 +34,86 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+// 导入 React 核心库
 import { Play, Pause, Expand, SkipBack, SkipForward } from "lucide-react";
+// 导入 React 核心库
 import { useState, useRef, useEffect, useCallback } from "react";
+// 导入项目模块
 import { cn } from "@/lib/utils";
+// 导入项目模块
 import { formatTimeCode } from "@/lib/time";
+// 导入项目模块
 import { FONT_CLASS_MAP } from "@/lib/font-config";
+// 导入本地模块
 import { BackgroundSettings } from "../background-settings";
+// 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
 
+// ActiveElement 接口定义
 interface ActiveElement {
   element: TimelineElement;
   track: TimelineTrack;
   mediaItem: MediaItem | null;
 }
 
+// PreviewPanel 函数
+// 导出组件 - 可复用的 UI 组件
 export function PreviewPanel() {
+// 常量定义 - 模块内部使用的固定值
   const { tracks, getTotalDuration } = useTimelineStore();
+// 常量定义 - 模块内部使用的固定值
   const { mediaItems } = useMediaStore();
+// 常量定义 - 模块内部使用的固定值
   const { currentTime, toggle, setCurrentTime, isPlaying } = usePlaybackStore();
+// 常量定义 - 模块内部使用的固定值
   const { canvasSize } = useEditorStore();
+// 常量定义 - 模块内部使用的固定值
   const previewRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const containerRef = useRef<HTMLDivElement>(null);
+// 状态管理 - 创建和管理组件内部状态
   const [previewDimensions, setPreviewDimensions] = useState({
     width: 0,
     height: 0,
   });
+// 状态管理 - 创建和管理组件内部状态
   const [isExpanded, setIsExpanded] = useState(false);
+// 常量定义 - 模块内部使用的固定值
   const { activeProject } = useProjectStore();
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
+// updatePreviewSize 函数
     const updatePreviewSize = () => {
       if (!containerRef.current) return;
 
       let availableWidth, availableHeight;
 
       if (isExpanded) {
+// 常量定义 - 模块内部使用的固定值
         const controlsHeight = 80;
+// 常量定义 - 模块内部使用的固定值
         const marginSpace = 24;
         availableWidth = window.innerWidth - marginSpace;
         availableHeight = window.innerHeight - controlsHeight - marginSpace;
       } else {
+// 常量定义 - 模块内部使用的固定值
         const container = containerRef.current.getBoundingClientRect();
+// 常量定义 - 模块内部使用的固定值
         const computedStyle = getComputedStyle(containerRef.current);
+// 常量定义 - 模块内部使用的固定值
         const paddingTop = parseFloat(computedStyle.paddingTop);
+// 常量定义 - 模块内部使用的固定值
         const paddingBottom = parseFloat(computedStyle.paddingBottom);
+// 常量定义 - 模块内部使用的固定值
         const paddingLeft = parseFloat(computedStyle.paddingLeft);
+// 常量定义 - 模块内部使用的固定值
         const paddingRight = parseFloat(computedStyle.paddingRight);
+// 常量定义 - 模块内部使用的固定值
         const gap = parseFloat(computedStyle.gap) || 16;
+// 常量定义 - 模块内部使用的固定值
         const toolbar = containerRef.current.querySelector("[data-toolbar]");
+// 常量定义 - 模块内部使用的固定值
         const toolbarHeight = toolbar
           ? toolbar.getBoundingClientRect().height
           : 0;
@@ -77,7 +127,9 @@ export function PreviewPanel() {
           (toolbarHeight > 0 ? gap : 0);
       }
 
+// 常量定义 - 模块内部使用的固定值
       const targetRatio = canvasSize.width / canvasSize.height;
+// 常量定义 - 模块内部使用的固定值
       const containerRatio = availableWidth / availableHeight;
       let width, height;
 
@@ -93,6 +145,7 @@ export function PreviewPanel() {
     };
 
     updatePreviewSize();
+// 常量定义 - 模块内部使用的固定值
     const resizeObserver = new ResizeObserver(updatePreviewSize);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
@@ -109,7 +162,9 @@ export function PreviewPanel() {
     };
   }, [canvasSize.width, canvasSize.height, isExpanded]);
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
+// handleEscapeKey 函数
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && isExpanded) {
         setIsExpanded(false);
@@ -129,17 +184,23 @@ export function PreviewPanel() {
     };
   }, [isExpanded]);
 
+// 回调函数优化 - 缓存函数引用，避免不必要的重新渲染
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
 
+// 常量定义 - 模块内部使用的固定值
   const hasAnyElements = tracks.some((track) => track.elements.length > 0);
+// getActiveElements 函数
   const getActiveElements = (): ActiveElement[] => {
+// 常量定义 - 模块内部使用的固定值
     const activeElements: ActiveElement[] = [];
 
     tracks.forEach((track) => {
       track.elements.forEach((element) => {
+// 常量定义 - 模块内部使用的固定值
         const elementStart = element.startTime;
+// 常量定义 - 模块内部使用的固定值
         const elementEnd =
           element.startTime +
           (element.duration - element.trimStart - element.trimEnd);
@@ -161,6 +222,7 @@ export function PreviewPanel() {
     return activeElements;
   };
 
+// 常量定义 - 模块内部使用的固定值
   const activeElements = getActiveElements();
 
   // Get media elements for blur background (video/image only)
@@ -174,6 +236,7 @@ export function PreviewPanel() {
     );
   };
 
+// 常量定义 - 模块内部使用的固定值
   const blurBackgroundElements = getBlurBackgroundElements();
 
   // Render blur background layer
@@ -188,10 +251,12 @@ export function PreviewPanel() {
 
     // Use the first media element for background (could be enhanced to use primary/focused element)
     const backgroundElement = blurBackgroundElements[0];
+// 常量定义 - 模块内部使用的固定值
     const { element, mediaItem } = backgroundElement;
 
     if (!mediaItem) return null;
 
+// 常量定义 - 模块内部使用的固定值
     const blurIntensity = activeProject.blurIntensity || 8;
 
     if (mediaItem.type === "video") {
@@ -244,13 +309,16 @@ export function PreviewPanel() {
 
   // Render an element
   const renderElement = (elementData: ActiveElement, index: number) => {
+// 常量定义 - 模块内部使用的固定值
     const { element, mediaItem } = elementData;
 
     // Text elements
     if (element.type === "text") {
+// 常量定义 - 模块内部使用的固定值
       const fontClassName =
         FONT_CLASS_MAP[element.fontFamily as keyof typeof FONT_CLASS_MAP] || "";
 
+// 常量定义 - 模块内部使用的固定值
       const scaleRatio = previewDimensions.width / canvasSize.width;
 
       return (
@@ -436,6 +504,7 @@ export function PreviewPanel() {
   );
 }
 
+// FullscreenToolbar 函数
 function FullscreenToolbar({
   hasAnyElements,
   onToggleExpanded,
@@ -451,37 +520,54 @@ function FullscreenToolbar({
   toggle: () => void;
   getTotalDuration: () => number;
 }) {
+// 常量定义 - 模块内部使用的固定值
   const { isPlaying } = usePlaybackStore();
+// 常量定义 - 模块内部使用的固定值
   const { activeProject } = useProjectStore();
+// 状态管理 - 创建和管理组件内部状态
   const [isDragging, setIsDragging] = useState(false);
 
+// 常量定义 - 模块内部使用的固定值
   const totalDuration = getTotalDuration();
+// 常量定义 - 模块内部使用的固定值
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
 
+// handleTimelineClick 函数
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!hasAnyElements) return;
+// 常量定义 - 模块内部使用的固定值
     const rect = e.currentTarget.getBoundingClientRect();
+// 常量定义 - 模块内部使用的固定值
     const clickX = e.clientX - rect.left;
+// 常量定义 - 模块内部使用的固定值
     const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+// 常量定义 - 模块内部使用的固定值
     const newTime = percentage * totalDuration;
     setCurrentTime(Math.max(0, Math.min(newTime, totalDuration)));
   };
 
+// handleTimelineDrag 函数
   const handleTimelineDrag = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!hasAnyElements) return;
     e.preventDefault();
     e.stopPropagation();
+// 常量定义 - 模块内部使用的固定值
     const rect = e.currentTarget.getBoundingClientRect();
     setIsDragging(true);
 
+// handleMouseMove 自定义钩子
     const handleMouseMove = (moveEvent: MouseEvent) => {
       moveEvent.preventDefault();
+// 常量定义 - 模块内部使用的固定值
       const dragX = moveEvent.clientX - rect.left;
+// 常量定义 - 模块内部使用的固定值
       const percentage = Math.max(0, Math.min(1, dragX / rect.width));
+// 常量定义 - 模块内部使用的固定值
       const newTime = percentage * totalDuration;
       setCurrentTime(Math.max(0, Math.min(newTime, totalDuration)));
     };
 
+// handleMouseUp 自定义钩子
     const handleMouseUp = () => {
       setIsDragging(false);
       document.removeEventListener("mousemove", handleMouseMove);
@@ -495,12 +581,16 @@ function FullscreenToolbar({
     handleMouseMove(e.nativeEvent);
   };
 
+// skipBackward 函数
   const skipBackward = () => {
+// 常量定义 - 模块内部使用的固定值
     const newTime = Math.max(0, currentTime - 1);
     setCurrentTime(newTime);
   };
 
+// skipForward 函数
   const skipForward = () => {
+// 常量定义 - 模块内部使用的固定值
     const newTime = Math.min(totalDuration, currentTime + 1);
     setCurrentTime(newTime);
   };
@@ -597,6 +687,7 @@ function FullscreenToolbar({
   );
 }
 
+// FullscreenPreview 函数
 function FullscreenPreview({
   previewDimensions,
   activeProject,
@@ -671,6 +762,7 @@ function FullscreenPreview({
   );
 }
 
+// PreviewToolbar 函数
 function PreviewToolbar({
   hasAnyElements,
   onToggleExpanded,
@@ -688,9 +780,13 @@ function PreviewToolbar({
   toggle: () => void;
   getTotalDuration: () => number;
 }) {
+// 常量定义 - 模块内部使用的固定值
   const { isPlaying } = usePlaybackStore();
+// 常量定义 - 模块内部使用的固定值
   const { setCanvasSize, setCanvasSizeToOriginal } = useEditorStore();
+// 常量定义 - 模块内部使用的固定值
   const { activeProject } = useProjectStore();
+// 常量定义 - 模块内部使用的固定值
   const {
     currentPreset,
     isOriginal,
@@ -699,11 +795,14 @@ function PreviewToolbar({
     canvasPresets,
   } = useAspectRatio();
 
+// handlePresetSelect 函数
   const handlePresetSelect = (preset: { width: number; height: number }) => {
     setCanvasSize({ width: preset.width, height: preset.height });
   };
 
+// handleOriginalSelect 函数
   const handleOriginalSelect = () => {
+// 常量定义 - 模块内部使用的固定值
     const aspectRatio = getOriginalAspectRatio();
     setCanvasSizeToOriginal(aspectRatio);
   };

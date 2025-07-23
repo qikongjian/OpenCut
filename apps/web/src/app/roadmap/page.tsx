@@ -1,12 +1,29 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/roadmap/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 Next.js 相关模块
 import { Metadata } from "next";
+// 导入项目模块
 import { Badge } from "@/components/ui/badge";
+// 导入项目模块
 import { GithubIcon } from "@/components/icons";
+// 导入 Next.js 相关模块
 import Link from "next/link";
+// 导入项目模块
 import { Footer } from "@/components/footer";
+// 导入项目模块
 import { Header } from "@/components/header";
+// 导入 React 核心库
 import ReactMarkdown from "react-markdown";
+// 导入项目模块
 import { cn } from "@/lib/utils";
 
+// 常量定义 - 模块内部使用的固定值
 const roadmapItems: {
   title: string;
   description: string;
@@ -45,6 +62,7 @@ const roadmapItems: {
   {
     title: "Export/Preview Logic",
     description:
+// 函数定义
       "The foundation that enables everything else. Real-time preview, video rendering, export functionality. Once this works, we can add effects, filters, transitions - basically everything that makes a video editor powerful.",
     status: {
       text: "In Progress",
@@ -89,6 +107,7 @@ const roadmapItems: {
   },
 ];
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const metadata: Metadata = {
   title: "Roadmap - OpenCut",
   description:
@@ -116,6 +135,8 @@ export const metadata: Metadata = {
   },
 };
 
+// RoadmapPage 组件
+// 默认导出组件 - 页面或主要组件
 export default function RoadmapPage() {
   return (
     <div className="min-h-screen bg-background">

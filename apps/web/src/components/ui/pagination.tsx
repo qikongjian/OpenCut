@@ -1,9 +1,22 @@
+// pagination.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/pagination.tsx
+// 最后更新: 2025/7/23
+
+// pagination.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 React 核心库
 import * as React from "react";
+// 导入 React 核心库
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
+// 导入本地模块
 import { ButtonProps, buttonVariants } from "./button";
 
+// Pagination 函数
 const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
   <nav
     role="navigation"
@@ -14,8 +27,10 @@ const Pagination = ({ className, ...props }: React.ComponentProps<"nav">) => (
 );
 Pagination.displayName = "Pagination";
 
+// 常量定义 - 模块内部使用的固定值
 const PaginationContent = React.forwardRef<
   HTMLUListElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"ul">
 >(({ className, ...props }, ref) => (
   <ul
@@ -26,19 +41,24 @@ const PaginationContent = React.forwardRef<
 ));
 PaginationContent.displayName = "PaginationContent";
 
+// 常量定义 - 模块内部使用的固定值
 const PaginationItem = React.forwardRef<
   HTMLLIElement,
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"li">
 >(({ className, ...props }, ref) => (
   <li ref={ref} className={cn("", className)} {...props} />
 ));
 PaginationItem.displayName = "PaginationItem";
 
+// PaginationLinkProps 类型定义
 type PaginationLinkProps = {
   isActive?: boolean;
 } & Pick<ButtonProps, "size"> &
+  // React 类组件 - 基于类的组件
   React.ComponentProps<"a">;
 
+// PaginationLink 函数
 const PaginationLink = ({
   className,
   isActive,
@@ -59,6 +79,7 @@ const PaginationLink = ({
 );
 PaginationLink.displayName = "PaginationLink";
 
+// PaginationPrevious 函数
 const PaginationPrevious = ({
   className,
   ...props
@@ -75,6 +96,7 @@ const PaginationPrevious = ({
 );
 PaginationPrevious.displayName = "PaginationPrevious";
 
+// PaginationNext 函数
 const PaginationNext = ({
   className,
   ...props
@@ -91,6 +113,7 @@ const PaginationNext = ({
 );
 PaginationNext.displayName = "PaginationNext";
 
+// PaginationEllipsis 函数
 const PaginationEllipsis = ({
   className,
   ...props

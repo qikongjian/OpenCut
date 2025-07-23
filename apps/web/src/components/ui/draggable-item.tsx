@@ -1,18 +1,35 @@
+// draggable-item.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/draggable-item.tsx
+// 最后更新: 2025/7/23
+
+// draggable-item.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入项目模块
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+// 导入项目模块
 import { Button } from "@/components/ui/button";
+// 导入模块
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+// 导入 React 核心库
 import { ReactNode, useState, useRef, useEffect } from "react";
+// 导入 React 核心库
 import { createPortal } from "react-dom";
+// 导入 React 核心库
 import { Plus } from "lucide-react";
+// 导入项目模块
 import { cn } from "@/lib/utils";
+// 导入项目模块
 import { usePlaybackStore } from "@/stores/playback-store";
 
+// 接口定义 - 定义对象的结构和属性类型
 export interface DraggableMediaItemProps {
   name: string;
   preview: ReactNode;
@@ -26,6 +43,8 @@ export interface DraggableMediaItemProps {
   rounded?: boolean;
 }
 
+// DraggableMediaItem 函数
+// 导出组件 - 可复用的 UI 组件
 export function DraggableMediaItem({
   name,
   preview,
@@ -38,22 +57,30 @@ export function DraggableMediaItem({
   showLabel = true,
   rounded = true,
 }: DraggableMediaItemProps) {
+// 状态管理 - 创建和管理组件内部状态
   const [isDragging, setIsDragging] = useState(false);
+// 状态管理 - 创建和管理组件内部状态
   const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+// 常量定义 - 模块内部使用的固定值
   const dragRef = useRef<HTMLDivElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const currentTime = usePlaybackStore((state) => state.currentTime);
 
+// handleAddToTimeline 函数
   const handleAddToTimeline = () => {
     onAddToTimeline?.(currentTime);
   };
 
+// 常量定义 - 模块内部使用的固定值
   const emptyImg = new window.Image();
   emptyImg.src =
     "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
     if (!isDragging) return;
 
+// handleDragOver 函数
     const handleDragOver = (e: DragEvent) => {
       setDragPosition({ x: e.clientX, y: e.clientY });
     };
@@ -65,6 +92,7 @@ export function DraggableMediaItem({
     };
   }, [isDragging]);
 
+// handleDragStart 函数
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setDragImage(emptyImg, 0, 0);
 
@@ -82,6 +110,7 @@ export function DraggableMediaItem({
     onDragStart?.(e);
   };
 
+// handleDragEnd 函数
   const handleDragEnd = () => {
     setIsDragging(false);
   };
@@ -159,6 +188,7 @@ export function DraggableMediaItem({
   );
 }
 
+// PlusButton 函数
 function PlusButton({
   className,
   onClick,
@@ -168,6 +198,7 @@ function PlusButton({
   onClick?: () => void;
   tooltipText?: string;
 }) {
+// button 函数
   const button = (
     <Button
       size="icon"

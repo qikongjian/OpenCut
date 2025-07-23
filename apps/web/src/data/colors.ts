@@ -1,3 +1,12 @@
+// colors.ts - 静态数据和配置
+// 此文件包含 静态数据和配置 的相关代码
+// 文件路径: data/colors.ts
+// 最后更新: 2025/7/23
+
+// colors.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
+// 导出常量对象 - 包含多个相关常量的对象
 export const colors = [
   "#ffffff",
   "#000000",

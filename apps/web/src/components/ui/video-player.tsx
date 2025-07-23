@@ -1,8 +1,19 @@
+// video-player.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/video-player.tsx
+// 最后更新: 2025/7/23
+
+// video-player.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import { useRef, useEffect } from "react";
+// 导入项目模块
 import { usePlaybackStore } from "@/stores/playback-store";
 
+// VideoPlayerProps 接口定义
 interface VideoPlayerProps {
   src: string;
   poster?: string;
@@ -13,6 +24,8 @@ interface VideoPlayerProps {
   clipDuration: number;
 }
 
+// VideoPlayer 函数
+// 导出组件 - 可复用的 UI 组件
 export function VideoPlayer({
   src,
   poster,
@@ -22,22 +35,28 @@ export function VideoPlayer({
   trimEnd,
   clipDuration,
 }: VideoPlayerProps) {
+// 常量定义 - 模块内部使用的固定值
   const videoRef = useRef<HTMLVideoElement>(null);
+// 常量定义 - 模块内部使用的固定值
   const { isPlaying, currentTime, volume, speed, muted } = usePlaybackStore();
 
   // Calculate if we're within this clip's timeline range
   const clipEndTime = clipStartTime + (clipDuration - trimStart - trimEnd);
+// 常量定义 - 模块内部使用的固定值
   const isInClipRange =
     currentTime >= clipStartTime && currentTime < clipEndTime;
 
   // Sync playback events
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const video = videoRef.current;
     if (!video || !isInClipRange) return;
 
+// handleSeekEvent 函数
     const handleSeekEvent = (e: CustomEvent) => {
       // Always update video time, even if outside clip range
       const timelineTime = e.detail.time;
+// 常量定义 - 模块内部使用的固定值
       const videoTime = Math.max(
         trimStart,
         Math.min(
@@ -48,9 +67,11 @@ export function VideoPlayer({
       video.currentTime = videoTime;
     };
 
+// handleUpdateEvent 函数
     const handleUpdateEvent = (e: CustomEvent) => {
       // Always update video time, even if outside clip range
       const timelineTime = e.detail.time;
+// 常量定义 - 模块内部使用的固定值
       const targetTime = Math.max(
         trimStart,
         Math.min(
@@ -64,6 +85,7 @@ export function VideoPlayer({
       }
     };
 
+// handleSpeed 函数
     const handleSpeed = (e: CustomEvent) => {
       video.playbackRate = e.detail.speed;
     };
@@ -93,6 +115,7 @@ export function VideoPlayer({
 
   // Sync playback state
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const video = videoRef.current;
     if (!video) return;
 
@@ -105,6 +128,7 @@ export function VideoPlayer({
 
   // Sync volume and speed
   useEffect(() => {
+// 常量定义 - 模块内部使用的固定值
     const video = videoRef.current;
     if (!video) return;
 

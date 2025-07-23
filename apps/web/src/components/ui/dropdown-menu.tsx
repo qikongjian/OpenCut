@@ -1,24 +1,44 @@
+// dropdown-menu.tsx - 基础 UI 组件
+// 此文件包含 基础 ui 组件 的相关代码
+// 文件路径: components/ui/dropdown-menu.tsx
+// 最后更新: 2025/7/23
+
+// dropdown-menu.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import * as React from "react";
+// 导入 Radix UI 组件库
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+// 导入 React 核心库
 import { Check, ChevronRight, Circle } from "lucide-react";
+// 导入 CVA 类名变体工具
 import { cva, type VariantProps } from "class-variance-authority";
 
+// 导入本地模块
 import { cn } from "../../lib/utils";
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenu = DropdownMenuPrimitive.Root;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
+// 常量定义 - 模块内部使用的固定值
 const dropdownMenuItemVariants = cva(
   "relative flex cursor-pointer select-none items-center gap-2 px-2 py-1.5 text-sm outline-none transition-opacity data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0",
   {
@@ -34,8 +54,10 @@ const dropdownMenuItemVariants = cva(
   }
 );
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
     inset?: boolean;
     variant?: VariantProps<typeof dropdownMenuItemVariants>["variant"];
@@ -58,8 +80,10 @@ const DropdownMenuSubTrigger = React.forwardRef<
 DropdownMenuSubTrigger.displayName =
   DropdownMenuPrimitive.SubTrigger.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.SubContent
@@ -74,8 +98,10 @@ const DropdownMenuSubContent = React.forwardRef<
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
 >(({ className, sideOffset = 4, ...props }, ref) => (
   <DropdownMenuPrimitive.Portal>
@@ -97,8 +123,10 @@ const DropdownMenuContent = React.forwardRef<
 ));
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
     inset?: boolean;
     variant?: VariantProps<typeof dropdownMenuItemVariants>["variant"];
@@ -116,8 +144,10 @@ const DropdownMenuItem = React.forwardRef<
 ));
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem> & {
     variant?: VariantProps<typeof dropdownMenuItemVariants>["variant"];
   }
@@ -143,8 +173,10 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 DropdownMenuCheckboxItem.displayName =
   DropdownMenuPrimitive.CheckboxItem.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem> & {
     variant?: VariantProps<typeof dropdownMenuItemVariants>["variant"];
   }
@@ -168,8 +200,10 @@ const DropdownMenuRadioItem = React.forwardRef<
 ));
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
     inset?: boolean;
   }
@@ -186,8 +220,10 @@ const DropdownMenuLabel = React.forwardRef<
 ));
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
+// 常量定义 - 模块内部使用的固定值
 const DropdownMenuSeparator = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
+  // React 类组件 - 基于类的组件
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
@@ -198,6 +234,7 @@ const DropdownMenuSeparator = React.forwardRef<
 ));
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
+// DropdownMenuShortcut 函数
 const DropdownMenuShortcut = ({
   className,
   ...props

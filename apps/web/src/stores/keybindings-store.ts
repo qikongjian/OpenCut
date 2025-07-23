@@ -1,9 +1,22 @@
+// keybindings-store.ts - Zustand 状态管理存储
+// 此文件包含 zustand 状态管理存储 的相关代码
+// 文件路径: stores/keybindings-store.ts
+// 最后更新: 2025/7/23
+
+// keybindings-store.ts - TypeScript 文件
+// 此文件包含 typescript 文件 的相关代码
+
 "use client";
 
+// 导入 Zustand 状态管理库
 import { create } from "zustand";
+// 导入 Zustand 状态管理库
 import { persist } from "zustand/middleware";
+// 导入项目模块
 import { ActionWithOptionalArgs } from "@/constants/actions";
+// 导入项目模块
 import { isAppleDevice, isDOMElement, isTypableElement } from "@/lib/utils";
+// 导入项目模块
 import { KeybindingConfig, ShortcutKey } from "@/types/keybinding";
 
 // Default keybindings configuration
@@ -29,12 +42,14 @@ export const defaultKeybindings: KeybindingConfig = {
   backspace: "delete-selected",
 };
 
+// 接口定义 - 定义对象的结构和属性类型
 export interface KeybindingConflict {
   key: ShortcutKey;
   existingAction: ActionWithOptionalArgs;
   newAction: ActionWithOptionalArgs;
 }
 
+// KeybindingsState 接口定义
 interface KeybindingsState {
   keybindings: KeybindingConfig;
   isCustomized: boolean;
@@ -60,7 +75,9 @@ interface KeybindingsState {
   getKeybindingString: (ev: KeyboardEvent) => ShortcutKey | null;
 }
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const useKeybindingsStore = create<KeybindingsState>()(
+  // 状态持久化 - 保存状态到本地存储
   persist(
     (set, get) => ({
       keybindings: { ...defaultKeybindings },
@@ -68,7 +85,9 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       keybindingsEnabled: true,
 
       updateKeybinding: (key: ShortcutKey, action: ActionWithOptionalArgs) => {
+        // 设置状态 - 更新状态值
         set((state) => {
+// 常量定义 - 模块内部使用的固定值
           const newKeybindings = { ...state.keybindings };
           newKeybindings[key] = action;
 
@@ -80,7 +99,9 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       },
 
       removeKeybinding: (key: ShortcutKey) => {
+        // 设置状态 - 更新状态值
         set((state) => {
+// 常量定义 - 模块内部使用的固定值
           const newKeybindings = { ...state.keybindings };
           delete newKeybindings[key];
 
@@ -92,6 +113,7 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       },
 
       resetToDefaults: () => {
+        // 设置状态 - 更新状态值
         set({
           keybindings: { ...defaultKeybindings },
           isCustomized: false,
@@ -99,10 +121,12 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       },
 
       enableKeybindings: () => {
+        // 设置状态 - 更新状态值
         set({ keybindingsEnabled: true });
       },
 
       disableKeybindings: () => {
+        // 设置状态 - 更新状态值
         set({ keybindingsEnabled: false });
       },
 
@@ -114,6 +138,7 @@ export const useKeybindingsStore = create<KeybindingsState>()(
             throw new Error(`Invalid key format: ${key}`);
           }
         }
+        // 设置状态 - 更新状态值
         set({
           keybindings: { ...config },
           isCustomized: true,
@@ -128,7 +153,9 @@ export const useKeybindingsStore = create<KeybindingsState>()(
         key: ShortcutKey,
         action: ActionWithOptionalArgs
       ) => {
+// 常量定义 - 模块内部使用的固定值
         const { keybindings } = get();
+// 常量定义 - 模块内部使用的固定值
         const existingAction = keybindings[key];
 
         if (existingAction && existingAction !== action) {
@@ -143,6 +170,7 @@ export const useKeybindingsStore = create<KeybindingsState>()(
       },
 
       getKeybindingsForAction: (action: ActionWithOptionalArgs) => {
+// 常量定义 - 模块内部使用的固定值
         const { keybindings } = get();
         return Object.keys(keybindings).filter(
           (key) => keybindings[key as ShortcutKey] === action
@@ -162,6 +190,7 @@ export const useKeybindingsStore = create<KeybindingsState>()(
 
 // Utility functions
 function generateKeybindingString(ev: KeyboardEvent): ShortcutKey | null {
+// 常量定义 - 模块内部使用的固定值
   const target = ev.target;
 
   // We may or may not have a modifier key
@@ -192,9 +221,11 @@ function generateKeybindingString(ev: KeyboardEvent): ShortcutKey | null {
   return `${key}` as ShortcutKey;
 }
 
+// getPressedKey 函数
 function getPressedKey(ev: KeyboardEvent): string | null {
   // Sometimes the property code is not available on the KeyboardEvent object
   const key = (ev.key ?? "").toLowerCase();
+// 常量定义 - 模块内部使用的固定值
   const code = ev.code ?? "";
 
   // Check arrow keys
@@ -216,6 +247,7 @@ function getPressedKey(ev: KeyboardEvent): string | null {
 
   // Check number keys using physical position for AZERTY support
   if (code.startsWith("Digit")) {
+// 常量定义 - 模块内部使用的固定值
     const digit = code.slice(5);
     if (digit.length === 1 && digit >= "0" && digit <= "9") {
       return digit;
@@ -233,7 +265,9 @@ function getPressedKey(ev: KeyboardEvent): string | null {
   return null;
 }
 
+// getActiveModifier 函数
 function getActiveModifier(ev: KeyboardEvent): string | null {
+// 常量定义 - 模块内部使用的固定值
   const modifierKeys = {
     ctrl: isAppleDevice() ? ev.metaKey : ev.ctrlKey,
     alt: ev.altKey,

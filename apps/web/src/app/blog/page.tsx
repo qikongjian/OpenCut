@@ -1,11 +1,27 @@
+// page.tsx - Next.js 页面组件
+// 此文件包含 next.js 页面组件 的相关代码
+// 文件路径: app/blog/page.tsx
+// 最后更新: 2025/7/23
+
+// page.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
+// 导入 Next.js 相关模块
 import { Metadata } from "next";
+// 导入项目模块
 import { Header } from "@/components/header";
+// 导入项目模块
 import { Card, CardContent } from "@/components/ui/card";
+// 导入项目模块
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+// 导入 Next.js 相关模块
 import Link from "next/link";
+// 导入项目模块
 import { getPosts } from "@/lib/blog-query";
+// 导入 Next.js 相关模块
 import Image from "next/image";
 
+// 导出常量对象 - 包含多个相关常量的对象
 export const metadata: Metadata = {
   title: "Blog - OpenCut",
   description:
@@ -18,7 +34,9 @@ export const metadata: Metadata = {
   },
 };
 
+// BlogPage 组件
 export default async function BlogPage() {
+// 常量定义 - 模块内部使用的固定值
   const data = await getPosts();
   if (!data || !data.posts) return <div>No posts yet</div>;
 

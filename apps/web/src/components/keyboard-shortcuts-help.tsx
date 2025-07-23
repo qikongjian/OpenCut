@@ -1,7 +1,18 @@
+// keyboard-shortcuts-help.tsx - React 组件
+// 此文件包含 react 组件 的相关代码
+// 文件路径: components/keyboard-shortcuts-help.tsx
+// 最后更新: 2025/7/23
+
+// keyboard-shortcuts-help.tsx - React 组件文件
+// 此文件包含 react 组件文件 的相关代码
+
 "use client";
 
+// 导入 React 核心库
 import { useState, useEffect } from "react";
+// 导入本地模块
 import { Button } from "./ui/button";
+// 导入模块
 import {
   Dialog,
   DialogContent,
@@ -10,15 +21,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
+// 导入项目模块
 import { getPlatformSpecialKey } from "@/lib/utils";
+// 导入 React 核心库
 import { Keyboard } from "lucide-react";
+// 导入模块
 import {
   useKeyboardShortcutsHelp,
   KeyboardShortcut,
 } from "@/hooks/use-keyboard-shortcuts-help";
+// 导入项目模块
 import { useKeybindingsStore } from "@/stores/keybindings-store";
+// 导入 Sonner 通知组件
 import { toast } from "sonner";
 
+// 常量定义 - 模块内部使用的固定值
 const modifier: {
   [key: string]: string;
 } = {
@@ -31,11 +48,13 @@ const modifier: {
   Space: "Space",
 };
 
+// getKeyWithModifier 函数
 function getKeyWithModifier(key: string) {
   if (key === "Ctrl") return getPlatformSpecialKey();
   return modifier[key] || key;
 }
 
+// ShortcutItem 函数
 const ShortcutItem = ({
   shortcut,
   recordingKey,
@@ -69,6 +88,7 @@ const ShortcutItem = ({
           <div key={index} className="flex items-center gap-1">
             <div className="flex items-center">
               {key.split("+").map((keyPart: string, partIndex: number) => {
+// 常量定义 - 模块内部使用的固定值
                 const keyId = `${shortcut.id}-${index}-${partIndex}`;
                 return (
                   <EditableShortcutKey
@@ -94,6 +114,7 @@ const ShortcutItem = ({
   );
 };
 
+// EditableShortcutKey 函数
 const EditableShortcutKey = ({
   children,
   keyId,
@@ -109,6 +130,7 @@ const EditableShortcutKey = ({
   isRecording: boolean;
   onStartRecording: () => void;
 }) => {
+// handleClick 函数
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -132,12 +154,17 @@ const EditableShortcutKey = ({
   );
 };
 
+// KeyboardShortcutsHelp 函数
 export const KeyboardShortcutsHelp = () => {
+// 状态管理 - 创建和管理组件内部状态
   const [open, setOpen] = useState(false);
+// 常量定义 - 模块内部使用的固定值
   const [recordingKey, setRecordingKey] = useState<string | null>(null);
+// 常量定义 - 模块内部使用的固定值
   const [recordingShortcut, setRecordingShortcut] =
     useState<KeyboardShortcut | null>(null);
 
+// 常量定义 - 模块内部使用的固定值
   const {
     updateKeybinding,
     removeKeybinding,
@@ -149,15 +176,19 @@ export const KeyboardShortcutsHelp = () => {
   // Get shortcuts from centralized hook
   const { shortcuts } = useKeyboardShortcutsHelp();
 
+// 常量定义 - 模块内部使用的固定值
   const categories = Array.from(new Set(shortcuts.map((s) => s.category)));
 
+// 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
     if (!recordingKey || !recordingShortcut) return;
 
+// handleKeyDown 函数
     const handleKeyDown = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
 
+// 常量定义 - 模块内部使用的固定值
       const keyString = getKeybindingString(e);
       if (keyString) {
         // Auto-save the new keybinding
@@ -186,6 +217,7 @@ export const KeyboardShortcutsHelp = () => {
       }
     };
 
+// handleClickOutside 函数
     const handleClickOutside = (e: MouseEvent) => {
       setRecordingKey(null);
       setRecordingShortcut(null);
@@ -208,6 +240,7 @@ export const KeyboardShortcutsHelp = () => {
     getKeybindingsForAction,
   ]);
 
+// handleStartRecording 函数
   const handleStartRecording = (keyId: string, shortcut: KeyboardShortcut) => {
     setRecordingKey(keyId);
     setRecordingShortcut(shortcut);
