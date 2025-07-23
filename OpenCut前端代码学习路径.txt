@@ -1,0 +1,399 @@
+🎯 OpenCut前端代码学习路径指南
+=====================================
+
+📋 学习目标
+-----------
+从零开始理解OpenCut前端项目的完整架构，掌握视频编辑器的核心实现原理，
+包括状态管理、组件设计、交互逻辑、媒体处理等关键技术。
+
+📚 第一阶段：项目基础架构 (1-2天)
+================================
+
+1.1 项目入口和布局
+------------------
+学习顺序：
+1. apps/web/src/app/layout.tsx - 根布局，了解全局配置
+2. apps/web/src/app/page.tsx - 首页，了解路由结构  
+3. apps/web/src/app/editor/[project_id]/page.tsx - 编辑器主页面
+
+学习重点：
+✓ Next.js App Router 的使用
+✓ 全局Provider的配置（ThemeProvider, StorageProvider等）
+✓ 编辑器页面的面板布局结构
+✓ 响应式设计和可调整面板
+
+关键概念：
+- Next.js 15 App Router架构
+- 全局状态提供者模式
+- ResizablePanelGroup布局系统
+
+1.2 核心状态管理
+----------------
+学习顺序：
+1. apps/web/src/stores/editor-store.ts - 编辑器基础状态
+2. apps/web/src/stores/project-store.ts - 项目管理
+3. apps/web/src/stores/media-store.ts - 媒体文件管理
+4. apps/web/src/stores/timeline-store.ts - 时间线核心逻辑
+5. apps/web/src/stores/playback-store.ts - 播放控制
+
+学习重点：
+✓ Zustand状态管理模式
+✓ 各个Store之间的依赖关系
+✓ 状态更新的流程
+✓ 异步操作处理
+
+关键概念：
+- Zustand状态管理库
+- Store间通信机制
+- 状态持久化策略
+
+📚 第二阶段：数据模型和类型定义 (1天)
+====================================
+
+2.1 类型系统
+------------
+学习顺序：
+1. apps/web/src/types/timeline.ts - 时间线相关类型
+2. apps/web/src/types/editor.ts - 编辑器类型
+3. apps/web/src/types/project.ts - 项目类型
+4. apps/web/src/types/playback.ts - 播放控制类型
+5. apps/web/src/types/keybinding.ts - 快捷键类型
+
+学习重点：
+✓ TypeScript类型定义
+✓ 联合类型和交叉类型的使用
+✓ 类型安全的数据流
+✓ 接口设计模式
+
+关键概念：
+- TypeScript高级类型
+- 类型守卫和类型断言
+- 泛型的使用
+
+2.2 常量定义
+------------
+学习顺序：
+1. apps/web/src/constants/actions.ts - 动作系统
+2. apps/web/src/constants/timeline-constants.ts - 时间线常量
+3. apps/web/src/constants/font-constants.ts - 字体常量
+
+学习重点：
+✓ 常量管理策略
+✓ 动作系统的设计
+✓ 配置参数的组织
+
+📚 第三阶段：核心功能模块 (3-4天)
+================================
+
+3.1 编辑器核心组件
+------------------
+学习顺序：
+1. apps/web/src/components/editor-provider.tsx - 编辑器提供者
+2. apps/web/src/components/editor/editor-header.tsx - 编辑器头部
+3. apps/web/src/components/editor/preview-panel.tsx - 预览面板
+4. apps/web/src/components/editor/media-panel/index.tsx - 媒体面板
+5. apps/web/src/components/editor/properties-panel/index.tsx - 属性面板
+
+学习重点：
+✓ 组件生命周期管理
+✓ 状态传递和通信
+✓ 复杂组件的拆分
+✓ 性能优化技巧
+
+关键概念：
+- React组件设计模式
+- 组件间通信机制
+- 性能优化策略
+
+3.2 时间线系统
+--------------
+学习顺序：
+1. apps/web/src/components/editor/timeline/index.tsx - 时间线主组件
+2. apps/web/src/components/editor/timeline/timeline-track.tsx - 轨道组件
+3. apps/web/src/components/editor/timeline/timeline-element.tsx - 元素组件
+4. apps/web/src/components/editor/timeline/timeline-playhead.tsx - 播放头
+
+学习重点：
+✓ 时间线渲染逻辑
+✓ 轨道和元素管理
+✓ 播放头控制
+✓ 时间计算和转换
+
+关键概念：
+- 时间线数据结构
+- 渲染优化技术
+- 时间同步机制
+
+3.3 交互功能
+------------
+学习顺序：
+1. apps/web/src/hooks/use-timeline-zoom.ts - 缩放功能
+2. apps/web/src/hooks/use-timeline-snapping.ts - 吸附功能
+3. apps/web/src/hooks/use-selection-box.ts - 选择框
+4. apps/web/src/hooks/use-drag-drop.ts - 拖拽功能
+5. apps/web/src/hooks/use-timeline-element-resize.ts - 元素调整
+
+学习重点：
+✓ 自定义Hook设计
+✓ 鼠标事件处理
+✓ 拖拽交互实现
+✓ 性能优化技巧
+
+关键概念：
+- React Hooks模式
+- 事件处理机制
+- 交互状态管理
+
+📚 第四阶段：工具库和工具函数 (2天)
+==================================
+
+4.1 核心工具库
+--------------
+学习顺序：
+1. apps/web/src/lib/utils.ts - 通用工具函数
+2. apps/web/src/lib/time.ts - 时间处理
+3. apps/web/src/lib/timeline.ts - 时间线工具
+4. apps/web/src/lib/media-processing.ts - 媒体处理
+5. apps/web/src/lib/font-config.ts - 字体配置
+
+学习重点：
+✓ 工具函数设计
+✓ 时间处理算法
+✓ 媒体文件处理
+✓ 配置管理
+
+关键概念：
+- 工具函数组织
+- 算法优化
+- 文件处理技术
+
+4.2 FFmpeg集成
+--------------
+学习顺序：
+1. apps/web/src/lib/ffmpeg-utils.ts - FFmpeg工具函数
+2. apps/web/src/lib/storage/storage-service.ts - 存储服务
+
+学习重点：
+✓ WebAssembly FFmpeg使用
+✓ 视频处理流程
+✓ 存储服务架构
+✓ 数据持久化
+
+关键概念：
+- WebAssembly技术
+- 视频处理算法
+- 存储系统设计
+
+📚 第五阶段：UI组件系统 (2天)
+==============================
+
+5.1 基础UI组件
+--------------
+学习顺序：
+1. apps/web/src/components/ui/button.tsx - 按钮组件
+2. apps/web/src/components/ui/dialog.tsx - 对话框
+3. apps/web/src/components/ui/resizable.tsx - 可调整大小面板
+4. apps/web/src/components/ui/video-player.tsx - 视频播放器
+5. apps/web/src/components/ui/audio-player.tsx - 音频播放器
+6. apps/web/src/components/ui/dropdown-menu.tsx - 下拉菜单
+7. apps/web/src/components/ui/context-menu.tsx - 右键菜单
+
+学习重点：
+✓ 组件设计模式
+✓ 可复用性设计
+✓ 样式系统
+✓ 交互体验
+
+关键概念：
+- 组件库设计
+- 样式系统架构
+- 交互设计原则
+
+5.2 编辑器专用组件
+------------------
+学习顺序：
+1. apps/web/src/components/editor/selection-box.tsx - 选择框
+2. apps/web/src/components/editor/snap-indicator.tsx - 吸附指示器
+3. apps/web/src/components/editor/audio-waveform.tsx - 音频波形
+4. apps/web/src/components/editor/speed-control.tsx - 速度控制
+
+学习重点：
+✓ 专用组件设计
+✓ 复杂交互实现
+✓ 性能优化
+✓ 用户体验
+
+📚 第六阶段：高级功能 (2-3天)
+==============================
+
+6.1 键盘快捷键系统
+------------------
+学习顺序：
+1. apps/web/src/hooks/use-keybindings.ts - 快捷键监听
+2. apps/web/src/hooks/use-editor-actions.ts - 编辑器动作
+3. apps/web/src/components/keyboard-shortcuts-help.tsx - 快捷键帮助
+4. apps/web/src/hooks/use-keybinding-conflicts.ts - 快捷键冲突检测
+
+学习重点：
+✓ 快捷键系统设计
+✓ 动作系统架构
+✓ 冲突检测机制
+✓ 用户体验优化
+
+关键概念：
+- 快捷键管理
+- 动作系统设计
+- 冲突解决策略
+
+6.2 存储和持久化
+----------------
+学习顺序：
+1. apps/web/src/components/storage-provider.tsx - 存储提供者
+2. apps/web/src/lib/storage/indexeddb-adapter.ts - IndexedDB适配器
+3. apps/web/src/lib/storage/opfs-adapter.ts - OPFS适配器
+4. apps/web/src/lib/storage/types.ts - 存储类型定义
+
+学习重点：
+✓ 存储系统架构
+✓ IndexedDB使用
+✓ OPFS文件系统
+✓ 数据同步机制
+
+关键概念：
+- 浏览器存储技术
+- 文件系统API
+- 数据同步策略
+
+🔧 阅读技巧和建议
+==================
+
+1. 调试工具使用
+---------------
+在浏览器控制台中访问调试信息：
+```javascript
+// 开发环境下可用的调试工具
+window.__OPENCUT_DEBUG__ = {
+  stores: {
+    timeline: useTimelineStore.getState,
+    media: useMediaStore.getState,
+    editor: useEditorStore.getState,
+  },
+  actions: {
+    invoke: invokeAction,
+  },
+};
+```
+
+2. 关键概念理解顺序
+-------------------
+1. 状态管理 → 理解数据流
+2. 组件结构 → 理解UI架构  
+3. 交互逻辑 → 理解用户操作
+4. 工具函数 → 理解辅助功能
+
+3. 重点关注的文件
+-----------------
+- timeline-store.ts - 最复杂的业务逻辑
+- preview-panel.tsx - 最复杂的渲染逻辑
+- ffmpeg-utils.ts - 核心视频处理
+- storage-service.ts - 数据持久化
+
+4. 实践建议
+-----------
+✓ 边读边运行 - 启动开发服务器，实时查看效果
+✓ 使用断点 - 在关键函数处设置断点调试
+✓ 画流程图 - 画出数据流和组件关系图
+✓ 做笔记 - 记录重要的设计模式和实现细节
+✓ 修改代码 - 尝试修改一些参数，观察效果变化
+
+5. 进阶学习路径
+---------------
+完成基础阅读后，可以深入研究：
+- 性能优化技巧
+- 错误处理机制
+- 测试策略
+- 部署配置
+- 插件系统设计
+
+📝 学习检查清单
+===============
+
+第一阶段检查项：
+□ 理解Next.js App Router架构
+□ 掌握Zustand状态管理模式
+□ 了解编辑器布局系统
+
+第二阶段检查项：
+□ 掌握TypeScript类型系统
+□ 理解常量管理策略
+□ 熟悉动作系统设计
+
+第三阶段检查项：
+□ 理解组件设计模式
+□ 掌握时间线渲染逻辑
+□ 熟悉交互功能实现
+
+第四阶段检查项：
+□ 掌握工具函数设计
+□ 理解FFmpeg集成
+□ 熟悉存储系统架构
+
+第五阶段检查项：
+□ 理解UI组件设计
+□ 掌握样式系统
+□ 熟悉专用组件实现
+
+第六阶段检查项：
+□ 掌握快捷键系统
+□ 理解存储持久化
+□ 熟悉高级功能实现
+
+🎯 学习目标达成标准
+===================
+
+初级理解：
+- 能够解释项目整体架构
+- 理解主要组件的作用
+- 掌握基本的状态管理
+
+中级理解：
+- 能够修改和扩展功能
+- 理解复杂的交互逻辑
+- 掌握性能优化技巧
+
+高级理解：
+- 能够重构和优化代码
+- 理解所有技术细节
+- 能够独立开发新功能
+
+📚 推荐学习资源
+===============
+
+官方文档：
+- Next.js 15 文档
+- React 18 文档
+- TypeScript 文档
+- Zustand 文档
+
+技术文章：
+- WebAssembly FFmpeg 使用指南
+- IndexedDB 最佳实践
+- OPFS 文件系统API
+- 视频编辑器架构设计
+
+实践项目：
+- 尝试实现简单的视频播放器
+- 实现基础的拖拽功能
+- 创建自定义Hook
+- 设计组件库
+
+💡 学习提示
+===========
+
+1. 不要急于求成，每个阶段都要确保理解透彻
+2. 多动手实践，理论结合实践效果更好
+3. 遇到问题及时查阅文档和源码
+4. 保持好奇心，探索代码中的设计模式
+5. 记录学习心得，形成自己的知识体系
+
+祝您学习愉快！🎉 
