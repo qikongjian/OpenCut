@@ -1,0 +1,145 @@
+# 添加视频 API 文档
+
+## 接口信息
+- **接口名称**: add_video
+- **请求方法**: POST
+- **接口地址**: https://open.install-ai-guider.top/cut_jianying/add_video
+- **功能描述**: 添加视频到剪映项目
+
+## 请求参数
+
+### Body 参数 (application/json)
+
+#### 必需参数
+| 参数名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| video_url | string | ✅ | 视频资源URL（用于获取视频素材） |
+
+#### 基础配置参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| start | integer | ❌ | 0 | 视频素材的起始截取时间（秒） |
+| end | integer | ❌ | 0 | 视频素材的结束截取时间（秒，0表示截取至视频末尾） |
+| width | integer | ❌ | 1080 | 画布宽度 |
+| height | integer | ❌ | 1920 | 画布高度 |
+| draft_id | string | ❌ | - | 草稿ID（用于关联目标草稿） |
+
+#### 变换参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| transform_x | integer | ❌ | 0 | X轴位置偏移 |
+| transform_y | integer | ❌ | 0 | Y轴位置偏移 |
+| scale_x | integer | ❌ | 1 | X轴缩放比例 |
+| scale_y | integer | ❌ | 1 | Y轴缩放比例 |
+| speed | integer | ❌ | 1.0 | 视频播放速度（大于1为加速，小于1为减速） |
+
+#### 时间线参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| target_start | integer | ❌ | 0 | 视频在时间线上的起始位置（秒） |
+| duration | number | ❌ | - | 视频素材的总时长（秒，主动设置可提升运行速度） |
+
+#### 轨道参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| track_name | string | ❌ | - | 轨道名称 |
+| relative_index | integer | ❌ | 0 | 相对索引（控制轨道内素材的排列顺序） |
+
+#### 转场参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| transition | string | ❌ | - | 转场类型（如"云朵"等） |
+| transition_duration | number | ❌ | 0.5 | 转场持续时间（秒） |
+
+#### 音频参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| volume | integer | ❌ | 1.0 | 视频音量（范围0.0-1.0） |
+
+#### 蒙版参数
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|--------|------|------|--------|------|
+| mask_type | string | ❌ | - | 蒙版类型（如圆形、矩形等） |
+| mask_center_x | number | ❌ | 0.5 | 蒙版中心X坐标（相对屏幕宽度比例） |
+| mask_center_y | number | ❌ | 0.5 | 蒙版中心Y坐标（相对屏幕高度比例） |
+| mask_size | integer | ❌ | 1.0 | 蒙版大小（相对屏幕高度比例） |
+| mask_rotation | integer | ❌ | 0.0 | 蒙版旋转角度（度） |
+| mask_feather | integer | ❌ | 0.0 | 蒙版羽化程度（值越大边缘越柔和） |
+| mask_invert | boolean | ❌ | false | 是否反转蒙版 |
+| mask_rect_width | number | ❌ | - | 矩形蒙版宽度（仅mask_type为矩形时有效） |
+| mask_round_corner | number | ❌ | - | 矩形蒙版圆角（仅mask_type为矩形时有效） |
+
+## 请求示例
+
+```json
+{
+    "video_url": "https://cdn.wanx.aliyuncs.com/wanx/1719234057367822001/text_to_video/092faf3c94244973ab752ee1280ba76f.mp4?spm=5176.29623064.0.0.41ed26d6cBOhV3&file=092faf3c94244973ab752ee1280ba76f.mp4",
+    "start": 0,
+    "end": 0,
+    "width": 1080,
+    "height": 1920,
+    "draft_id": "draft_123456",
+    "transform_x": 0,
+    "transform_y": 0,
+    "scale_x": 1,
+    "scale_y": 1,
+    "speed": 1.0,
+    "target_start": 0,
+    "track_name": "video_main",
+    "relative_index": 0,
+    "duration": null,
+    "transition": "云朵",
+    "transition_duration": 0.5,
+    "volume": 1.0,
+    "mask_type": "圆形",
+    "mask_center_x": 0.5,
+    "mask_center_y": 0.5,
+    "mask_size": 1.0,
+    "mask_rotation": 0.0,
+    "mask_feather": 0.0,
+    "mask_invert": false,
+    "mask_rect_width": null,
+    "mask_round_corner": null
+}
+```
+
+## 响应参数
+
+### 响应状态
+- **状态码**: 200
+- **状态**: 成功
+- **内容类型**: application/json
+
+### 响应字段
+| 字段名 | 类型 | 必填 | 描述 |
+|--------|------|------|------|
+| error | string | ✅ | 错误信息（成功时为空） |
+| success | boolean | ✅ | 请求是否成功 |
+| output | object | ✅ | 输出数据 |
+| output.draft_id | string | ✅ | 草稿ID |
+| output.draft_url | string | ✅ | 草稿下载链接 |
+| purchase_link | string | ✅ | 购买链接 |
+
+## 响应示例
+
+```json
+{
+    "error": "",
+    "success": true,
+    "output": {
+        "draft_id": "dfd_cat_1752374046_d23ea53a",
+        "draft_url": "https://www.install-ai-guider.top/draft/downloader?draft_id=dfd_cat_1752374046_d23ea53a"
+    },
+    "purchase_link": "https://www.coze.cn/store/project/7498257920212647946?entity_id=1&bid=6g6miqtbk3009"
+}
+```
+
+## 使用说明
+
+1. **必需参数**: 只有 `video_url` 是必需的，其他参数都是可选的
+2. **视频截取**: 通过 `start` 和 `end` 参数可以截取视频的特定片段
+3. **画布设置**: `width` 和 `height` 用于设置视频的画布尺寸
+4. **变换效果**: 可以通过变换参数调整视频的位置、缩放和速度
+5. **蒙版效果**: 支持圆形和矩形蒙版，可以设置位置、大小、旋转等属性
+6. **转场效果**: 可以在视频前后添加转场效果
+7. **轨道管理**: 可以指定轨道名称和素材在轨道中的位置
