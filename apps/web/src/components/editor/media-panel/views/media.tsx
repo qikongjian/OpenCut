@@ -72,16 +72,22 @@ export function MediaView() {
 // 新增多选状态管理
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
-// 新增拖拽和多选状态
-const [draggedId, setDraggedId] = useState<string | null>(null);
 
   // 新增预览播放方法
   const handleMediaPreview = (mediaItem: MediaItem) => {
     if (mediaItem.type === 'video') {
-      // 设置预览状态
+      // 设置预览状态 - 不联动时间轴播放
       usePlaybackStore.getState().setPreviewMode(true);
       usePlaybackStore.getState().setPreviewMedia(mediaItem);
-      usePlaybackStore.getState().play();
+      // 延迟一点时间后自动播放预览视频，确保视频元素已经渲染
+      setTimeout(() => {
+        const videoElement = document.querySelector('video[data-preview="true"]') as HTMLVideoElement;
+        if (videoElement) {
+          videoElement.play().catch(() => {
+            // 如果自动播放失败，静默处理
+          });
+        }
+      }, 100);
     }
   };
 
@@ -364,17 +370,39 @@ const [draggedId, setDraggedId] = useState<string | null>(null);
               {/* Render each media item as a draggable button */}
               {filteredMediaItems.map((item) => (
                 <ContextMenu key={item.id}>
-                  <ContextMenuTrigger>
+                  <ContextMenuTrigger style={{ width: 120, height: 90 }}>
                     <div
                       className={cn(
                         "relative transition-all duration-200 media-item group cursor-pointer",
-                        addedToTimeline.has(item.id) && "opacity-70 scale-95 animate-fadeIn border-2 border-cyan-400",
-                        draggedId === item.id && "ring-2 ring-blue-400 shadow-lg scale-90 opacity-60 z-20",
-                        isMultiSelectMode && selectedFiles.includes(item.file) && "ring-2 ring-cyan-400",
                         "hover:scale-105 hover:shadow-md"
                       )}
                       style={{ minHeight: 120, minWidth: 120 }}
+                      onClick={() => handleMediaPreview(item)}
                     >
+                      {/* 已添加标签 */}
+                      {addedToTimeline.has(item.id) && (
+                        <div
+                          className="absolute left-1 top-1 z-10"
+                          style={{
+                            alignItems: 'center',
+                            background: 'var(--lvv-color-black-04)',
+                            borderRadius: '4px',
+                            color: 'var(--lvv-color-text-content-primary)',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            fontSize: '12px',
+                            fontWeight: '400',
+                            height: '18px',
+                            justifyContent: 'center',
+                            lineHeight: '14px',
+                            minWidth: '44px',
+                            padding: '2px 4px',
+                            border: 'none'
+                          }}
+                        >
+                          已添加
+                        </div>
+                      )}
                       <DraggableMediaItem
                         name={item.name}
                         preview={renderPreview(item)}
@@ -391,8 +419,6 @@ const [draggedId, setDraggedId] = useState<string | null>(null);
                         }
                         onClick={() => handleMediaPreview(item)}
                         rounded={false}
-                        onDragStart={() => setDraggedId(item.id)}
-                        onDragEnd={() => setDraggedId(null)}
                       />
                     </div>
                   </ContextMenuTrigger>

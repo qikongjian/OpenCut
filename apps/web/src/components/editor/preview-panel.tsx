@@ -97,8 +97,28 @@ export function PreviewPanel() {
   });
 // 状态管理 - 创建和管理组件内部状态
   const [isExpanded, setIsExpanded] = useState(false);
+// 新增预览播放状态
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 // 常量定义 - 模块内部使用的固定值
   const { activeProject } = useProjectStore();
+
+// 监听预览视频播放状态
+  useEffect(() => {
+    const video = previewVideoRef.current;
+    if (!video) return;
+    
+    const handlePlay = () => setIsPreviewPlaying(true);
+    const handlePause = () => setIsPreviewPlaying(false);
+    
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+    };
+  }, [previewMode, previewMedia]);
 
 // 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
@@ -473,34 +493,8 @@ export function PreviewPanel() {
                 // 预览模式显示 - 独立播放器
                 <div className="absolute inset-0 flex items-center justify-center">
                   <video
-                    ref={(el) => {
-                      if (el) {
-                        // 监听预览播放事件
-                        const handlePreviewPlay = (e: Event) => {
-                          const customEvent = e as CustomEvent;
-                          const { media } = customEvent.detail;
-                          if (media && media.url === previewMedia.url) {
-                            el.play().catch(() => {});
-                          }
-                        };
-                        
-                        const handlePreviewPause = () => {
-                          el.pause();
-                        };
-                        
-                        window.addEventListener('preview-play', handlePreviewPlay);
-                        window.addEventListener('preview-pause', handlePreviewPause);
-                        
-                        // 清理事件监听器
-                        el.addEventListener('loadstart', () => {
-                          // 组件卸载时清理
-                          return () => {
-                            window.removeEventListener('preview-play', handlePreviewPlay);
-                            window.removeEventListener('preview-pause', handlePreviewPause);
-                          };
-                        });
-                      }
-                    }}
+                    ref={previewVideoRef}
+                    data-preview="true"
                     src={previewMedia.url!}
                     poster={previewMedia.thumbnailUrl}
                     className="max-w-full max-h-full object-contain"
@@ -551,6 +545,8 @@ export function PreviewPanel() {
             playPreview={playPreview}
             pausePreview={pausePreview}
             setPreviewMode={setPreviewMode}
+            isPreviewPlaying={isPreviewPlaying}
+            previewVideoRef={previewVideoRef}
             // 新增播放控制增强
             isLooping={isLooping}
             toggleLoop={toggleLoop}
@@ -856,6 +852,8 @@ function PreviewToolbar({
   playPreview,
   pausePreview,
   setPreviewMode,
+  isPreviewPlaying,
+  previewVideoRef,
   // 新增播放控制增强
   isLooping,
   toggleLoop,
@@ -878,6 +876,8 @@ function PreviewToolbar({
   playPreview: () => void;
   pausePreview: () => void;
   setPreviewMode: (mode: boolean) => void;
+  isPreviewPlaying: boolean;
+  previewVideoRef: React.RefObject<HTMLVideoElement>;
   // 新增播放控制增强
   isLooping: boolean;
   toggleLoop: () => void;
@@ -971,8 +971,15 @@ function PreviewToolbar({
         size="icon"
         onClick={() => {
           if (previewMode && previewMedia) {
-            // 预览模式播放控制 - 独立于时间轴播放状态
-            playPreview();
+            // 预览模式播放控制 - 直接控制视频元素
+            const video = previewVideoRef.current;
+            if (video) {
+              if (video.paused) {
+                video.play();
+              } else {
+                video.pause();
+              }
+            }
           } else {
             // 正常时间轴播放控制
             toggle();
@@ -982,7 +989,11 @@ function PreviewToolbar({
         className="h-auto p-0"
       >
         {previewMode && previewMedia ? (
-          <Play className="h-3 w-3" />
+          isPreviewPlaying ? (
+            <Pause className="h-3 w-3" />
+          ) : (
+            <Play className="h-3 w-3" />
+          )
         ) : isPlaying ? (
           <Pause className="h-3 w-3" />
         ) : (
