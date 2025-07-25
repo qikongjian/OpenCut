@@ -37,13 +37,22 @@ const startTimer = (store: () => PlaybackStore) => {
 // 常量定义 - 模块内部使用的固定值
       const newTime = state.currentTime + delta * state.speed;
       if (newTime >= state.duration) {
-        // When video completes, pause and reset playhead to start
-        state.pause();
-        state.setCurrentTime(0);
-        // Notify video elements to sync with reset
-        window.dispatchEvent(
-          new CustomEvent("playback-seek", { detail: { time: 0 } })
-        );
+        // When video completes, handle based on loop setting
+        if (state.isLooping) {
+          // Loop back to start
+          state.setCurrentTime(0);
+          window.dispatchEvent(
+            new CustomEvent("playback-seek", { detail: { time: 0 } })
+          );
+        } else {
+          // Pause and reset playhead to start
+          state.pause();
+          state.setCurrentTime(0);
+          // Notify video elements to sync with reset
+          window.dispatchEvent(
+            new CustomEvent("playback-seek", { detail: { time: 0 } })
+          );
+        }
       } else {
         state.setCurrentTime(newTime);
         // Notify video elements to sync
@@ -76,6 +85,14 @@ export const usePlaybackStore = create<PlaybackStore>((set, get) => ({
   muted: false,
   previousVolume: 1,
   speed: 1.0,
+  // 新增预览模式状态
+  previewMode: false,
+  previewMedia: null,
+  // 新增播放控制增强状态
+  isLooping: false,
+  playbackQuality: 'auto' as const,
+  buffering: false,
+  error: null,
 
   play: () => {
     // 设置状态 - 更新状态值
@@ -168,5 +185,72 @@ export const usePlaybackStore = create<PlaybackStore>((set, get) => ({
       // 获取状态 - 读取状态值
       get().mute();
     }
+  },
+
+  // 新增预览模式控制方法
+  setPreviewMode: (mode: boolean) => set({ previewMode: mode }),
+  
+  setPreviewMedia: (media: any | null) => set({ previewMedia: media }),
+  
+  playPreview: () => {
+    const { previewMedia } = get();
+    if (previewMedia) {
+      // 预览播放不影响时间轴播放状态
+      set({ previewMode: true });
+      // 触发预览播放事件
+      window.dispatchEvent(new CustomEvent('preview-play', {
+        detail: { media: previewMedia }
+      }));
+    }
+  },
+  
+  pausePreview: () => {
+    // 预览暂停不影响时间轴播放状态
+    // 触发预览暂停事件
+    window.dispatchEvent(new CustomEvent('preview-pause'));
+  },
+
+  // 新增播放控制增强方法
+  
+  toggleLoop: () => set((state) => ({ isLooping: !state.isLooping })),
+  
+  setPlaybackQuality: (quality: 'auto' | 'low' | 'medium' | 'high') => 
+    set({ playbackQuality: quality }),
+  
+  setBuffering: (buffering: boolean) => set({ buffering }),
+  
+  setError: (error: string | null) => set({ error }),
+  
+  skipForward: (seconds: number) => {
+    const { currentTime, duration } = get();
+    const newTime = Math.min(currentTime + seconds, duration);
+    set({ currentTime: newTime });
+    window.dispatchEvent(new CustomEvent('playback-seek', { 
+      detail: { time: newTime } 
+    }));
+  },
+  
+  skipBackward: (seconds: number) => {
+    const { currentTime } = get();
+    const newTime = Math.max(currentTime - seconds, 0);
+    set({ currentTime: newTime });
+    window.dispatchEvent(new CustomEvent('playback-seek', { 
+      detail: { time: newTime } 
+    }));
+  },
+  
+  jumpToStart: () => {
+    set({ currentTime: 0 });
+    window.dispatchEvent(new CustomEvent('playback-seek', { 
+      detail: { time: 0 } 
+    }));
+  },
+  
+  jumpToEnd: () => {
+    const { duration } = get();
+    set({ currentTime: duration });
+    window.dispatchEvent(new CustomEvent('playback-seek', { 
+      detail: { time: duration } 
+    }));
   },
 }));

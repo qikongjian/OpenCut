@@ -64,7 +64,26 @@ export function PreviewPanel() {
 // 常量定义 - 模块内部使用的固定值
   const { mediaItems } = useMediaStore();
 // 常量定义 - 模块内部使用的固定值
-  const { currentTime, toggle, setCurrentTime, isPlaying } = usePlaybackStore();
+  const { 
+    currentTime, 
+    toggle, 
+    setCurrentTime, 
+    isPlaying, 
+    previewMode, 
+    previewMedia,
+    setPreviewMode,
+    playPreview,
+    pausePreview,
+    // 新增播放控制增强
+    isLooping,
+    toggleLoop,
+    skipForward,
+    skipBackward,
+    jumpToStart,
+    jumpToEnd,
+    buffering,
+    error
+  } = usePlaybackStore();
 // 常量定义 - 模块内部使用的固定值
   const { canvasSize } = useEditorStore();
 // 常量定义 - 模块内部使用的固定值
@@ -437,7 +456,7 @@ export function PreviewPanel() {
           className="flex-1 flex flex-col items-center justify-center p-3 min-h-0 min-w-0"
         >
           <div className="flex-1"></div>
-          {hasAnyElements ? (
+          {(hasAnyElements || previewMedia) ? (
             <div
               ref={previewRef}
               className="relative overflow-hidden border"
@@ -450,23 +469,70 @@ export function PreviewPanel() {
                     : activeProject?.backgroundColor || "#000000",
               }}
             >
-              {renderBlurBackground()}
-              {activeElements.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                  No elements at current time
+              {previewMode && previewMedia ? (
+                // 预览模式显示 - 独立播放器
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <video
+                    ref={(el) => {
+                      if (el) {
+                        // 监听预览播放事件
+                        const handlePreviewPlay = (e: Event) => {
+                          const customEvent = e as CustomEvent;
+                          const { media } = customEvent.detail;
+                          if (media && media.url === previewMedia.url) {
+                            el.play().catch(() => {});
+                          }
+                        };
+                        
+                        const handlePreviewPause = () => {
+                          el.pause();
+                        };
+                        
+                        window.addEventListener('preview-play', handlePreviewPlay);
+                        window.addEventListener('preview-pause', handlePreviewPause);
+                        
+                        // 清理事件监听器
+                        el.addEventListener('loadstart', () => {
+                          // 组件卸载时清理
+                          return () => {
+                            window.removeEventListener('preview-play', handlePreviewPlay);
+                            window.removeEventListener('preview-pause', handlePreviewPause);
+                          };
+                        });
+                      }
+                    }}
+                    src={previewMedia.url!}
+                    poster={previewMedia.thumbnailUrl}
+                    className="max-w-full max-h-full object-contain"
+                    playsInline
+                    preload="auto"
+                    controls={false}
+                    style={{ pointerEvents: "none" }}
+                    onContextMenu={(e) => e.preventDefault()}
+                  />
                 </div>
               ) : (
-                activeElements.map((elementData, index) =>
-                  renderElement(elementData, index)
-                )
+                // 正常时间轴模式显示
+                <>
+                  {renderBlurBackground()}
+                  {activeElements.length === 0 ? (
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                      No elements at current time
+                    </div>
+                  ) : (
+                    activeElements.map((elementData, index) =>
+                      renderElement(elementData, index)
+                    )
+                  )}
+                  {activeProject?.backgroundType === "blur" &&
+                    blurBackgroundElements.length === 0 &&
+                    activeElements.length > 0 && (
+                      <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs p-2 rounded">
+                        Add a video or image to use blur background
+                      </div>
+                    )}
+                </>
               )}
-              {activeProject?.backgroundType === "blur" &&
-                blurBackgroundElements.length === 0 &&
-                activeElements.length > 0 && (
-                  <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs p-2 rounded">
-                    Add a video or image to use blur background
-                  </div>
-                )}
             </div>
           ) : null}
 
@@ -480,6 +546,20 @@ export function PreviewPanel() {
             setCurrentTime={setCurrentTime}
             toggle={toggle}
             getTotalDuration={getTotalDuration}
+            previewMode={previewMode}
+            previewMedia={previewMedia}
+            playPreview={playPreview}
+            pausePreview={pausePreview}
+            setPreviewMode={setPreviewMode}
+            // 新增播放控制增强
+            isLooping={isLooping}
+            toggleLoop={toggleLoop}
+            skipForward={skipForward}
+            skipBackward={skipBackward}
+            jumpToStart={jumpToStart}
+            jumpToEnd={jumpToEnd}
+            buffering={buffering}
+            error={error}
           />
         </div>
       </div>
@@ -771,6 +851,20 @@ function PreviewToolbar({
   setCurrentTime,
   toggle,
   getTotalDuration,
+  previewMode,
+  previewMedia,
+  playPreview,
+  pausePreview,
+  setPreviewMode,
+  // 新增播放控制增强
+  isLooping,
+  toggleLoop,
+  skipForward,
+  skipBackward,
+  jumpToStart,
+  jumpToEnd,
+  buffering,
+  error,
 }: {
   hasAnyElements: boolean;
   onToggleExpanded: () => void;
@@ -779,6 +873,20 @@ function PreviewToolbar({
   setCurrentTime: (time: number) => void;
   toggle: () => void;
   getTotalDuration: () => number;
+  previewMode: boolean;
+  previewMedia: any | null;
+  playPreview: () => void;
+  pausePreview: () => void;
+  setPreviewMode: (mode: boolean) => void;
+  // 新增播放控制增强
+  isLooping: boolean;
+  toggleLoop: () => void;
+  skipForward: (seconds: number) => void;
+  skipBackward: (seconds: number) => void;
+  jumpToStart: () => void;
+  jumpToEnd: () => void;
+  buffering: boolean;
+  error: string | null;
 }) {
 // 常量定义 - 模块内部使用的固定值
   const { isPlaying } = usePlaybackStore();
@@ -849,22 +957,101 @@ function PreviewToolbar({
               activeProject?.fps || 30
             )}
           </span>
+          {/* 新增状态显示 */}
+          {buffering && (
+            <span className="text-blue-500 text-xs">缓冲中...</span>
+          )}
+          {error && (
+            <span className="text-red-500 text-xs">错误: {error}</span>
+          )}
         </p>
       </div>
       <Button
         variant="text"
         size="icon"
-        onClick={toggle}
-        disabled={!hasAnyElements}
+        onClick={() => {
+          if (previewMode && previewMedia) {
+            // 预览模式播放控制 - 独立于时间轴播放状态
+            playPreview();
+          } else {
+            // 正常时间轴播放控制
+            toggle();
+          }
+        }}
+        disabled={!hasAnyElements && !previewMedia}
         className="h-auto p-0"
       >
-        {isPlaying ? (
+        {previewMode && previewMedia ? (
+          <Play className="h-3 w-3" />
+        ) : isPlaying ? (
           <Pause className="h-3 w-3" />
         ) : (
           <Play className="h-3 w-3" />
         )}
       </Button>
       <div className="flex items-center gap-3">
+        {previewMode && previewMedia && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPreviewMode(false)}
+            className="text-xs"
+          >
+            退出预览
+          </Button>
+        )}
+        
+        {/* 新增播放控制增强按钮 */}
+        {!previewMode && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => skipBackward(5)}
+              className="text-xs"
+              title="后退5秒"
+            >
+              -5s
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => skipForward(5)}
+              className="text-xs"
+              title="前进5秒"
+            >
+              +5s
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={jumpToStart}
+              className="text-xs"
+              title="跳转到开始"
+            >
+              开始
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={jumpToEnd}
+              className="text-xs"
+              title="跳转到结束"
+            >
+              结束
+            </Button>
+            <Button
+              variant={isLooping ? "default" : "ghost"}
+              size="sm"
+              onClick={toggleLoop}
+              className="text-xs"
+              title="循环播放"
+            >
+              循环
+            </Button>
+          </>
+        )}
+        
         <BackgroundSettings />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

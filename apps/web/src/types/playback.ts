@@ -15,6 +15,14 @@ export interface PlaybackState {
   speed: number;
   muted: boolean;
   previousVolume?: number;
+  // 新增预览模式支持
+  previewMode: boolean;
+  previewMedia: any | null;
+  // 新增播放控制增强
+  isLooping: boolean;
+  playbackQuality: 'auto' | 'low' | 'medium' | 'high';
+  buffering: boolean;
+  error: string | null;
 }
 
 // 接口定义 - 定义对象的结构和属性类型
@@ -28,4 +36,20 @@ export interface PlaybackControls {
   mute: () => void;
   unmute: () => void;
   toggleMute: () => void;
+  // 新增预览模式控制
+  setPreviewMode: (mode: boolean) => void;
+  setPreviewMedia: (media: any | null) => void;
+  playPreview: () => void;
+  pausePreview: () => void;
+  // 新增播放控制增强
+  setDuration: (duration: number) => void;
+  setCurrentTime: (time: number) => void;
+  toggleLoop: () => void;
+  setPlaybackQuality: (quality: 'auto' | 'low' | 'medium' | 'high') => void;
+  setBuffering: (buffering: boolean) => void;
+  setError: (error: string | null) => void;
+  skipForward: (seconds: number) => void;
+  skipBackward: (seconds: number) => void;
+  jumpToStart: () => void;
+  jumpToEnd: () => void;
 }

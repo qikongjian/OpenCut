@@ -14,6 +14,8 @@ import { storageService } from "@/lib/storage/storage-service";
 import { useTimelineStore } from "./timeline-store";
 // 导入项目模块
 import { generateUUID } from "@/lib/utils";
+// 导入 Sonner 通知组件
+import { toast } from "sonner";
 
 // 类型定义 - 创建类型别名或联合类型
 export type MediaType = "image" | "video" | "audio";
@@ -193,6 +195,19 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
   addMediaItem: async (projectId, item) => {
 // 常量定义 - 模块内部使用的固定值
+    const existingItems = get().mediaItems;
+    
+    // 检查重复媒体
+    const isDuplicate = existingItems.some(existingItem => 
+      existingItem.name === item.name && 
+      existingItem.file.size === item.file.size
+    );
+    
+    if (isDuplicate) {
+      toast.warning(`媒体文件 "${item.name}" 已存在，跳过添加`);
+      return;
+    }
+
     const newItem: MediaItem = {
       ...item,
       id: generateUUID(),

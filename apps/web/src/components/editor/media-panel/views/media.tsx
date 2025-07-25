@@ -15,7 +15,7 @@ import { processMediaFiles } from "@/lib/media-processing";
 // 导入项目模块
 import { useMediaStore, type MediaItem } from "@/stores/media-store";
 // 导入 React 核心库
-import { Image, Loader2, Music, Plus, Video } from "lucide-react";
+import { Image, Loader2, Music, Plus, Video, Check } from "lucide-react";
 // 导入 React 核心库
 import { useEffect, useRef, useState } from "react";
 // 导入 Sonner 通知组件
@@ -47,6 +47,10 @@ import { DraggableMediaItem } from "@/components/ui/draggable-item";
 import { useProjectStore } from "@/stores/project-store";
 // 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
+// 导入播放状态管理
+import { usePlaybackStore } from "@/stores/playback-store";
+// 导入项目模块
+import { cn } from "@/lib/utils";
 
 // MediaView 函数
 // 导出组件 - 可复用的 UI 组件
@@ -65,6 +69,60 @@ export function MediaView() {
   const [searchQuery, setSearchQuery] = useState("");
 // 状态管理 - 创建和管理组件内部状态
   const [mediaFilter, setMediaFilter] = useState("all");
+// 新增多选状态管理
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+// 新增拖拽和多选状态
+const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  // 新增预览播放方法
+  const handleMediaPreview = (mediaItem: MediaItem) => {
+    if (mediaItem.type === 'video') {
+      // 设置预览状态
+      usePlaybackStore.getState().setPreviewMode(true);
+      usePlaybackStore.getState().setPreviewMedia(mediaItem);
+      usePlaybackStore.getState().play();
+    }
+  };
+
+  // 新增状态跟踪
+  const [addedToTimeline, setAddedToTimeline] = useState<Set<string>>(new Set());
+  const { isMediaAddedToTimeline } = useTimelineStore();
+
+  // 监听媒体添加和删除事件
+  useEffect(() => {
+    const handleMediaAdded = (e: CustomEvent) => {
+      const { mediaId } = e.detail;
+      setAddedToTimeline(prev => new Set([...prev, mediaId]));
+    };
+
+    const handleMediaRemoved = (e: CustomEvent) => {
+      const { mediaId } = e.detail;
+      setAddedToTimeline(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mediaId);
+        return newSet;
+      });
+    };
+
+    window.addEventListener('media-added-to-timeline', handleMediaAdded);
+    window.addEventListener('media-removed-from-timeline', handleMediaRemoved);
+    return () => {
+      window.removeEventListener('media-added-to-timeline', handleMediaAdded);
+      window.removeEventListener('media-removed-from-timeline', handleMediaRemoved);
+    };
+  }, []);
+
+  // 初始化已添加状态
+  useEffect(() => {
+    const addedItems = new Set<string>();
+    mediaItems.forEach(item => {
+      if (isMediaAddedToTimeline(item.id)) {
+        addedItems.add(item.id);
+      }
+    });
+    setAddedToTimeline(addedItems);
+  }, [mediaItems, isMediaAddedToTimeline]);
 
 // 常量定义 - 模块内部使用的固定值
   const processFiles = async (files: FileList | File[]) => {
@@ -107,7 +165,11 @@ export function MediaView() {
 // handleFileChange 函数
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // When files are selected via file picker, process them
-    if (e.target.files) processFiles(e.target.files);
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedFiles(files);
+      processFiles(files);
+    }
     e.target.value = ""; // Reset input
   };
 
@@ -303,22 +365,36 @@ export function MediaView() {
               {filteredMediaItems.map((item) => (
                 <ContextMenu key={item.id}>
                   <ContextMenuTrigger>
-                    <DraggableMediaItem
-                      name={item.name}
-                      preview={renderPreview(item)}
-                      dragData={{
-                        id: item.id,
-                        type: item.type,
-                        name: item.name,
-                      }}
-                      showPlusOnDrag={false}
-                      onAddToTimeline={(currentTime) =>
-                        useTimelineStore
-                          .getState()
-                          .addMediaAtTime(item, currentTime)
-                      }
-                      rounded={false}
-                    />
+                    <div
+                      className={cn(
+                        "relative transition-all duration-200 media-item group cursor-pointer",
+                        addedToTimeline.has(item.id) && "opacity-70 scale-95 animate-fadeIn border-2 border-cyan-400",
+                        draggedId === item.id && "ring-2 ring-blue-400 shadow-lg scale-90 opacity-60 z-20",
+                        isMultiSelectMode && selectedFiles.includes(item.file) && "ring-2 ring-cyan-400",
+                        "hover:scale-105 hover:shadow-md"
+                      )}
+                      style={{ minHeight: 120, minWidth: 120 }}
+                    >
+                      <DraggableMediaItem
+                        name={item.name}
+                        preview={renderPreview(item)}
+                        dragData={{
+                          id: item.id,
+                          type: item.type,
+                          name: item.name,
+                        }}
+                        showPlusOnDrag={false}
+                        onAddToTimeline={(currentTime) =>
+                          useTimelineStore
+                            .getState()
+                            .addMediaAtTime(item, currentTime)
+                        }
+                        onClick={() => handleMediaPreview(item)}
+                        rounded={false}
+                        onDragStart={() => setDraggedId(item.id)}
+                        onDragEnd={() => setDraggedId(null)}
+                      />
+                    </div>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
                     <ContextMenuItem>Export clips</ContextMenuItem>

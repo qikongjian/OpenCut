@@ -36,6 +36,7 @@ export interface DraggableMediaItemProps {
   dragData: Record<string, any>;
   onDragStart?: (e: React.DragEvent) => void;
   onAddToTimeline?: (currentTime: number) => void;
+  onClick?: () => void;
   aspectRatio?: number;
   className?: string;
   showPlusOnDrag?: boolean;
@@ -51,6 +52,7 @@ export function DraggableMediaItem({
   dragData,
   onDragStart,
   onAddToTimeline,
+  onClick,
   aspectRatio = 16 / 9,
   className = "",
   showPlusOnDrag = true,
@@ -124,13 +126,18 @@ export function DraggableMediaItem({
           <AspectRatio
             ratio={aspectRatio}
             className={cn(
-              "bg-accent relative overflow-hidden",
+              "bg-accent relative overflow-hidden cursor-pointer",
               rounded && "rounded-md",
               "[&::-webkit-drag-ghost]:opacity-0" // Webkit-specific ghost hiding
             )}
             draggable={true}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClick?.();
+            }}
           >
             {preview}
             {!isDragging && (

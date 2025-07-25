@@ -100,6 +100,10 @@ interface TimelineStore {
     clickOffsetTime: number;
     currentTime: number;
   };
+  
+  // 新增已添加媒体跟踪
+  addedMediaItems: Set<string>;
+  isMediaAddedToTimeline: (mediaId: string) => boolean;
   setDragState: (dragState: Partial<TimelineStore["dragState"]>) => void;
   startDrag: (
     elementId: string,
@@ -278,6 +282,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     // Snapping settings defaults
     snappingEnabled: true,
+    
+    // 新增已添加媒体跟踪
+    addedMediaItems: new Set<string>(),
+    
+    isMediaAddedToTimeline: (mediaId: string) => {
+      return get().addedMediaItems.has(mediaId);
+    },
 
     getSortedTracks: () => {
 // 常量定义 - 模块内部使用的固定值
@@ -618,6 +629,18 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         )
       );
 
+      // 新增：记录媒体已添加到时间轴
+      if (newElement.type === 'media' && newElement.mediaId) {
+        set((state) => ({
+          addedMediaItems: new Set([...state.addedMediaItems, newElement.mediaId])
+        }));
+        
+        // 触发状态更新事件
+        window.dispatchEvent(new CustomEvent('media-added-to-timeline', {
+          detail: { mediaId: newElement.mediaId }
+        }));
+      }
+
       // 获取状态 - 读取状态值
 
       get().selectElement(trackId, newElement.id);
@@ -626,6 +649,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     removeElementFromTrack: (trackId, elementId) => {
 // 常量定义 - 模块内部使用的固定值
       const { rippleEditingEnabled } = get();
+
+      // 获取要删除的元素信息
+      const track = get()._tracks.find(t => t.id === trackId);
+      const element = track?.elements.find(e => e.id === elementId);
 
       if (rippleEditingEnabled) {
         // 获取状态 - 读取状态值
@@ -648,6 +675,27 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
             )
             .filter((track) => track.elements.length > 0)
         );
+      }
+
+      // 新增：如果删除的是媒体元素，更新媒体状态
+      if (element && element.type === 'media' && element.mediaId) {
+        // 检查该媒体是否还在时间轴中的其他地方
+        const remainingTracks = get()._tracks;
+        const mediaStillExists = remainingTracks.some(track =>
+          track.elements.some(el => el.type === 'media' && el.mediaId === element.mediaId)
+        );
+
+        if (!mediaStillExists) {
+          // 如果媒体不再存在于时间轴中，从已添加列表中移除
+          set((state) => ({
+            addedMediaItems: new Set([...state.addedMediaItems].filter(id => id !== element.mediaId))
+          }));
+          
+          // 触发状态更新事件
+          window.dispatchEvent(new CustomEvent('media-removed-from-timeline', {
+            detail: { mediaId: element.mediaId }
+          }));
+        }
       }
     },
 
@@ -731,6 +779,27 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         .filter((track) => track.elements.length > 0 || track.isMain);
 
       updateTracksAndSave(updatedTracks);
+
+      // 新增：如果删除的是媒体元素，更新媒体状态
+      if (element && element.type === 'media' && element.mediaId) {
+        // 检查该媒体是否还在时间轴中的其他地方
+        const remainingTracks = get()._tracks;
+        const mediaStillExists = remainingTracks.some(track =>
+          track.elements.some(el => el.type === 'media' && el.mediaId === element.mediaId)
+        );
+
+        if (!mediaStillExists) {
+          // 如果媒体不再存在于时间轴中，从已添加列表中移除
+          set((state) => ({
+            addedMediaItems: new Set([...state.addedMediaItems].filter(id => id !== element.mediaId))
+          }));
+          
+          // 触发状态更新事件
+          window.dispatchEvent(new CustomEvent('media-removed-from-timeline', {
+            detail: { mediaId: element.mediaId }
+          }));
+        }
+      }
     },
 
     moveElementToTrack: (fromTrackId, toTrackId, elementId) => {
@@ -1490,7 +1559,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       const defaultTracks = ensureMainTrack([]);
       updateTracks(defaultTracks);
       // 设置状态 - 更新状态值
-      set({ history: [], redoStack: [], selectedElements: [] });
+      set({ 
+        history: [], 
+        redoStack: [], 
+        selectedElements: [],
+        addedMediaItems: new Set() // 清空已添加媒体状态
+      });
     },
 
     // Snapping actions
