@@ -15,9 +15,9 @@ import { processMediaFiles } from "@/lib/media-processing";
 // 导入项目模块
 import { useMediaStore, type MediaItem } from "@/stores/media-store";
 // 导入 React 核心库
-import { Image, Loader2, Music, Plus, Video, Check } from "lucide-react";
+import { Loader2, Plus, Upload, FolderOpen } from "lucide-react";
 // 导入 React 核心库
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入项目模块
@@ -41,6 +41,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+// 导入 DropdownMenu 组件
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 // 导入项目模块
 import { DraggableMediaItem } from "@/components/ui/draggable-item";
 // 导入项目模块
@@ -52,85 +60,29 @@ import { usePlaybackStore } from "@/stores/playback-store";
 // 导入项目模块
 import { cn } from "@/lib/utils";
 
+
 // MediaView 函数
-// 导出组件 - 可复用的 UI 组件
 export function MediaView() {
-// 常量定义 - 模块内部使用的固定值
-  const { mediaItems, addMediaItem, removeMediaItem } = useMediaStore();
-// 常量定义 - 模块内部使用的固定值
+  // 获取媒体存储状态和操作方法
+  const { mediaItems, addMediaItem, removeMediaItem, isLoading, isImporting, importProgress } = useMediaStore();
+  // 获取当前活动项目
   const { activeProject } = useProjectStore();
-// 常量定义 - 模块内部使用的固定值
+  // 获取时间线状态
+  const { tracks, addElementToTrack } = useTimelineStore();
+  // 获取播放状态
+  const { pause } = usePlaybackStore();
+
+  // 文件输入引用
   const fileInputRef = useRef<HTMLInputElement>(null);
-// 状态管理 - 创建和管理组件内部状态
+  // 本地状态
   const [isProcessing, setIsProcessing] = useState(false);
-// 状态管理 - 创建和管理组件内部状态
   const [progress, setProgress] = useState(0);
-// 状态管理 - 创建和管理组件内部状态
   const [searchQuery, setSearchQuery] = useState("");
-// 状态管理 - 创建和管理组件内部状态
   const [mediaFilter, setMediaFilter] = useState("all");
-// 新增多选状态管理
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
-
-  // 新增预览播放方法
-  const handleMediaPreview = (mediaItem: MediaItem) => {
-    if (mediaItem.type === 'video') {
-      // 设置预览状态 - 不联动时间轴播放
-      usePlaybackStore.getState().setPreviewMode(true);
-      usePlaybackStore.getState().setPreviewMedia(mediaItem);
-      // 延迟一点时间后自动播放预览视频，确保视频元素已经渲染
-      setTimeout(() => {
-        const videoElement = document.querySelector('video[data-preview="true"]') as HTMLVideoElement;
-        if (videoElement) {
-          videoElement.play().catch(() => {
-            // 如果自动播放失败，静默处理
-          });
-        }
-      }, 100);
-    }
-  };
-
-  // 新增状态跟踪
   const [addedToTimeline, setAddedToTimeline] = useState<Set<string>>(new Set());
-  const { isMediaAddedToTimeline } = useTimelineStore();
 
-  // 监听媒体添加和删除事件
-  useEffect(() => {
-    const handleMediaAdded = (e: CustomEvent) => {
-      const { mediaId } = e.detail;
-      setAddedToTimeline(prev => new Set([...prev, mediaId]));
-    };
 
-    const handleMediaRemoved = (e: CustomEvent) => {
-      const { mediaId } = e.detail;
-      setAddedToTimeline(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(mediaId);
-        return newSet;
-      });
-    };
-
-    window.addEventListener('media-added-to-timeline', handleMediaAdded);
-    window.addEventListener('media-removed-from-timeline', handleMediaRemoved);
-    return () => {
-      window.removeEventListener('media-added-to-timeline', handleMediaAdded);
-      window.removeEventListener('media-removed-from-timeline', handleMediaRemoved);
-    };
-  }, []);
-
-  // 初始化已添加状态
-  useEffect(() => {
-    const addedItems = new Set<string>();
-    mediaItems.forEach(item => {
-      if (isMediaAddedToTimeline(item.id)) {
-        addedItems.add(item.id);
-      }
-    });
-    setAddedToTimeline(addedItems);
-  }, [mediaItems, isMediaAddedToTimeline]);
-
-// 常量定义 - 模块内部使用的固定值
+  // 处理文件函数 - 需要在 useDragDrop 之前定义
   const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     if (!activeProject) {
@@ -159,118 +111,138 @@ export function MediaView() {
     }
   };
 
-// 常量定义 - 模块内部使用的固定值
-  const { isDragOver, dragProps } = useDragDrop({
-    // When files are dropped, process them
+  // 拖拽功能
+  const { dragProps, isDragOver } = useDragDrop({
     onDrop: processFiles,
   });
 
-// handleFileSelect 函数
-  const handleFileSelect = () => fileInputRef.current?.click(); // Open file picker
+  // 检查媒体是否已添加到时间线 - 使用 useCallback 避免无限循环
+  const isMediaAddedToTimeline = useCallback((mediaId: string): boolean => {
+    return tracks.some(track => 
+      track.elements.some(element => 
+        element.type === 'media' && element.mediaId === mediaId
+      )
+    );
+  }, [tracks]);
 
-// handleFileChange 函数
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // When files are selected via file picker, process them
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setSelectedFiles(files);
-      processFiles(files);
-    }
-    e.target.value = ""; // Reset input
-  };
-
-// 常量定义 - 模块内部使用的固定值
-  const handleRemove = async (e: React.MouseEvent, id: string) => {
-    // Remove a media item from the store
-    e.stopPropagation();
-
-    if (!activeProject) {
-      toast.error("No active project");
-      return;
-    }
-
-    // Media store now handles cascade deletion automatically
-    await removeMediaItem(activeProject.id, id);
-  };
-
-// formatDuration 函数
-  const formatDuration = (duration: number) => {
-    // Format seconds as mm:ss
-    const min = Math.floor(duration / 60);
-// 常量定义 - 模块内部使用的固定值
-    const sec = Math.floor(duration % 60);
-    return `${min}:${sec.toString().padStart(2, "0")}`;
-  };
-
-// 状态管理 - 创建和管理组件内部状态
-  const [filteredMediaItems, setFilteredMediaItems] = useState(mediaItems);
-
-// 副作用处理 - 处理组件生命周期中的副作用操作
+  // 监听媒体添加和删除事件
   useEffect(() => {
-// 常量定义 - 模块内部使用的固定值
-    const filtered = mediaItems.filter((item) => {
-      if (mediaFilter && mediaFilter !== "all" && item.type !== mediaFilter) {
-        return false;
-      }
+    const handleMediaAdded = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { mediaId } = customEvent.detail;
+      setAddedToTimeline(prev => new Set([...prev, mediaId]));
+    };
 
-      if (
-        searchQuery &&
-        !item.name.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
-      }
+    const handleMediaRemoved = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { mediaId } = customEvent.detail;
+      setAddedToTimeline(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mediaId);
+        return newSet;
+      });
+    };
 
-      return true;
+    window.addEventListener('media-added-to-timeline', handleMediaAdded);
+    window.addEventListener('media-removed-from-timeline', handleMediaRemoved);
+    return () => {
+      window.removeEventListener('media-added-to-timeline', handleMediaAdded);
+      window.removeEventListener('media-removed-from-timeline', handleMediaRemoved);
+    };
+  }, []);
+
+  // 初始化已添加状态
+  useEffect(() => {
+    const addedItems = new Set<string>();
+    mediaItems.forEach(item => {
+      if (isMediaAddedToTimeline(item.id)) {
+        addedItems.add(item.id);
+      }
     });
+    setAddedToTimeline(addedItems);
+  }, [mediaItems, isMediaAddedToTimeline]);
 
-    setFilteredMediaItems(filtered);
-  }, [mediaItems, mediaFilter, searchQuery]);
 
-// renderPreview 函数
-  const renderPreview = (item: MediaItem) => {
-    // Render a preview for each media type (image, video, audio, unknown)
-    if (item.type === "image") {
+
+
+
+  // 处理文件选择
+  const handleFileSelect = () => fileInputRef.current?.click();
+
+  // 处理文件变化
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    await processFiles(files);
+    e.target.value = "";
+  };
+
+  // 处理媒体删除
+  const handleMediaDelete = async (item: MediaItem) => {
+    if (!activeProject) return;
+    
+    // 暂停播放
+    pause();
+    
+    // 显示确认对话框
+    if (confirm(`确定要删除 "${item.name}" 吗？`)) {
+      await removeMediaItem(activeProject.id, item.id);
+    }
+  };
+
+  // 处理媒体预览
+  const handleMediaPreview = (item: MediaItem) => {
+    // 可以在这里添加预览逻辑
+    console.log('Preview media:', item);
+  };
+
+  // 格式化持续时间
+  const formatDuration = (duration: number): string => {
+    const minutes = Math.floor(duration / 60);
+    const seconds = Math.floor(duration % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // 过滤媒体项目
+  const filteredMediaItems = mediaItems.filter((item) => {
+    const matchesFilter = mediaFilter === "all" || item.type === mediaFilter;
+    const matchesSearch = 
+      searchQuery === "" ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  // 渲染预览
+  const renderPreview = (item: MediaItem): React.ReactNode => {
+    if (item.type === "video") {
       return (
-        <div className="w-full h-full flex items-center justify-center">
-          <img
-            src={item.url}
-            alt={item.name}
-            className="max-w-full max-h-full object-contain"
-            loading="lazy"
-          />
+        <div className="w-full h-full relative overflow-hidden">
+          {item.thumbnailUrl ? (
+            <img
+              src={item.thumbnailUrl}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex flex-col items-center justify-center text-gray-400">
+            </div>
+          )}
         </div>
       );
     }
 
-    if (item.type === "video") {
-      if (item.thumbnailUrl) {
-        return (
-          <div className="relative w-full h-full">
-            <img
-              src={item.thumbnailUrl}
-              alt={item.name}
-              className="w-full h-full object-cover rounded"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded">
-              <Video className="h-6 w-6 text-white drop-shadow-md" />
-            </div>
-            {item.duration && (
-              <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 rounded">
-                {formatDuration(item.duration)}
-              </div>
-            )}
-          </div>
-        );
-      }
+    if (item.type === "image") {
       return (
-        <div className="w-full h-full bg-muted/30 flex flex-col items-center justify-center text-muted-foreground rounded">
-          <Video className="h-6 w-6 mb-1" />
-          <span className="text-xs">Video</span>
-          {item.duration && (
-            <span className="text-xs opacity-70">
-              {formatDuration(item.duration)}
-            </span>
+        <div className="w-full h-full relative overflow-hidden">
+          {item.url ? (
+            <img
+              src={item.url}
+              alt={item.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex flex-col items-center justify-center text-gray-400">
+            </div>
           )}
         </div>
       );
@@ -278,22 +250,13 @@ export function MediaView() {
 
     if (item.type === "audio") {
       return (
-        <div className="w-full h-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex flex-col items-center justify-center text-muted-foreground rounded border border-green-500/20">
-          <Music className="h-6 w-6 mb-1" />
-          <span className="text-xs">Audio</span>
-          {item.duration && (
-            <span className="text-xs opacity-70">
-              {formatDuration(item.duration)}
-            </span>
-          )}
+        <div className="w-full h-full bg-gradient-to-br from-green-500/10 to-emerald-500/10 flex flex-col items-center justify-center text-gray-400">
         </div>
       );
     }
 
     return (
-      <div className="w-full h-full bg-muted/30 flex flex-col items-center justify-center text-muted-foreground rounded">
-        <Image className="h-6 w-6" />
-        <span className="text-xs mt-1">Unknown</span>
+      <div className="w-full h-full bg-gray-800/20 flex flex-col items-center justify-center text-gray-500">
       </div>
     );
   };
@@ -314,9 +277,9 @@ export function MediaView() {
         className={`h-full flex flex-col gap-1 transition-colors relative ${isDragOver ? "bg-accent/30" : ""}`}
         {...dragProps}
       >
-        <div className="p-3 pb-2">
+        <div className="px-2 pt-2 pb-1">
           {/* Search and filter controls */}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 mb-1.5">
             <Select value={mediaFilter} onValueChange={setMediaFilter}>
               <SelectTrigger className="w-[80px] h-9 text-xs">
                 <SelectValue />
@@ -335,100 +298,162 @@ export function MediaView() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleFileSelect}
-              disabled={isProcessing}
-              className="flex-none bg-transparent min-w-[30px] whitespace-nowrap overflow-hidden px-2 justify-center items-center h-9"
-            >
-              {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-            </Button>
+            
+            {/* 统一的导入按钮组 */}
+            <div className="flex gap-1">
+              {/* 导入下拉菜单 */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    disabled={isProcessing || isImporting}
+                    className="flex-none bg-transparent min-w-[30px] whitespace-nowrap overflow-hidden px-2 justify-center items-center h-9"
+                  >
+                    {isProcessing || isImporting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={handleFileSelect}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    选择文件
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      // 创建一个临时的input来选择文件夹
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.webkitdirectory = true;
+                      input.multiple = true;
+                      input.onchange = (e) => {
+                        const files = (e.target as HTMLInputElement).files;
+                        if (files) processFiles(files);
+                      };
+                      input.click();
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    选择文件夹
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
+
+
+
+          {/* 只在有媒体文件时显示统计信息，无文件时显示导入提示 */}
+          {mediaItems.length > 0 ? (
+            <div className="text-xs text-gray-400 mb-1 px-2">
+              共 {mediaItems.length} 个媒体文件
+              {filteredMediaItems.length !== mediaItems.length && 
+                ` (显示 ${filteredMediaItems.length} 个)`
+              }
+            </div>
+          ) : (
+            <div className="text-xs text-gray-400 mb-1 px-2">
+              <div className="flex items-center gap-1.5">
+                <Upload className="h-3 w-3 opacity-60" />
+                <span>拖拽文件到此处，或点击 + 按钮导入</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 pt-0">
+        <div className="flex-1 overflow-y-auto px-2 pt-0 pb-2">
           {isDragOver || filteredMediaItems.length === 0 ? (
             <MediaDragOverlay
               isVisible={true}
-              isProcessing={isProcessing}
-              progress={progress}
+              isProcessing={isProcessing || isImporting}
+              progress={importProgress?.percentage || progress}
               onClick={handleFileSelect}
               isEmptyState={filteredMediaItems.length === 0 && !isDragOver}
             />
           ) : (
             <div
-              className="grid gap-2"
+              className="grid gap-1.5"
               style={{
-                gridTemplateColumns: "repeat(auto-fill, 160px)",
+                gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
               }}
             >
               {/* Render each media item as a draggable button */}
               {filteredMediaItems.map((item) => (
                 <ContextMenu key={item.id}>
-                  <ContextMenuTrigger style={{ width: 120, height: 90 }}>
+                  <ContextMenuTrigger>
                     <div
-                      className={cn(
-                        "relative transition-all duration-200 media-item group cursor-pointer",
-                        "hover:scale-105 hover:shadow-md"
-                      )}
-                      style={{ minHeight: 120, minWidth: 120 }}
+                      className="relative group cursor-pointer"
                       onClick={() => handleMediaPreview(item)}
                     >
-                      {/* 已添加标签 */}
-                      {addedToTimeline.has(item.id) && (
-                        <div
-                          className="absolute left-1 top-1 z-10"
-                          style={{
-                            alignItems: 'center',
-                            background: 'var(--lvv-color-black-04)',
-                            borderRadius: '4px',
-                            color: 'var(--lvv-color-text-content-primary)',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            fontSize: '12px',
-                            fontWeight: '400',
-                            height: '18px',
-                            justifyContent: 'center',
-                            lineHeight: '14px',
-                            minWidth: '44px',
-                            padding: '2px 4px',
-                            border: 'none'
-                          }}
-                        >
-                          已添加
+                      {/* 媒体卡片容器 */}
+                      <div className="relative bg-gray-900/40 rounded-md overflow-hidden transition-colors duration-200 hover:bg-gray-900/60 border border-gray-700/20">
+                        {/* 已添加标签 */}
+                        {addedToTimeline.has(item.id) && (
+                          <div className="absolute left-2 top-2 z-20 bg-green-600 text-white text-xs px-2 py-0.5 rounded-sm">
+                            已添加
+                          </div>
+                        )}
+
+                        {/* 媒体预览区域 - 16:9比例 */}
+                        <div className="bg-gray-800/50 relative">
+                          <DraggableMediaItem
+                            name={item.name}
+                            preview={renderPreview(item)}
+                            dragData={{
+                              id: item.id,
+                              type: item.type,
+                              name: item.name,
+                              duration: item.duration,
+                              width: item.width,
+                              height: item.height,
+                              fps: item.fps
+                            }}
+                            onAddToTimeline={(currentTime) => {
+                              const { addMediaAtTime } = useTimelineStore.getState();
+                              const success = addMediaAtTime(item, currentTime);
+                              if (success) {
+                                // 手动触发状态更新（以防事件系统有延迟）
+                                setAddedToTimeline(prev => new Set([...prev, item.id]));
+                              }
+                            }}
+                            onClick={() => handleMediaPreview(item)}
+                            className="w-full"
+                            aspectRatio={16/9}
+                            rounded={false}
+                            showLabel={false}
+                            showPlusOnDrag={true}
+                          />
+                          
+                          {/* 时长显示 - 左下角 */}
+                          {item.duration && (
+                            <div className="absolute bottom-1 left-1 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-mono z-10">
+                              {formatDuration(item.duration)}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <DraggableMediaItem
-                        name={item.name}
-                        preview={renderPreview(item)}
-                        dragData={{
-                          id: item.id,
-                          type: item.type,
-                          name: item.name,
-                        }}
-                        showPlusOnDrag={false}
-                        onAddToTimeline={(currentTime) =>
-                          useTimelineStore
-                            .getState()
-                            .addMediaAtTime(item, currentTime)
-                        }
-                        onClick={() => handleMediaPreview(item)}
-                        rounded={false}
-                      />
+
+                        {/* 文件名 - 底部固定显示 */}
+                        <div className="p-2 bg-gray-900/60">
+                          <div className="text-white text-xs font-medium truncate">
+                            {item.name}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem>Export clips</ContextMenuItem>
-                    <ContextMenuItem
-                      variant="destructive"
-                      onClick={(e) => handleRemove(e, item.id)}
-                    >
-                      Delete
+                    <ContextMenuItem onClick={() => handleMediaPreview(item)}>
+                      预览
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleMediaDelete(item)}>
+                      删除
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>

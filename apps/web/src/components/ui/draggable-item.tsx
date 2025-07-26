@@ -119,7 +119,7 @@ export function DraggableMediaItem({
 
   return (
     <>
-      <div ref={dragRef} className="relative group w-28 h-28">
+      <div ref={dragRef} className="relative group h-28">
         <div
           className={`flex flex-col gap-1 p-0 h-auto w-full relative cursor-default ${className}`}
         >
@@ -150,12 +150,12 @@ export function DraggableMediaItem({
           {showLabel && (
             <span
               className="text-[0.7rem] text-muted-foreground truncate w-full text-left"
-              aria-label={name}
-              title={name}
+              aria-label={name || 'Untitled'}
+              title={name || 'Untitled'}
             >
-              {name.length > 8
+              {name && name.length > 8
                 ? `${name.slice(0, 16)}...${name.slice(-3)}`
-                : name}
+                : name || 'Untitled'}
             </span>
           )}
         </div>

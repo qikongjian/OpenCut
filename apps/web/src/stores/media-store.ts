@@ -20,6 +20,29 @@ import { toast } from "sonner";
 // 类型定义 - 创建类型别名或联合类型
 export type MediaType = "image" | "video" | "audio";
 
+// 支持的文件格式配置
+export const SUPPORTED_FORMATS = {
+  video: ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm', '.m4v'],
+  audio: ['.mp3', '.wav', '.aac', '.flac', '.ogg', '.m4a', '.wma'],
+  image: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tiff']
+} as const;
+
+// 导入进度接口
+export interface ImportProgress {
+  current: number;
+  total: number;
+  percentage: number;
+  currentFileName: string;
+  status: 'processing' | 'completed' | 'error';
+}
+
+// 批量导入结果接口
+export interface BatchImportResult {
+  successful: MediaItem[];
+  failed: { file: File; error: string }[];
+  duplicates: string[];
+}
+
 // 接口定义 - 定义对象的结构和属性类型
 export interface MediaItem {
   id: string;
@@ -45,6 +68,9 @@ export interface MediaItem {
 interface MediaStore {
   mediaItems: MediaItem[];
   isLoading: boolean;
+  // 新增：导入进度状态
+  importProgress: ImportProgress | null;
+  isImporting: boolean;
 
   // Actions - now require projectId
   addMediaItem: (
@@ -55,6 +81,29 @@ interface MediaStore {
   loadProjectMedia: (projectId: string) => Promise<void>;
   clearProjectMedia: (projectId: string) => Promise<void>;
   clearAllMedia: () => void; // Clear local state only
+  
+  // 新增：批量导入功能
+  batchImportFiles: (
+    projectId: string,
+    files: File[],
+    onProgress?: (progress: ImportProgress) => void
+  ) => Promise<BatchImportResult>;
+  
+  // 新增：文件夹拖拽导入
+  importFromDataTransfer: (
+    projectId: string,
+    dataTransfer: DataTransfer,
+    onProgress?: (progress: ImportProgress) => void
+  ) => Promise<BatchImportResult>;
+  
+  // 新增：文件格式验证
+  validateFileFormat: (file: File) => { isValid: boolean; type?: MediaType; error?: string };
+  
+  // 新增：取消导入
+  cancelImport: () => void;
+  
+  // 新增：清除导入进度
+  clearImportProgress: () => void;
 }
 
 // to 函数
@@ -74,6 +123,68 @@ export const getFileType = (file: File): MediaType | null => {
   }
 
   return null;
+};
+
+// 新增：文件扩展名验证函数
+export const validateFileByExtension = (fileName: string): { isValid: boolean; type?: MediaType; error?: string } => {
+  const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
+  
+  if (SUPPORTED_FORMATS.video.includes(extension as any)) {
+    return { isValid: true, type: 'video' };
+  }
+  if (SUPPORTED_FORMATS.audio.includes(extension as any)) {
+    return { isValid: true, type: 'audio' };
+  }
+  if (SUPPORTED_FORMATS.image.includes(extension as any)) {
+    return { isValid: true, type: 'image' };
+  }
+  
+  return { 
+    isValid: false, 
+    error: `不支持的文件格式: ${extension}。支持的格式: ${[
+      ...SUPPORTED_FORMATS.video,
+      ...SUPPORTED_FORMATS.audio,
+      ...SUPPORTED_FORMATS.image
+    ].join(', ')}` 
+  };
+};
+
+// 新增：从DataTransfer中提取文件（支持文件夹）
+export const extractFilesFromDataTransfer = async (dataTransfer: DataTransfer): Promise<File[]> => {
+  const files: File[] = [];
+  const items = Array.from(dataTransfer.items);
+  
+  for (const item of items) {
+    if (item.kind === 'file') {
+      const entry = item.webkitGetAsEntry();
+      if (entry) {
+        await processEntry(entry, files);
+      }
+    }
+  }
+  
+  return files;
+};
+
+// 递归处理文件夹条目
+const processEntry = async (entry: FileSystemEntry, files: File[]): Promise<void> => {
+  if (entry.isFile) {
+    const fileEntry = entry as FileSystemFileEntry;
+    const file = await new Promise<File>((resolve, reject) => {
+      fileEntry.file(resolve, reject);
+    });
+    files.push(file);
+  } else if (entry.isDirectory) {
+    const dirEntry = entry as FileSystemDirectoryEntry;
+    const reader = dirEntry.createReader();
+    const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+      reader.readEntries(resolve, reject);
+    });
+    
+    for (const childEntry of entries) {
+      await processEntry(childEntry, files);
+    }
+  }
 };
 
 // to 函数
@@ -192,6 +303,8 @@ export const getMediaAspectRatio = (item: MediaItem): number => {
 export const useMediaStore = create<MediaStore>((set, get) => ({
   mediaItems: [],
   isLoading: false,
+  importProgress: null,
+  isImporting: false,
 
   addMediaItem: async (projectId, item) => {
 // 常量定义 - 模块内部使用的固定值
@@ -348,5 +461,167 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     // Clear local state
     // 设置状态 - 更新状态值
     set({ mediaItems: [] });
+  },
+
+  // 新增：批量导入文件
+  batchImportFiles: async (projectId, files, onProgress) => {
+    set({ isImporting: true, importProgress: null });
+    
+    const result: BatchImportResult = {
+      successful: [],
+      failed: [],
+      duplicates: []
+    };
+    
+    const existingItems = get().mediaItems;
+    let processedCount = 0;
+    
+    try {
+      for (const file of files) {
+        // 更新进度
+        const progress: ImportProgress = {
+          current: processedCount + 1,
+          total: files.length,
+          percentage: Math.round(((processedCount + 1) / files.length) * 100),
+          currentFileName: file.name,
+          status: 'processing'
+        };
+        
+        set({ importProgress: progress });
+        if (onProgress) onProgress(progress);
+        
+        // 验证文件格式
+        const validation = get().validateFileFormat(file);
+        if (!validation.isValid) {
+          result.failed.push({ file, error: validation.error || '未支持的文件格式' });
+          processedCount++;
+          continue;
+        }
+        
+        // 检查重复文件
+        const isDuplicate = existingItems.some(existingItem => 
+          existingItem.name === file.name && 
+          existingItem.file.size === file.size
+        );
+        
+        if (isDuplicate) {
+          result.duplicates.push(file.name);
+          processedCount++;
+          continue;
+        }
+        
+        try {
+          // 处理媒体文件
+          const processedItems = await import('@/lib/media-processing').then(module => 
+            module.processMediaFiles([file])
+          );
+          
+          if (processedItems.length > 0) {
+            const processedItem = processedItems[0];
+            const newItem: MediaItem = {
+              ...processedItem,
+              id: generateUUID(),
+            };
+            
+            // 添加到本地状态
+            set((state) => ({
+              mediaItems: [...state.mediaItems, newItem],
+            }));
+            
+            // 保存到持久化存储
+            await storageService.saveMediaItem(projectId, newItem);
+            
+            result.successful.push(newItem);
+          }
+        } catch (error) {
+          console.error(`Failed to process file ${file.name}:`, error);
+          result.failed.push({ 
+            file, 
+            error: error instanceof Error ? error.message : '处理文件时发生错误' 
+          });
+        }
+        
+        processedCount++;
+        // 短暂延迟以保持UI响应性
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      
+      // 完成导入
+      const finalProgress: ImportProgress = {
+        current: files.length,
+        total: files.length,
+        percentage: 100,
+        currentFileName: '',
+        status: 'completed'
+      };
+      
+      set({ importProgress: finalProgress, isImporting: false });
+      if (onProgress) onProgress(finalProgress);
+      
+      // 显示导入结果
+      if (result.successful.length > 0) {
+        toast.success(`成功导入 ${result.successful.length} 个文件`);
+      }
+      if (result.failed.length > 0) {
+        toast.error(`${result.failed.length} 个文件导入失败`);
+      }
+      if (result.duplicates.length > 0) {
+        toast.warning(`跳过 ${result.duplicates.length} 个重复文件`);
+      }
+      
+    } catch (error) {
+      console.error('Batch import failed:', error);
+      set({ 
+        importProgress: { 
+          current: processedCount, 
+          total: files.length, 
+          percentage: 0, 
+          currentFileName: '', 
+          status: 'error' 
+        },
+        isImporting: false 
+      });
+      toast.error('批量导入失败');
+    }
+    
+    return result;
+  },
+
+  // 新增：从DataTransfer导入（支持文件夹拖拽）
+  importFromDataTransfer: async (projectId, dataTransfer, onProgress) => {
+    try {
+      const files = await extractFilesFromDataTransfer(dataTransfer);
+      return await get().batchImportFiles(projectId, files, onProgress);
+    } catch (error) {
+      console.error('Failed to extract files from data transfer:', error);
+      toast.error('文件夹导入失败');
+      return { successful: [], failed: [], duplicates: [] };
+    }
+  },
+
+  // 新增：文件格式验证
+  validateFileFormat: (file) => {
+    // 优先使用MIME类型验证
+    const mimeType = getFileType(file);
+    if (mimeType) {
+      return { isValid: true, type: mimeType };
+    }
+    
+    // 回退到文件扩展名验证
+    return validateFileByExtension(file.name);
+  },
+
+  // 新增：取消导入
+  cancelImport: () => {
+    set({ 
+      isImporting: false, 
+      importProgress: null 
+    });
+    toast.info('导入已取消');
+  },
+
+  // 新增：清除导入进度
+  clearImportProgress: () => {
+    set({ importProgress: null });
   },
 }));

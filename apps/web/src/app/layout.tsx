@@ -21,22 +21,15 @@ import { StorageProvider } from "../components/storage-provider";
 import { baseMetaData } from "./metadata";
 // 导入默认字体配置
 import { defaultFont } from "../lib/font-config";
-// 导入机器人防护客户端组件，用于保护 API 路由
-import { BotIdClient } from "botid/client";
+// 导入机器人防护客户端包装组件，用于保护 API 路由
+import { BotIdClientWrapper } from "../components/botid-client-wrapper";
 // 导入环境变量配置
 import { env } from "@/env";
 
 // 导出元数据，用于 SEO 和页面信息
 export const metadata = baseMetaData;
 
-// 定义需要保护的 API 路由配置
-// 这些路由将受到 BotId 的机器人防护
-const protectedRoutes = [
-  {
-    path: "/api/waitlist", // 保护等待列表 API
-    method: "POST", // 只保护 POST 请求
-  },
-];
+
 
 // 根布局组件，这是 Next.js 应用的顶层布局
 // 默认导出组件 - 页面或主要组件
@@ -50,7 +43,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* 机器人防护客户端，保护指定的 API 路由 */}
-        <BotIdClient protect={protectedRoutes} />
+        <BotIdClientWrapper />
       </head>
       {/* 主体元素，应用默认字体和样式 */}
       <body className={`${defaultFont.className} font-sans antialiased`}>

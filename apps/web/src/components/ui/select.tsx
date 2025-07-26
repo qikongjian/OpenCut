@@ -123,8 +123,9 @@ const SelectContent = React.forwardRef<
       )}
       position={position}
       onCloseAutoFocus={(e) => {
+        // 只在必要时阻止默认行为
+        if (e.defaultPrevented) return;
         e.preventDefault();
-        e.stopPropagation();
       }}
       {...props}
     >
