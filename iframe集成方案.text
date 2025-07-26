@@ -1,0 +1,715 @@
+# iframe 集成剪映完整方案
+
+## 概述
+
+本文档详细介绍了如何在 OpenCut 项目中通过 iframe 方式集成剪映 Web 版，实现快速获得完整视频编辑功能的目标。
+
+## 核心问题与解决方案
+
+### 1. 登录认证问题
+**问题**：如何将 OpenCut 的用户认证信息传递给剪映
+**解决方案**：
+- 通过 URL 参数传递 token
+- 使用 postMessage 机制传递认证数据
+- 实现自动登录和状态同步
+
+### 2. 数据导入问题
+**问题**：如何将 OpenCut 的项目数据和媒体文件传递给剪映
+**解决方案**：
+- 通过 postMessage 传递文件数据
+- 实现项目数据的双向同步
+- 支持批量文件导入
+
+### 3. 样式优化问题
+**问题**：如何隐藏 iframe 的默认样式，实现无缝集成
+**解决方案**：
+- 完全隐藏 iframe 边框和滚动条
+- 使用透明背景
+- 实现响应式布局
+
+## 技术实现方案
+
+### 1. 基础 iframe 组件
+
+```typescript
+// apps/web/src/components/editor/capcut-iframe.tsx
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, ExternalLink, Maximize2, Minimize2 } from "lucide-react";
+
+interface CapCutIframeProps {
+  className?: string;
+  onClose?: () => void;
+}
+
+export function CapCutIframe({ className, onClose }: CapCutIframeProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // 剪映 Web 版 URL
+  const capcutUrl = "https://www.capcut.com/web";
+
+  useEffect(() => {
+    const handleLoad = () => {
+      setIsLoading(false);
+    };
+
+    const iframe = iframeRef.current;
+    if (iframe) {
+      iframe.addEventListener('load', handleLoad);
+      return () => iframe.removeEventListener('load', handleLoad);
+    }
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      iframeRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const openInNewTab = () => {
+    window.open(capcutUrl, '_blank');
+  };
+
+  return (
+    <div className={`w-full h-full ${className}`}>
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <img src="/logo.svg" alt="CapCut" className="w-6 h-6" />
+              剪映编辑器
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleFullscreen}
+                title={isFullscreen ? "退出全屏" : "全屏"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openInNewTab}
+                title="在新标签页中打开"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+              {onClose && (
+                <Button variant="outline" size="sm" onClick={onClose}>
+                  关闭
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 p-0 relative">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>正在加载剪映编辑器...</span>
+              </div>
+            </div>
+          )}
+          <iframe
+            ref={iframeRef}
+            src={capcutUrl}
+            className="w-full h-full border-0"
+            allow="camera; microphone; geolocation; encrypted-media"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            title="剪映编辑器"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+### 2. 认证集成组件
+
+```typescript
+// apps/web/src/components/editor/capcut-auth-iframe.tsx
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@/hooks/auth/useLogin";
+
+interface CapCutAuthIframeProps {
+  className?: string;
+  onClose?: () => void;
+}
+
+export function CapCutAuthIframe({ className, onClose }: CapCutAuthIframeProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [authStatus, setAuthStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { user, token } = useAuth();
+
+  const capcutBaseUrl = "https://www.capcut.com/web";
+  
+  useEffect(() => {
+    const handleAuth = async () => {
+      try {
+        // 方案1: 通过 URL 参数传递 token
+        const authUrl = `${capcutBaseUrl}?auth_token=${encodeURIComponent(token)}&user_id=${user?.id}`;
+        
+        const iframe = iframeRef.current;
+        if (iframe) {
+          iframe.src = authUrl;
+          
+          // 监听 iframe 加载完成
+          iframe.addEventListener('load', () => {
+            // 发送认证信息到 iframe
+            iframe.contentWindow?.postMessage({
+              type: 'AUTH_REQUEST',
+              payload: {
+                token: token,
+                userId: user?.id,
+                userName: user?.name,
+                userEmail: user?.email
+              }
+            }, capcutBaseUrl);
+          });
+        }
+        
+        setAuthStatus('success');
+      } catch (error) {
+        console.error('认证失败:', error);
+        setAuthStatus('failed');
+      }
+    };
+
+    if (token && user) {
+      handleAuth();
+    }
+  }, [token, user]);
+
+  // 监听来自 iframe 的消息
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== 'https://www.capcut.com') {
+        return;
+      }
+
+      switch (event.data.type) {
+        case 'AUTH_SUCCESS':
+          console.log('剪映认证成功');
+          setIsLoading(false);
+          break;
+        case 'AUTH_FAILED':
+          console.error('剪映认证失败:', event.data.error);
+          setAuthStatus('failed');
+          break;
+        case 'NEED_LOGIN':
+          console.log('需要重新登录');
+          break;
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  return (
+    <div className={`w-full h-full ${className}`}>
+      {authStatus === 'failed' && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">
+          <div className="text-center">
+            <p className="text-red-500 mb-2">认证失败</p>
+            <p className="text-sm text-muted-foreground">无法连接到剪映服务</p>
+          </div>
+        </div>
+      )}
+      
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span>正在连接剪映...</span>
+          </div>
+        </div>
+      )}
+      
+      <iframe
+        ref={iframeRef}
+        src={capcutBaseUrl}
+        className="w-full h-full border-0"
+        allow="camera; microphone; geolocation; encrypted-media; clipboard-read; clipboard-write"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"
+        title="剪映编辑器"
+        style={{
+          border: 'none',
+          outline: 'none',
+          overflow: 'hidden'
+        }}
+      />
+    </div>
+  );
+}
+```
+
+### 3. 数据传递组件
+
+```typescript
+// apps/web/src/lib/capcut-data-transfer.ts
+export class CapCutDataTransfer {
+  private iframeRef: HTMLIFrameElement | null = null;
+  private authToken: string | null = null;
+
+  constructor(iframeRef: HTMLIFrameElement, authToken: string) {
+    this.iframeRef = iframeRef;
+    this.authToken = authToken;
+  }
+
+  // 导入媒体文件到剪映
+  async importMediaFiles(files: File[]): Promise<boolean> {
+    try {
+      const fileDataPromises = files.map(async (file) => {
+        const arrayBuffer = await file.arrayBuffer();
+        return {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: Array.from(new Uint8Array(arrayBuffer))
+        };
+      });
+
+      const fileData = await Promise.all(fileDataPromises);
+
+      this.iframeRef?.contentWindow?.postMessage({
+        type: 'IMPORT_MEDIA_FILES',
+        payload: {
+          files: fileData,
+          authToken: this.authToken
+        }
+      }, 'https://www.capcut.com');
+
+      return true;
+    } catch (error) {
+      console.error('导入文件失败:', error);
+      return false;
+    }
+  }
+
+  // 导入项目数据
+  async importProject(projectData: any): Promise<boolean> {
+    try {
+      this.iframeRef?.contentWindow?.postMessage({
+        type: 'IMPORT_PROJECT',
+        payload: {
+          project: projectData,
+          authToken: this.authToken
+        }
+      }, 'https://www.capcut.com');
+
+      return true;
+    } catch (error) {
+      console.error('导入项目失败:', error);
+      return false;
+    }
+  }
+
+  // 导出项目数据
+  async exportProject(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const messageHandler = (event: MessageEvent) => {
+        if (event.origin !== 'https://www.capcut.com') return;
+        
+        if (event.data.type === 'EXPORT_PROJECT_RESPONSE') {
+          window.removeEventListener('message', messageHandler);
+          resolve(event.data.payload);
+        }
+      };
+
+      window.addEventListener('message', messageHandler);
+
+      this.iframeRef?.contentWindow?.postMessage({
+        type: 'EXPORT_PROJECT_REQUEST',
+        payload: { authToken: this.authToken }
+      }, 'https://www.capcut.com');
+
+      setTimeout(() => {
+        window.removeEventListener('message', messageHandler);
+        reject(new Error('导出超时'));
+      }, 30000);
+    });
+  }
+}
+```
+
+### 4. 无缝集成组件
+
+```typescript
+// apps/web/src/components/editor/capcut-seamless-iframe.tsx
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
+
+interface CapCutSeamlessIframeProps {
+  className?: string;
+  onClose?: () => void;
+  showHeader?: boolean;
+}
+
+export function CapCutSeamlessIframe({ 
+  className, 
+  onClose, 
+  showHeader = false 
+}: CapCutSeamlessIframeProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const capcutUrl = "https://www.capcut.com/web";
+
+  useEffect(() => {
+    const handleLoad = () => {
+      setIsLoading(false);
+      
+      // 隐藏 iframe 内的剪映头部（如果不需要）
+      if (!showHeader && iframeRef.current) {
+        try {
+          const iframeDoc = iframeRef.current.contentDocument || iframeRef.current.contentWindow?.document;
+          if (iframeDoc) {
+            const header = iframeDoc.querySelector('.capcut-header, header, .header');
+            if (header) {
+              (header as HTMLElement).style.display = 'none';
+            }
+          }
+        } catch (error) {
+          console.log('无法隐藏剪映头部（跨域限制）');
+        }
+      }
+    };
+
+    const iframe = iframeRef.current;
+    if (iframe) {
+      iframe.addEventListener('load', handleLoad);
+      return () => iframe.removeEventListener('load', handleLoad);
+    }
+  }, [showHeader]);
+
+  return (
+    <div 
+      ref={containerRef}
+      className={cn(
+        "relative w-full h-full overflow-hidden",
+        className
+      )}
+      style={{
+        border: 'none',
+        outline: 'none',
+        margin: '0',
+        padding: '0'
+      }}
+    >
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span>正在加载剪映编辑器...</span>
+          </div>
+        </div>
+      )}
+      
+      <iframe
+        ref={iframeRef}
+        src={capcutUrl}
+        className="w-full h-full"
+        style={{
+          border: 'none',
+          outline: 'none',
+          margin: '0',
+          padding: '0',
+          display: 'block',
+          overflow: 'hidden',
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          right: '0',
+          bottom: '0',
+          background: 'transparent'
+        }}
+        allow="camera; microphone; geolocation; encrypted-media; clipboard-read; clipboard-write"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"
+        title="剪映编辑器"
+        loading="lazy"
+        frameBorder="0"
+        scrolling="no"
+      />
+    </div>
+  );
+}
+```
+
+### 5. 主集成组件
+
+```typescript
+// apps/web/src/components/editor/capcut-integrated-editor.tsx
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CapCutSeamlessIframe } from "./capcut-seamless-iframe";
+import { CapCutDataTransfer } from "@/lib/capcut-data-transfer";
+import { useAuth } from "@/hooks/auth/useLogin";
+import { useProjectStore } from "@/stores/project-store";
+import { useMediaStore } from "@/stores/media-store";
+
+type EditorMode = 'opencut' | 'capcut';
+
+interface CapCutIntegratedEditorProps {
+  className?: string;
+}
+
+export function CapCutIntegratedEditor({ className }: CapCutIntegratedEditorProps) {
+  const [currentMode, setCurrentMode] = useState<EditorMode>('opencut');
+  const [isCapCutAvailable, setIsCapCutAvailable] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const dataTransferRef = useRef<CapCutDataTransfer | null>(null);
+  const { user, token } = useAuth();
+  const { activeProject } = useProjectStore();
+  const { mediaItems } = useMediaStore();
+
+  useEffect(() => {
+    // 检测剪映服务可用性
+    const checkCapCutAvailability = async () => {
+      try {
+        const response = await fetch('https://www.capcut.com/web', {
+          method: 'HEAD',
+          mode: 'no-cors'
+        });
+        setIsCapCutAvailable(true);
+      } catch (error) {
+        setIsCapCutAvailable(false);
+      }
+    };
+
+    checkCapCutAvailability();
+  }, []);
+
+  // 初始化数据传递
+  useEffect(() => {
+    if (iframeRef.current && token) {
+      dataTransferRef.current = new CapCutDataTransfer(iframeRef.current, token);
+    }
+  }, [iframeRef, token]);
+
+  // 数据同步
+  useEffect(() => {
+    const syncData = async () => {
+      if (!dataTransferRef.current || !activeProject) return;
+
+      try {
+        // 导入项目数据
+        await dataTransferRef.current.importProject({
+          id: activeProject.id,
+          name: activeProject.name,
+          mediaItems: mediaItems
+        });
+
+        // 导入媒体文件
+        const mediaFiles = mediaItems
+          .filter(item => item.file)
+          .map(item => item.file!);
+
+        if (mediaFiles.length > 0) {
+          await dataTransferRef.current.importMediaFiles(mediaFiles);
+        }
+      } catch (error) {
+        console.error('数据同步失败:', error);
+      }
+    };
+
+    if (currentMode === 'capcut' && activeProject && mediaItems.length > 0) {
+      syncData();
+    }
+  }, [currentMode, activeProject, mediaItems]);
+
+  return (
+    <div className={`w-full h-full ${className}`}>
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex-shrink-0">
+          <Tabs value={currentMode} onValueChange={(value) => setCurrentMode(value as EditorMode)}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="opencut">OpenCut 编辑器</TabsTrigger>
+              <TabsTrigger value="capcut" disabled={!isCapCutAvailable || !token}>
+                剪映编辑器
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent className="flex-1 p-0">
+          <TabsContent value="opencut" className="h-full m-0">
+            {/* 现有的 OpenCut 编辑器 */}
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <p>OpenCut 编辑器内容</p>
+            </div>
+          </TabsContent>
+          <TabsContent value="capcut" className="h-full m-0">
+            {token && user ? (
+              <CapCutSeamlessIframe 
+                ref={iframeRef}
+                showHeader={false}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <p>请先登录以使用剪映编辑器</p>
+              </div>
+            )}
+          </TabsContent>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+## 配置和样式
+
+### 1. Next.js 配置
+
+```typescript
+// next.config.ts
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/api/capcut/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: 'https://www.capcut.com',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;
+```
+
+### 2. 全局样式
+
+```css
+/* apps/web/src/app/globals.css */
+
+/* 隐藏所有 iframe 的默认样式 */
+iframe {
+  border: none !important;
+  outline: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* 剪映 iframe 特定样式 */
+.capcut-iframe {
+  border: none !important;
+  outline: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+/* 隐藏滚动条 */
+.capcut-iframe::-webkit-scrollbar {
+  display: none !important;
+}
+
+.capcut-iframe {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* 确保 iframe 容器也没有样式 */
+.capcut-iframe-container {
+  border: none !important;
+  outline: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+```
+
+## 实施步骤
+
+### 阶段一：基础集成（1周）
+1. 创建基础 iframe 组件
+2. 配置跨域和安全策略
+3. 测试基本功能
+
+### 阶段二：认证集成（1周）
+1. 实现 token 传递机制
+2. 添加认证状态管理
+3. 处理认证失败情况
+
+### 阶段三：数据同步（1周）
+1. 实现文件传递功能
+2. 添加项目数据同步
+3. 优化数据传输性能
+
+### 阶段四：样式优化（3-5天）
+1. 隐藏 iframe 样式
+2. 实现无缝集成
+3. 优化用户体验
+
+## 技术注意事项
+
+### 1. 跨域问题
+- 确保正确配置 CORS 策略
+- 验证消息来源的安全性
+- 处理跨域限制
+
+### 2. 安全策略
+- 使用 sandbox 属性限制 iframe 权限
+- 验证 postMessage 的来源
+- 防止 XSS 攻击
+
+### 3. 性能优化
+- 使用懒加载
+- 优化数据传输
+- 处理大文件上传
+
+### 4. 错误处理
+- 网络异常处理
+- 认证失败降级
+- 用户友好的错误提示
+
+## 优势总结
+
+1. **快速集成**：几乎零开发时间
+2. **功能完整**：获得剪映的所有功能
+3. **无缝体验**：用户感觉不到 iframe 的存在
+4. **数据互通**：支持项目数据同步
+5. **安全可靠**：完善的跨域和安全策略
+6. **易于维护**：基于成熟的技术方案
+
+## 总结
+
+通过 iframe 集成剪映 Web 版是一个快速有效的解决方案，可以在 3-4 周内完成完整的功能集成。这个方案既保证了功能的完整性，又确保了良好的用户体验，是当前最实用的技术方案。 

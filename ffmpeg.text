@@ -1,0 +1,598 @@
+# OpenCut 项目中 FFmpeg 技术文档
+
+## 概述
+
+FFmpeg 是 OpenCut 项目的核心技术组件，通过 WebAssembly (WASM) 技术为浏览器提供完整的客户端视频处理能力。本文档详细介绍了 FFmpeg 在项目中的实现、应用场景和技术细节。
+
+## 技术架构
+
+### 1. 核心技术栈
+
+```
+FFmpeg WebAssembly 技术栈：
+├── @ffmpeg/ffmpeg 0.12.15    # FFmpeg WebAssembly 主库
+├── @ffmpeg/core 0.12.10      # FFmpeg 核心功能模块
+├── @ffmpeg/util 0.12.2       # FFmpeg 工具函数库
+└── ffmpeg-core.wasm (31MB)   # WebAssembly 二进制文件
+```
+
+### 2. 文件结构
+
+```
+apps/web/
+├── public/ffmpeg/
+│   ├── ffmpeg-core.js (109KB)    # FFmpeg JavaScript 包装器
+│   └── ffmpeg-core.wasm (31MB)   # FFmpeg WebAssembly 核心
+└── src/lib/
+    └── ffmpeg-utils.ts           # FFmpeg 工具函数封装
+```
+
+## 核心功能实现
+
+### 1. FFmpeg 初始化
+
+```typescript
+// 单例模式管理 FFmpeg 实例
+let ffmpeg: FFmpeg | null = null;
+
+export const initFFmpeg = async (): Promise<FFmpeg> => {
+  if (ffmpeg) return ffmpeg;  // 避免重复初始化
+
+  try {
+    console.log('Initializing FFmpeg...');
+    ffmpeg = new FFmpeg();
+    
+    // 加载本地 FFmpeg 核心文件
+    const baseURL = '/ffmpeg';
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    
+    console.log('FFmpeg initialized successfully');
+    return ffmpeg;
+  } catch (error) {
+    console.error('Failed to initialize FFmpeg:', error);
+    ffmpeg = null;
+    throw new Error(`FFmpeg initialization failed: ${error}`);
+  }
+};
+```
+
+### 2. 视频信息提取
+
+```typescript
+export const getVideoInfo = async (videoFile: File): Promise<{
+  duration: number;    // 视频时长（秒）
+  width: number;       // 视频宽度（像素）
+  height: number;      // 视频高度（像素）
+  fps: number;         // 帧率（帧/秒）
+}> => {
+  const ffmpeg = await initFFmpeg();
+  const inputName = 'input.mp4';
+
+  // 写入文件到 FFmpeg 虚拟文件系统
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+
+  // 捕获 FFmpeg 输出信息
+  let ffmpegOutput = '';
+  let listening = true;
+  const listener = (data: string) => {
+    if (listening) ffmpegOutput += data;
+  };
+  ffmpeg.on('log', ({ message }) => listener(message));
+
+  // 执行 FFmpeg 命令获取视频信息
+  try {
+    await ffmpeg.exec(['-i', inputName, '-f', 'null', '-']);
+  } catch (error) {
+    listening = false;
+    await ffmpeg.deleteFile(inputName);
+    throw new Error('Failed to extract video info. The file may be corrupted or in an unsupported format.');
+  }
+
+  listening = false;
+  await ffmpeg.deleteFile(inputName);
+
+  // 解析输出信息
+  const durationMatch = ffmpegOutput.match(/Duration: (\d+):(\d+):([\d.]+)/);
+  const videoStreamMatch = ffmpegOutput.match(/Video:.* (\d+)x(\d+)[^,]*, ([\d.]+) fps/);
+  
+  let duration = 0;
+  if (durationMatch) {
+    const [, h, m, s] = durationMatch;
+    duration = parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+  }
+
+  let width = 0, height = 0, fps = 0;
+  if (videoStreamMatch) {
+    width = parseInt(videoStreamMatch[1]);
+    height = parseInt(videoStreamMatch[2]);
+    fps = parseFloat(videoStreamMatch[3]);
+  }
+
+  return { duration, width, height, fps };
+};
+```
+
+### 3. 缩略图生成
+
+```typescript
+export const generateThumbnail = async (
+  videoFile: File,
+  timeInSeconds: number = 1
+): Promise<string> => {
+  const ffmpeg = await initFFmpeg();
+  const inputName = 'input.mp4';
+  const outputName = 'thumbnail.jpg';
+  
+  // 写入输入文件
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+  
+  // 在指定时间点生成缩略图
+  await ffmpeg.exec([
+    '-i', inputName,                    // 输入文件
+    '-ss', timeInSeconds.toString(),    // 指定时间点
+    '-vframes', '1',                    // 只生成一帧
+    '-vf', 'scale=320:240',            // 缩放到指定尺寸
+    '-q:v', '2',                       // 质量设置（1-31，越小质量越好）
+    outputName
+  ]);
+  
+  // 读取输出文件
+  const data = await ffmpeg.readFile(outputName);
+  const blob = new Blob([data], { type: 'image/jpeg' });
+  
+  // 清理临时文件
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
+  
+  return URL.createObjectURL(blob);
+};
+```
+
+### 4. 视频裁剪
+
+```typescript
+export const trimVideo = async (
+  videoFile: File,
+  startTime: number,
+  endTime: number,
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  const ffmpeg = await initFFmpeg();
+  const inputName = 'input.mp4';
+  const outputName = 'output.mp4';
+  const duration = endTime - startTime;
+  
+  // 设置进度回调
+  if (onProgress) {
+    ffmpeg.on('progress', ({ progress }) => {
+      onProgress(progress * 100);
+    });
+  }
+  
+  // 写入输入文件
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+  
+  // 视频裁剪
+  await ffmpeg.exec([
+    '-i', inputName,                    // 输入文件
+    '-ss', startTime.toString(),        // 开始时间
+    '-t', duration.toString(),          // 持续时间
+    '-c', 'copy',                       // 使用流复制，提高处理速度
+    outputName
+  ]);
+  
+  // 读取输出文件
+  const data = await ffmpeg.readFile(outputName);
+  const blob = new Blob([data], { type: 'video/mp4' });
+  
+  // 清理临时文件
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
+  
+  return blob;
+};
+```
+
+### 5. 格式转换
+
+```typescript
+export const convertToWebM = async (
+  videoFile: File,
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  const ffmpeg = await initFFmpeg();
+  const inputName = 'input.mp4';
+  const outputName = 'output.webm';
+  
+  // 设置进度回调
+  if (onProgress) {
+    ffmpeg.on('progress', ({ progress }) => {
+      onProgress(progress * 100);
+    });
+  }
+  
+  // 写入输入文件
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+  
+  // 转换为 WebM 格式
+  await ffmpeg.exec([
+    '-i', inputName,                    // 输入文件
+    '-c:v', 'libvpx-vp9',              // 视频编码器：VP9
+    '-crf', '30',                       // 质量参数（0-63，越小质量越好）
+    '-b:v', '0',                        // 比特率设置
+    '-c:a', 'libopus',                  // 音频编码器：Opus
+    outputName
+  ]);
+  
+  // 读取输出文件
+  const data = await ffmpeg.readFile(outputName);
+  const blob = new Blob([data], { type: 'video/webm' });
+  
+  // 清理临时文件
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
+  
+  return blob;
+};
+```
+
+### 6. 音频提取
+
+```typescript
+export const extractAudio = async (
+  videoFile: File,
+  format: 'mp3' | 'wav' = 'mp3'
+): Promise<Blob> => {
+  const ffmpeg = await initFFmpeg();
+  const inputName = 'input.mp4';
+  const outputName = `output.${format}`;
+  
+  // 写入输入文件
+  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+  
+  // 提取音频
+  await ffmpeg.exec([
+    '-i', inputName,                    // 输入文件
+    '-vn',                              // 禁用视频流
+    '-acodec', format === 'mp3' ? 'libmp3lame' : 'pcm_s16le',  // 音频编码器
+    outputName
+  ]);
+  
+  // 读取输出文件
+  const data = await ffmpeg.readFile(outputName);
+  const blob = new Blob([data], { type: `audio/${format}` });
+  
+  // 清理临时文件
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
+  
+  return blob;
+};
+```
+
+## 在项目中的应用场景
+
+### 1. 媒体文件处理
+
+```typescript
+// 在 media-processing.ts 中的应用
+export async function processMediaFiles(
+  files: FileList | File[],
+  onProgress?: (progress: number) => void
+): Promise<ProcessedMediaItem[]> {
+  
+  for (const file of fileArray) {
+    if (fileType === "video") {
+      try {
+        // 使用 FFmpeg 获取完整视频信息
+        const videoInfo = await getVideoInfo(file);
+        duration = videoInfo.duration;
+        width = videoInfo.width;
+        height = videoInfo.height;
+        fps = videoInfo.fps;
+
+        // 使用 FFmpeg 生成缩略图
+        thumbnailUrl = await generateThumbnail(file, 1);
+      } catch (error) {
+        // FFmpeg 失败时的降级处理
+        console.warn("FFmpeg processing failed, falling back to basic processing");
+        const videoResult = await generateVideoThumbnail(file);  // 使用 Canvas API
+        thumbnailUrl = videoResult.thumbnailUrl;
+        width = videoResult.width;
+        height = videoResult.height;
+        duration = await getMediaDuration(file);
+      }
+    }
+  }
+}
+```
+
+### 2. 视频导出功能
+
+```typescript
+// 在 editor-header.tsx 中的应用
+const handleExport = async () => {
+  if (!activeProject) {
+    toast.error("没有活动项目");
+    return;
+  }
+
+  if (mediaItems.length === 0) {
+    toast.error("请先添加媒体文件到项目中");
+    return;
+  }
+
+  setIsExporting(true);
+  
+  try {
+    // 获取第一个视频文件作为导出源
+    const videoItem = mediaItems.find(item => item.type === "video");
+    
+    if (!videoItem || !videoItem.file) {
+      toast.error("没有找到可导出的视频文件");
+      return;
+    }
+
+    console.log('Starting video export...', {
+      fileName: videoItem.name,
+      fileSize: videoItem.file.size,
+      fileType: videoItem.file.type
+    });
+
+    toast.info("正在导出视频，请稍候...");
+
+    // 使用 FFmpeg 转换视频
+    const videoBlob = await convertToWebM(videoItem.file, (progress) => {
+      console.log(`导出进度: ${progress.toFixed(1)}%`);
+    });
+
+    console.log('Video conversion completed, blob size:', videoBlob.size);
+
+    // 创建下载链接
+    const url = URL.createObjectURL(videoBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${activeProject.name || "opencut-project"}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast.success("视频导出成功！");
+  } catch (error) {
+    console.error('Export failed:', error);
+    if (error.message.includes('FFmpeg')) {
+      toast.error("FFmpeg 处理失败，请检查视频文件格式");
+    } else {
+      toast.error("导出失败，请重试");
+    }
+  } finally {
+    setIsExporting(false);
+  }
+};
+```
+
+## 技术优势
+
+### 1. 客户端处理能力
+
+- **无需服务器**: 所有视频处理都在浏览器中完成
+- **隐私保护**: 视频文件不会上传到服务器，保护用户隐私
+- **离线支持**: 完全离线工作，无需网络连接
+- **实时处理**: 支持实时视频预览和编辑
+
+### 2. 高性能处理
+
+- **WebAssembly**: 接近原生性能的视频处理
+- **并行处理**: 支持多线程视频处理
+- **内存优化**: 高效的内存管理和垃圾回收
+- **流式处理**: 支持大文件的分块处理
+
+### 3. 格式支持
+
+- **多格式输入**: 支持几乎所有常见视频格式（MP4、AVI、MOV、MKV等）
+- **多格式输出**: 支持 WebM、MP4、MP3、WAV 等格式
+- **编码器支持**: 支持 H.264、VP9、Opus、AAC 等编码器
+- **容器格式**: 支持多种容器格式的转换
+
+### 4. 专业功能
+
+- **视频分析**: 精确提取视频元数据
+- **质量控制**: 支持多种质量参数设置
+- **进度监控**: 实时处理进度反馈
+- **错误处理**: 完善的错误处理和降级策略
+
+## 错误处理和降级策略
+
+### 1. 降级处理机制
+
+```typescript
+try {
+  // 优先使用 FFmpeg 处理
+  const videoInfo = await getVideoInfo(file);
+  thumbnailUrl = await generateThumbnail(file, 1);
+} catch (error) {
+  // FFmpeg 失败时降级到基础处理
+  console.warn("FFmpeg processing failed, falling back to basic processing:", error);
+  
+  // 使用 Canvas API 生成缩略图
+  const videoResult = await generateVideoThumbnail(file);
+  thumbnailUrl = videoResult.thumbnailUrl;
+  width = videoResult.width;
+  height = videoResult.height;
+  duration = await getMediaDuration(file);
+}
+```
+
+### 2. 错误类型处理
+
+```typescript
+catch (error) {
+  console.error('Export failed:', error);
+  if (error.message.includes('FFmpeg')) {
+    toast.error("FFmpeg 处理失败，请检查视频文件格式");
+  } else if (error.message.includes('memory')) {
+    toast.error("内存不足，请尝试处理较小的视频文件");
+  } else if (error.message.includes('format')) {
+    toast.error("不支持的视频格式，请使用常见格式如 MP4、AVI 等");
+  } else {
+    toast.error("导出失败，请重试");
+  }
+}
+```
+
+## 性能优化
+
+### 1. 内存管理
+
+```typescript
+// 及时清理临时文件
+await ffmpeg.deleteFile(inputName);
+await ffmpeg.deleteFile(outputName);
+
+// 清理 Object URL
+URL.revokeObjectURL(blob);
+
+// 组件卸载时清理资源
+useEffect(() => {
+  return () => {
+    if (mediaItem.url) {
+      URL.revokeObjectURL(mediaItem.url);
+    }
+    if (mediaItem.thumbnailUrl) {
+      URL.revokeObjectURL(mediaItem.thumbnailUrl);
+    }
+  };
+}, [mediaItem]);
+```
+
+### 2. 进度监控
+
+```typescript
+// 实时进度回调
+if (onProgress) {
+  ffmpeg.on('progress', ({ progress }) => {
+    onProgress(progress * 100);
+  });
+}
+
+// 用户界面进度显示
+const [exportProgress, setExportProgress] = useState(0);
+
+const handleExport = async () => {
+  const videoBlob = await convertToWebM(videoItem.file, (progress) => {
+    setExportProgress(progress);
+    console.log(`导出进度: ${progress.toFixed(1)}%`);
+  });
+};
+```
+
+### 3. 单例模式
+
+```typescript
+// 避免重复初始化 FFmpeg
+let ffmpeg: FFmpeg | null = null;
+
+export const initFFmpeg = async (): Promise<FFmpeg> => {
+  if (ffmpeg) return ffmpeg;  // 返回已存在的实例
+  
+  // 初始化新实例
+  ffmpeg = new FFmpeg();
+  await ffmpeg.load({...});
+  return ffmpeg;
+};
+```
+
+## 浏览器兼容性
+
+### 1. 支持的浏览器
+
+- **Chrome**: 67+ (支持 WebAssembly)
+- **Firefox**: 60+ (支持 WebAssembly)
+- **Safari**: 11+ (支持 WebAssembly)
+- **Edge**: 79+ (支持 WebAssembly)
+
+### 2. 功能检测
+
+```typescript
+// 检测 WebAssembly 支持
+const isWebAssemblySupported = () => {
+  return typeof WebAssembly === 'object' && 
+         typeof WebAssembly.instantiate === 'function';
+};
+
+// 检测 FFmpeg 支持
+const isFFmpegSupported = async () => {
+  try {
+    await initFFmpeg();
+    return true;
+  } catch (error) {
+    console.warn('FFmpeg not supported:', error);
+    return false;
+  }
+};
+```
+
+## 部署注意事项
+
+### 1. 文件大小优化
+
+- **ffmpeg-core.wasm**: 31MB，需要配置正确的 MIME 类型
+- **ffmpeg-core.js**: 109KB，JavaScript 包装器
+- **CDN 配置**: 建议使用 CDN 加速文件加载
+
+### 2. 服务器配置
+
+```nginx
+# Nginx 配置示例
+location /ffmpeg/ {
+    add_header Access-Control-Allow-Origin *;
+    add_header Content-Type application/wasm;
+    expires 1y;
+}
+```
+
+### 3. 缓存策略
+
+```typescript
+// 浏览器缓存配置
+const cacheConfig = {
+  maxAge: 31536000,  // 1年
+  immutable: true,
+  headers: {
+    'Cache-Control': 'public, max-age=31536000, immutable'
+  }
+};
+```
+
+## 未来扩展
+
+### 1. 计划功能
+
+- **视频滤镜**: 支持亮度、对比度、饱和度调整
+- **视频特效**: 支持转场效果、动画效果
+- **音频处理**: 支持音频混音、音量调节
+- **批量处理**: 支持多个视频的批量处理
+
+### 2. 性能优化
+
+- **Web Workers**: 在后台线程中处理视频
+- **流式处理**: 支持大文件的分块处理
+- **硬件加速**: 利用 GPU 加速视频处理
+- **缓存优化**: 智能缓存处理结果
+
+## 总结
+
+FFmpeg 在 OpenCut 项目中起到了**核心视频处理引擎**的作用，通过 WebAssembly 技术为浏览器提供了专业级的视频处理能力。它不仅实现了客户端视频编辑的核心功能，还确保了用户隐私和数据安全，是项目技术架构的重要支柱。
+
+主要特点：
+1. **完整的客户端视频处理能力**
+2. **高性能的 WebAssembly 实现**
+3. **丰富的格式支持和编码器**
+4. **完善的错误处理和降级策略**
+5. **优秀的用户体验和性能优化**
+
+通过 FFmpeg 的集成，OpenCut 能够在浏览器中实现专业级的视频编辑功能，为用户提供了强大而便捷的视频编辑体验。 
