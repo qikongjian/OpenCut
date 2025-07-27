@@ -21,10 +21,18 @@ interface BaseTimelineElement {
   trimEnd: number; // 元素内容的结束裁剪时间（秒）
 }
 
-// 媒体元素接口 - 引用媒体存储中的文件
+// 媒体元素接口 - 包含媒体文件的副本
 export interface MediaElement extends BaseTimelineElement {
   type: "media"; // 元素类型标识
-  mediaId: string; // 关联的媒体文件ID
+  mediaId: string; // 关联的媒体文件ID（用于向后兼容）
+  // 媒体文件副本，确保时间轴元素独立于媒体库
+  mediaFile?: File; // 媒体文件副本
+  mediaUrl?: string; // 媒体文件URL副本
+  thumbnailUrl?: string; // 缩略图URL副本
+  mediaType?: MediaType; // 媒体类型
+  mediaWidth?: number; // 媒体宽度
+  mediaHeight?: number; // 媒体高度
+  mediaFps?: number; // 视频帧率
 }
 
 // 文本元素接口 - 包含嵌入的文本数据

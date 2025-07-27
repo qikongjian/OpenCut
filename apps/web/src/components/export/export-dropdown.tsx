@@ -56,12 +56,21 @@ export function ExportDropdown({
   React.useEffect(() => {
     const generateTimelineCover = async () => {
       try {
+        console.log("开始生成时间线封面...");
+        
         // 获取时间线状态
         const timelineStore = useTimelineStore.getState();
         const { tracks, getTotalDuration } = timelineStore;
         
+        console.log("时间线状态:", { 
+          tracksCount: tracks.length, 
+          totalDuration: getTotalDuration(),
+          mediaItemsCount: mediaItems.length 
+        });
+        
         // 检查是否有时间线内容
         if (tracks.length === 0 || getTotalDuration() === 0) {
+          console.log("没有时间线内容，设置封面为null");
           setVideoCover(null);
           return;
         }
@@ -72,56 +81,113 @@ export function ExportDropdown({
           .filter(element => element.type === "media")
           .sort((a, b) => a.startTime - b.startTime)[0];
 
+        console.log("第一个媒体元素:", firstMediaElement);
+
         if (!firstMediaElement) {
+          console.log("没有找到媒体元素");
           setVideoCover(null);
           return;
         }
 
-        // 找到对应的媒体文件
-        const mediaItem = mediaItems.find(item => item.id === firstMediaElement.mediaId);
-        if (!mediaItem || !mediaItem.file) {
-          setVideoCover(null);
+        // 优先使用时间轴元素中存储的媒体文件副本
+        const elementMedia = firstMediaElement as any; // MediaElement
+        
+        let mediaItem = null;
+        let mediaFile = null;
+        let thumbnailUrl = null;
+        
+        if (elementMedia.mediaFile) {
+          // 使用时间轴元素中的媒体文件副本
+          mediaFile = elementMedia.mediaFile;
+          thumbnailUrl = elementMedia.thumbnailUrl;
+        } else {
+          // 回退到从媒体库中查找
+          mediaItem = mediaItems.find(item => item.id === firstMediaElement.mediaId);
+          
+          if (!mediaItem) {
+            setVideoCover(null);
+            return;
+          }
+          
+          mediaFile = mediaItem.file;
+          thumbnailUrl = mediaItem.thumbnailUrl;
+        }
+
+        // 优先使用已有的缩略图
+        if (thumbnailUrl) {
+          setVideoCover(thumbnailUrl);
           return;
         }
 
-        // 生成封面（使用时间线中的时间点）
-        const video = document.createElement("video");
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
+        // 如果没有缩略图，但有文件，则生成新的缩略图
+        if (mediaFile) {
 
-        if (!ctx) return;
+          // 生成封面（使用时间线中的时间点）
+          const video = document.createElement("video");
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
 
-        video.addEventListener("loadedmetadata", () => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          // 使用时间线中的时间点，如果超出视频长度则使用10%位置
-          const targetTime = Math.min(firstMediaElement.startTime, video.duration * 0.1);
-          video.currentTime = targetTime;
-        });
+          if (!ctx) {
+            console.error("无法获取canvas上下文");
+            return;
+          }
 
-        video.addEventListener("seeked", () => {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
-          setVideoCover(coverUrl);
-          video.remove();
-          canvas.remove();
-        });
+          video.addEventListener("loadedmetadata", () => {
+            console.log("视频元数据加载完成:", {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              duration: video.duration
+            });
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            // 使用时间线中的时间点，如果超出视频长度则使用10%位置
+            const targetTime = Math.min(firstMediaElement.startTime, video.duration * 0.1);
+            console.log("设置视频时间点:", targetTime);
+            video.currentTime = targetTime;
+          });
 
-        video.addEventListener("error", () => {
-          console.error("Failed to generate timeline cover");
-          video.remove();
-          canvas.remove();
-        });
+          video.addEventListener("seeked", () => {
+            console.log("视频seek完成，开始绘制封面");
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
+            console.log("封面生成成功:", coverUrl.substring(0, 50) + "...");
+            setVideoCover(coverUrl);
+            video.remove();
+            canvas.remove();
+          });
 
-        video.src = URL.createObjectURL(mediaItem.file);
-        video.load();
-      } catch (error) {
-        console.error("Error generating timeline cover:", error);
+          video.addEventListener("error", (e) => {
+            console.error("视频加载错误:", e);
+            video.remove();
+            canvas.remove();
+          });
+
+          video.src = URL.createObjectURL(mediaFile);
+          video.load();
+        } else {
+          console.log("媒体项没有文件");
+          setVideoCover(null);
+        }
+              } catch (error) {
+          console.error("生成时间线封面时出错:", error);
+          
+          // 备用方案：尝试使用第一个媒体项的缩略图
+          if (mediaItems.length > 0) {
+            const firstMediaItem = mediaItems[0];
+            if (firstMediaItem.thumbnailUrl) {
+              console.log("使用备用缩略图:", firstMediaItem.thumbnailUrl);
+              setVideoCover(firstMediaItem.thumbnailUrl);
+            }
+          }
+        }
+      };
+
+      // 只有当导出菜单打开时才生成封面
+      if (open) {
+        generateTimelineCover();
       }
-    };
-
-    generateTimelineCover();
-  }, [mediaItems]);
+    }, [mediaItems, open]);
 
   const handleShareForReview = () => {
     console.log("Share for Review")
@@ -239,17 +305,51 @@ export function ExportDropdown({
             <Label htmlFor="video-cover" className="text-sm font-medium">
               Video Cover
             </Label>
-            <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+            <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border relative">
               {videoCover ? (
                 <img 
                   src={videoCover} 
                   alt="Video Cover" 
                   className="w-full h-full object-cover"
+                  onLoad={() => console.log("缩略图加载成功")}
+                  onError={(e) => {
+                    console.error("缩略图加载失败:", e);
+                    setVideoCover(null);
+                  }}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-                  <div className="text-white text-sm font-medium">Video Cover Preview</div>
+                  <div className="text-white text-sm font-medium">
+                    {mediaItems.length > 0 ? "Loading Cover..." : "No Media Available"}
+                  </div>
                 </div>
+              )}
+              {/* 刷新按钮 */}
+              {!videoCover && mediaItems.length > 0 && (
+                <button
+                  onClick={() => {
+                    console.log("手动刷新缩略图");
+                    setVideoCover(null);
+                    setTimeout(() => {
+                      const timelineStore = useTimelineStore.getState();
+                      const { tracks } = timelineStore;
+                      if (tracks.length > 0) {
+                        const firstMediaElement = tracks
+                          .flatMap(track => track.elements)
+                          .filter(element => element.type === "media")[0];
+                        if (firstMediaElement) {
+                          const mediaItem = mediaItems.find(item => item.id === firstMediaElement.mediaId);
+                          if (mediaItem?.thumbnailUrl) {
+                            setVideoCover(mediaItem.thumbnailUrl);
+                          }
+                        }
+                      }
+                    }, 100);
+                  }}
+                  className="absolute top-2 right-2 p-1 bg-black/50 rounded text-white text-xs hover:bg-black/70"
+                >
+                  Refresh
+                </button>
               )}
             </div>
           </div>

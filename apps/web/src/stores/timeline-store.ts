@@ -1652,6 +1652,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         startTime: currentTime,
         trimStart: 0,
         trimEnd: 0,
+        // 创建媒体文件副本，确保时间轴元素独立于媒体库
+        mediaFile: item.file,
+        mediaUrl: item.url,
+        thumbnailUrl: item.thumbnailUrl,
+        mediaType: item.type,
+        mediaWidth: item.width,
+        mediaHeight: item.height,
+        mediaFps: item.fps,
       });
       return true;
     },
@@ -1702,6 +1710,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         startTime: 0,
         trimStart: 0,
         trimEnd: 0,
+        // 创建媒体文件副本，确保时间轴元素独立于媒体库
+        mediaFile: item.file,
+        mediaUrl: item.url,
+        thumbnailUrl: item.thumbnailUrl,
+        mediaType: item.type,
+        mediaWidth: item.width,
+        mediaHeight: item.height,
+        mediaFps: item.fps,
       });
       return true;
     },

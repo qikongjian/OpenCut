@@ -318,17 +318,18 @@ export const exportVideo = async (
     
     // 添加格式特定优化
     if (format === 'webm') {
+      const webmSettings = settings as any; // 类型断言，因为WebM设置包含额外属性
       command.push(
-        '-deadline', settings.deadline,
-        '-cpu-used', settings.cpuUsed,
-        '-tile-columns', settings.tileColumns,
-        '-frame-parallel', settings.frameParallel,
-        '-lag-in-frames', settings.lagInFrames,
-        '-auto-alt-ref', settings.autoAltRef,
-        '-arnr-maxframes', settings.arnrMaxFrames,
-        '-arnr-strength', settings.arnrStrength,
-        '-enable-cdef', settings.enableCdef,
-        '-enable-restoration', settings.enableRestoration
+        '-deadline', webmSettings.deadline,
+        '-cpu-used', webmSettings.cpuUsed,
+        '-tile-columns', webmSettings.tileColumns,
+        '-frame-parallel', webmSettings.frameParallel,
+        '-lag-in-frames', webmSettings.lagInFrames,
+        '-auto-alt-ref', webmSettings.autoAltRef,
+        '-arnr-maxframes', webmSettings.arnrMaxFrames,
+        '-arnr-strength', webmSettings.arnrStrength,
+        '-enable-cdef', webmSettings.enableCdef,
+        '-enable-restoration', webmSettings.enableRestoration
       );
     }
     
@@ -708,5 +709,344 @@ export const testFFmpeg = async (): Promise<{ success: boolean; error?: string }
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
     };
+  }
+};
+
+// 时间线导出函数 - 导出整个时间轴的内容
+export const exportTimeline = async (
+  timelineData: {
+    tracks: Array<{
+      id: string;
+      type: string;
+      elements: Array<{
+        id: string;
+        type: string;
+        startTime: number;
+        duration: number;
+        trimStart: number;
+        trimEnd: number;
+        mediaId?: string;
+        mediaFile?: File;
+        mediaUrl?: string;
+        mediaType?: string;
+        mediaWidth?: number;
+        mediaHeight?: number;
+        mediaFps?: number;
+        thumbnailUrl?: string;
+      }>;
+    }>;
+    totalDuration: number;
+  },
+  exportConfig: {
+    format: 'mp4' | 'webm' | 'avi' | 'mov';
+    resolution: '480p' | '720p' | '1080p' | '4k';
+    quality: 'low' | 'medium' | 'high';
+    frameRate: string;
+  },
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  const startTime = performance.now();
+  console.log(`🚀 Starting reliable timeline export...`, {
+    totalDuration: timelineData.totalDuration,
+    tracksCount: timelineData.tracks.length,
+    elementsCount: timelineData.tracks.reduce((sum, track) => sum + track.elements.length, 0),
+    format: exportConfig.format,
+    resolution: exportConfig.resolution
+  });
+
+  const ffmpeg = await initFFmpeg();
+  const inputNames: string[] = [];
+  const tempFiles: string[] = [];
+
+  // 进度管理
+  let currentProgress = 0;
+  let progressInterval: NodeJS.Timeout | null = null;
+  
+  const updateProgress = (targetProgress: number, duration: number = 1000) => {
+    if (!onProgress) return;
+    
+    const startProgress = currentProgress;
+    const progressDiff = targetProgress - startProgress;
+    const startTimestamp = performance.now();
+    
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    
+    progressInterval = setInterval(() => {
+      const elapsed = performance.now() - startTimestamp;
+      const progressRatio = Math.min(elapsed / duration, 1);
+      
+      // 使用缓动函数让进度更平滑
+      const easedRatio = 1 - Math.pow(1 - progressRatio, 3); // easeOutCubic
+      const newProgress = startProgress + (progressDiff * easedRatio);
+      
+      currentProgress = newProgress;
+      onProgress(Math.min(newProgress, targetProgress));
+      
+      if (progressRatio >= 1) {
+        clearInterval(progressInterval!);
+        progressInterval = null;
+      }
+    }, 50); // 每50ms更新一次，提供流畅体验
+  };
+
+  try {
+    // 初始化进度
+    updateProgress(5, 200);
+
+    // 1. 收集所有媒体元素并按时间排序
+    const mediaElements = timelineData.tracks
+      .flatMap(track => track.elements)
+      .filter(element => element.type === "media")
+      .map(element => ({
+        ...element,
+        endTime: element.startTime + (element.duration - element.trimStart - element.trimEnd),
+        actualDuration: element.duration - element.trimStart - element.trimEnd
+      }))
+      .sort((a, b) => a.startTime - b.startTime);
+
+    console.log(`📋 Found ${mediaElements.length} media elements to export:`, 
+      mediaElements.map(el => ({
+        startTime: el.startTime,
+        endTime: el.endTime,
+        actualDuration: el.actualDuration
+      }))
+    );
+
+    if (mediaElements.length === 0) {
+      throw new Error("No media elements found in timeline");
+    }
+
+    updateProgress(10, 300);
+
+    // 2. 处理每个媒体元素，应用裁剪并创建片段
+    const segments: string[] = [];
+    const totalElements = mediaElements.length;
+    const processingProgressStart = 10;
+    const processingProgressEnd = 70;
+    const processingProgressRange = processingProgressEnd - processingProgressStart;
+    
+    for (let i = 0; i < mediaElements.length; i++) {
+      const element = mediaElements[i];
+      const originalInputName = `input_${i}.mp4`;
+      const processedInputName = `processed_${i}.mp4`;
+      
+      inputNames.push(originalInputName);
+      tempFiles.push(originalInputName, processedInputName);
+      
+      // 更新进度 - 每个元素处理占用一定比例
+      const elementProgress = processingProgressStart + (processingProgressRange * (i + 0.3) / totalElements);
+      updateProgress(elementProgress, 500);
+      
+      let mediaFile: File | null = null;
+      
+      // 获取媒体文件
+      if (element.mediaFile) {
+        mediaFile = element.mediaFile;
+        console.log(`📁 Using timeline media file: ${element.mediaFile.name}`);
+      } else if (element.mediaUrl) {
+        try {
+          const response = await fetch(element.mediaUrl);
+          const blob = await response.blob();
+          mediaFile = new File([blob], `media_${i}.mp4`, { type: blob.type });
+          console.log(`📁 Downloaded media from URL: ${element.mediaUrl}`);
+        } catch (error) {
+          console.error(`Failed to download media from URL: ${element.mediaUrl}`, error);
+          throw new Error(`Failed to access media file for element ${element.id}`);
+        }
+      } else {
+        throw new Error(`No media file available for element ${element.id}`);
+      }
+
+      // 写入原始文件
+      console.log(`📝 Writing input file ${originalInputName}...`);
+      await ffmpeg.writeFile(originalInputName, new Uint8Array(await mediaFile.arrayBuffer()));
+
+      // 处理裁剪和标准化
+      const resolutionMap = {
+        '480p': '854:480',
+        '720p': '1280:720', 
+        '1080p': '1920:1080',
+        '4k': '3840:2160'
+      };
+      const outputResolution = resolutionMap[exportConfig.resolution];
+      
+      const qualitySettings = {
+        'low': { crf: '35', preset: 'ultrafast' },
+        'medium': { crf: '28', preset: 'veryfast' },
+        'high': { crf: '20', preset: 'fast' }
+      };
+      const quality = qualitySettings[exportConfig.quality];
+
+      // 构建处理命令
+      const processCommand = ['-i', originalInputName];
+      
+      // 应用裁剪（如果需要）
+      if (element.trimStart > 0) {
+        processCommand.push('-ss', element.trimStart.toString());
+      }
+      if (element.trimEnd > 0) {
+        const trimmedDuration = element.duration - element.trimStart - element.trimEnd;
+        processCommand.push('-t', trimmedDuration.toString());
+      }
+      
+      // 标准化视频设置
+      processCommand.push(
+        '-vf', `scale=${outputResolution}:flags=lanczos,fps=${exportConfig.frameRate}`,
+        '-c:v', 'libx264',
+        '-crf', quality.crf,
+        '-preset', quality.preset,
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-y', processedInputName
+      );
+
+      console.log(`🔄 Processing segment ${i + 1}/${mediaElements.length}:`, processCommand.slice(0, 8), '...');
+      await ffmpeg.exec(processCommand);
+      
+      segments.push(processedInputName);
+      
+      // 完成当前元素处理的进度
+      const completedElementProgress = processingProgressStart + (processingProgressRange * (i + 1) / totalElements);
+      updateProgress(completedElementProgress, 200);
+    }
+
+    updateProgress(75, 500);
+
+    // 3. 处理时间间隔 - 在片段之间插入黑色视频
+    const finalSegments: string[] = [];
+    
+    for (let i = 0; i < segments.length; i++) {
+      const element = mediaElements[i];
+      
+      // 如果不是第一个元素，检查是否需要插入间隔
+      if (i > 0) {
+        const prevElement = mediaElements[i - 1];
+        const gap = element.startTime - prevElement.endTime;
+        
+        if (gap > 0.1) { // 如果间隔大于0.1秒
+          const blackSegmentName = `black_${i}.mp4`;
+          tempFiles.push(blackSegmentName);
+          
+          console.log(`⚫ Creating ${gap}s black segment between elements`);
+          
+          const resolutionMap = {
+            '480p': '854:480',
+            '720p': '1280:720', 
+            '1080p': '1920:1080',
+            '4k': '3840:2160'
+          };
+          const outputResolution = resolutionMap[exportConfig.resolution];
+          
+          await ffmpeg.exec([
+            '-f', 'lavfi',
+            '-i', `color=black:size=${outputResolution}:duration=${gap}:rate=${exportConfig.frameRate}`,
+            '-f', 'lavfi',
+            '-i', `anullsrc=channel_layout=stereo:sample_rate=44100`,
+            '-c:v', 'libx264',
+            '-c:a', 'aac',
+            '-shortest',
+            '-y', blackSegmentName
+          ]);
+          
+          finalSegments.push(blackSegmentName);
+        }
+      }
+      
+      finalSegments.push(segments[i]);
+    }
+
+    updateProgress(85, 500);
+
+    // 4. 使用concat demuxer连接所有片段
+    const concatFile = 'concat.txt';
+    const concatContent = finalSegments.map(name => `file '${name}'`).join('\n');
+    
+    console.log('📝 Writing concat file:', concatContent);
+    await ffmpeg.writeFile(concatFile, new Uint8Array(new TextEncoder().encode(concatContent)));
+    tempFiles.push(concatFile);
+
+    const outputName = `timeline_output.${exportConfig.format}`;
+    
+    const concatCommand = [
+      '-f', 'concat',
+      '-safe', '0',
+      '-i', concatFile,
+      '-c', 'copy', // 使用copy避免重新编码
+      '-y', outputName
+    ];
+
+    console.log('🔧 Executing concat command:', concatCommand);
+    updateProgress(90, 800);
+
+    // 执行最终合并
+    const execStart = performance.now();
+    await ffmpeg.exec(concatCommand);
+    console.log(`🔧 Concat execution completed in ${(performance.now() - execStart).toFixed(2)}ms`);
+
+    updateProgress(95, 300);
+
+    // 5. 读取输出文件
+    console.log('📖 Reading output file...');
+    const data = await ffmpeg.readFile(outputName);
+    
+    const mimeType = exportConfig.format === 'webm' ? 'video/webm' : 
+                    exportConfig.format === 'mp4' ? 'video/mp4' :
+                    exportConfig.format === 'avi' ? 'video/x-msvideo' :
+                    'video/quicktime';
+    
+    const blob = new Blob([data], { type: mimeType });
+
+    updateProgress(100, 200);
+
+    const totalTime = performance.now() - startTime;
+    console.log(`✅ Reliable timeline export completed in ${totalTime.toFixed(2)}ms`);
+    console.log(`📊 Output size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+
+    // 6. 清理临时文件
+    try {
+      for (const fileName of tempFiles) {
+        try {
+          await ffmpeg.deleteFile(fileName);
+        } catch (deleteError) {
+          console.warn(`Warning: Failed to delete ${fileName}:`, deleteError);
+        }
+      }
+      await ffmpeg.deleteFile(outputName);
+    } catch (cleanupError) {
+      console.warn('Warning: Failed to cleanup temporary files:', cleanupError);
+    }
+
+    // 清理进度定时器
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+
+    return blob;
+
+  } catch (error) {
+    console.error('❌ Reliable timeline export failed:', error);
+    
+    // 清理进度定时器
+    if (progressInterval) {
+      clearInterval(progressInterval);
+    }
+    
+    // 清理临时文件
+    try {
+      for (const fileName of tempFiles) {
+        try {
+          await ffmpeg.deleteFile(fileName);
+        } catch (deleteError) {
+          // 忽略删除错误
+        }
+      }
+      await ffmpeg.deleteFile(`timeline_output.${exportConfig.format}`);
+    } catch (cleanupError) {
+      console.warn('Warning: Failed to cleanup temporary files:', cleanupError);
+    }
+    
+    throw error;
   }
 };

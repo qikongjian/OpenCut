@@ -181,8 +181,28 @@ export function MediaView() {
     // 暂停播放
     pause();
     
-    // 显示确认对话框
-    if (confirm(`确定要删除 "${item.name}" 吗？`)) {
+    // 检查该媒体是否在时间轴中被使用
+    const isUsedInTimeline = tracks.some(track =>
+      track.elements.some(element => 
+        element.type === 'media' && element.mediaId === item.id
+      )
+    );
+    
+    let shouldDelete = false;
+    
+    if (isUsedInTimeline) {
+      // 如果媒体在时间轴中被使用，显示信息（但不会删除时间轴元素）
+      shouldDelete = confirm(
+        `"${item.name}" 正在时间轴中使用。\n\n` +
+        `删除此媒体文件不会影响时间轴中的片段，因为时间轴元素已包含媒体文件的副本。\n\n` +
+        `确定要删除媒体库中的文件吗？`
+      );
+    } else {
+      // 如果媒体不在时间轴中使用，直接确认删除
+      shouldDelete = confirm(`确定要删除 "${item.name}" 吗？`);
+    }
+    
+    if (shouldDelete) {
       await removeMediaItem(activeProject.id, item.id);
     }
   };
@@ -379,7 +399,17 @@ export function MediaView() {
                   <ContextMenuTrigger>
                     <div
                       className="relative group cursor-pointer"
-                      onClick={() => handleMediaPreview(item)}
+                      onMouseDown={(e) => {
+                        // 只处理左键点击，不阻止拖拽
+                        if (e.button === 0) {
+                          // 延迟执行点击事件，避免与拖拽冲突
+                          setTimeout(() => {
+                            if (!e.defaultPrevented) {
+                              handleMediaPreview(item);
+                            }
+                          }, 100);
+                        }
+                      }}
                     >
                       {/* 媒体卡片容器 */}
                       <div className="relative bg-gray-900/40 rounded-md overflow-hidden transition-colors duration-200 hover:bg-gray-900/60 border border-gray-700/20">

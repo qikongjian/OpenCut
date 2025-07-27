@@ -134,11 +134,14 @@ export function DraggableMediaItem({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onMouseDown={(e) => {
-              // 只处理左键点击，不阻止右键菜单
+              // 只处理左键点击，不阻止拖拽和右键菜单
               if (e.button === 0) {
-                e.preventDefault();
-                e.stopPropagation();
-                onClick?.();
+                // 延迟执行点击事件，避免与拖拽冲突
+                setTimeout(() => {
+                  if (!e.defaultPrevented) {
+                    onClick?.();
+                  }
+                }, 100);
               }
             }}
           >

@@ -1180,6 +1180,14 @@ export function TimelineTrackContent({
             startTime: mediaSnappedTime,
             trimStart: 0,
             trimEnd: 0,
+            // 创建媒体文件副本，确保时间轴元素独立于媒体库
+            mediaFile: mediaItem.file,
+            mediaUrl: mediaItem.url,
+            thumbnailUrl: mediaItem.thumbnailUrl,
+            mediaType: mediaItem.type,
+            mediaWidth: mediaItem.width,
+            mediaHeight: mediaItem.height,
+            mediaFps: mediaItem.fps,
           });
         }
       }

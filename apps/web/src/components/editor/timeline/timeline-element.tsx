@@ -223,24 +223,31 @@ export function TimelineElement({
     }
 
     // Render media element ->
+    // 优先使用媒体文件副本，如果不存在则回退到媒体库中的文件
     const mediaItem = mediaItems.find((item) => item.id === element.mediaId);
-    if (!mediaItem) {
+    const elementMedia = element as MediaElement;
+    
+    // 使用媒体文件副本或回退到媒体库中的文件
+    const mediaUrl = elementMedia.mediaUrl || mediaItem?.url;
+    const thumbnailUrl = elementMedia.thumbnailUrl || mediaItem?.thumbnailUrl;
+    const mediaType = elementMedia.mediaType || mediaItem?.type;
+    const mediaWidth = elementMedia.mediaWidth || mediaItem?.width;
+    const mediaHeight = elementMedia.mediaHeight || mediaItem?.height;
+    
+    if (!mediaUrl && !thumbnailUrl && !mediaItem) {
       return (
         <span className="text-xs text-foreground/80 truncate">
-          {element.name}
+          {element.name} (媒体文件已删除)
         </span>
       );
     }
 
-// 常量定义 - 模块内部使用的固定值
     const TILE_ASPECT_RATIO = 16 / 9;
 
-    if (mediaItem.type === "image") {
+    if (mediaType === "image") {
       // Calculate tile size based on 16:9 aspect ratio
       const trackHeight = getTrackHeight(track.type);
-// 常量定义 - 模块内部使用的固定值
       const tileHeight = trackHeight - 8; // Account for padding
-// 常量定义 - 模块内部使用的固定值
       const tileWidth = tileHeight * TILE_ASPECT_RATIO;
 
       return (
@@ -250,15 +257,15 @@ export function TimelineElement({
             <div
               className="absolute top-3 bottom-3 left-0 right-0"
               style={{
-                backgroundImage: mediaItem.url
-                  ? `url(${mediaItem.url})`
+                backgroundImage: mediaUrl
+                  ? `url(${mediaUrl})`
                   : "none",
                 backgroundRepeat: "repeat-x",
                 backgroundSize: `${tileWidth}px ${tileHeight}px`,
                 backgroundPosition: "left center",
                 pointerEvents: "none",
               }}
-              aria-label={`Tiled background of ${mediaItem.name}`}
+              aria-label={`Tiled background of ${element.name}`}
             />
             {/* Overlay with vertical borders */}
             <div
@@ -279,17 +286,12 @@ export function TimelineElement({
       );
     }
 
-// 常量定义 - 模块内部使用的固定值
     const VIDEO_TILE_PADDING = 16;
-// 常量定义 - 模块内部使用的固定值
     const OVERLAY_SPACE_MULTIPLIER = 1.5;
 
-    if (mediaItem.type === "video" && mediaItem.thumbnailUrl) {
-// 常量定义 - 模块内部使用的固定值
+    if (mediaType === "video" && thumbnailUrl) {
       const trackHeight = getTrackHeight(track.type);
-// 常量定义 - 模块内部使用的固定值
       const tileHeight = trackHeight - 8; // Match image padding
-// 常量定义 - 模块内部使用的固定值
       const tileWidth = tileHeight * TILE_ASPECT_RATIO;
 
       return (
@@ -299,15 +301,15 @@ export function TimelineElement({
             <div
               className="absolute top-3 bottom-3 left-0 right-0"
               style={{
-                backgroundImage: mediaItem.thumbnailUrl
-                  ? `url(${mediaItem.thumbnailUrl})`
+                backgroundImage: thumbnailUrl
+                  ? `url(${thumbnailUrl})`
                   : "none",
                 backgroundRepeat: "repeat-x",
                 backgroundSize: `${tileWidth}px ${tileHeight}px`,
                 backgroundPosition: "left center",
                 pointerEvents: "none",
               }}
-              aria-label={`Tiled thumbnail of ${mediaItem.name}`}
+              aria-label={`Tiled thumbnail of ${element.name}`}
             />
             {/* Overlay with vertical borders */}
             <div
@@ -329,12 +331,12 @@ export function TimelineElement({
     }
 
     // Render audio element ->
-    if (mediaItem.type === "audio") {
+    if (mediaType === "audio") {
       return (
         <div className="w-full h-full flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <AudioWaveform
-              audioUrl={mediaItem.url || ""}
+              audioUrl={mediaUrl || ""}
               height={24}
               className="w-full"
             />

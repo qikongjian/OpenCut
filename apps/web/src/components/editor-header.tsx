@@ -33,7 +33,7 @@ import { useMediaStore } from "@/stores/media-store";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入 FFmpeg 视频处理库
-import { convertToWebM, exportVideo } from "@/lib/ffmpeg-utils";
+import { convertToWebM, exportVideo, exportTimeline } from "@/lib/ffmpeg-utils";
 // 导入导出系统组件
 import { ExportDropdown } from "./export/export-dropdown";
 import { ExportSettings, ExportProgress, ExportSuccess } from "./export/index";
@@ -89,27 +89,27 @@ export function EditorHeader() {
         elementsCount: tracks.reduce((sum, track) => sum + track.elements.length, 0)
       });
 
-      // TODO: 实现真正的时间线导出
-      // 这里应该：
-      // 1. 收集时间线上的所有媒体元素
-      // 2. 按照时间线顺序组合视频
-      // 3. 应用剪辑、文本、特效等
-      // 4. 使用FFmpeg合成最终视频
+      // 实现真正的时间线导出
+      // 收集时间线上的所有媒体元素并按照时间线顺序组合视频
       
-      // 临时实现：导出第一个视频文件作为占位符
-      const videoItem = mediaItems.find(item => item.type === "video");
+      // 获取时间线数据
+      const timelineData = {
+        tracks: tracks,
+        totalDuration: getTotalDuration()
+      };
       
-      if (!videoItem || !videoItem.file) {
-        toast.error("No video file found for export");
-        setExportProgressOpen(false);
-        return;
-      }
+      // 导出配置
+      const exportConfig = {
+        format: 'mp4' as const,
+        resolution: '720p' as const,
+        quality: 'medium' as const,
+        frameRate: '30'
+      };
 
-      // 使用新的 exportVideo 函数，支持多种格式
-      const videoBlob = await exportVideo(
-        videoItem.file,
-        'mp4', // 默认导出为MP4格式
-        'medium', // 中等质量
+      // 使用新的 exportTimeline 函数，导出整个时间轴
+      const videoBlob = await exportTimeline(
+        timelineData,
+        exportConfig,
         (progress) => {
           console.log(`导出进度: ${progress.toFixed(1)}%`);
           setExportProgress(progress);

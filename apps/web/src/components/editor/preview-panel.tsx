@@ -247,11 +247,32 @@ export function PreviewPanel() {
         if (currentTime >= elementStart && currentTime < elementEnd) {
           let mediaItem = null;
           if (element.type === "media") {
-            mediaItem =
-              element.mediaId === "test"
-                ? null
-                : mediaItems.find((item) => item.id === element.mediaId) ||
-                  null;
+            if (element.mediaId === "test") {
+              mediaItem = null;
+            } else {
+              // 优先使用时间轴元素中存储的媒体文件副本
+              const elementMedia = element as MediaElement;
+              
+              if (elementMedia.mediaFile) {
+                // 使用时间轴元素中的媒体文件副本，重新创建URL
+                const mediaUrl = elementMedia.mediaUrl || URL.createObjectURL(elementMedia.mediaFile);
+                mediaItem = {
+                  id: element.mediaId,
+                  name: element.name,
+                  type: elementMedia.mediaType || "video",
+                  url: mediaUrl,
+                  thumbnailUrl: elementMedia.thumbnailUrl,
+                  width: elementMedia.mediaWidth,
+                  height: elementMedia.mediaHeight,
+                  fps: elementMedia.mediaFps,
+                  duration: element.duration,
+                  file: elementMedia.mediaFile
+                };
+              } else {
+                // 回退到从媒体库中查找
+                mediaItem = mediaItems.find((item) => item.id === element.mediaId) || null;
+              }
+            }
           }
           activeElements.push({ element, track, mediaItem });
         }
