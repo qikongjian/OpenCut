@@ -746,7 +746,7 @@ export const exportTimeline = async (
   onProgress?: (progress: number) => void
 ): Promise<Blob> => {
   const startTime = performance.now();
-  console.log(`🚀 Starting reliable timeline export...`, {
+  console.log(`🚀 Starting ULTRA-FAST timeline export...`, {
     totalDuration: timelineData.totalDuration,
     tracksCount: timelineData.tracks.length,
     elementsCount: timelineData.tracks.reduce((sum, track) => sum + track.elements.length, 0),
@@ -762,7 +762,7 @@ export const exportTimeline = async (
   let currentProgress = 0;
   let progressInterval: NodeJS.Timeout | null = null;
   
-  const updateProgress = (targetProgress: number, duration: number = 1000) => {
+  const updateProgress = (targetProgress: number, duration: number = 500) => {
     if (!onProgress) return;
     
     const startProgress = currentProgress;
@@ -793,7 +793,7 @@ export const exportTimeline = async (
 
   try {
     // 初始化进度
-    updateProgress(5, 200);
+    updateProgress(5, 100);
 
     // 1. 收集所有媒体元素并按时间排序
     const mediaElements = timelineData.tracks
@@ -806,130 +806,170 @@ export const exportTimeline = async (
       }))
       .sort((a, b) => a.startTime - b.startTime);
 
-    console.log(`📋 Found ${mediaElements.length} media elements to export:`, 
-      mediaElements.map(el => ({
-        startTime: el.startTime,
-        endTime: el.endTime,
-        actualDuration: el.actualDuration
-      }))
-    );
+    console.log(`📋 Found ${mediaElements.length} media elements to export`);
 
     if (mediaElements.length === 0) {
       throw new Error("No media elements found in timeline");
     }
 
-    updateProgress(10, 300);
+    // 获取智能编码设置
+    const totalFileSize = mediaElements.reduce((sum, el) => {
+      return sum + (el.mediaFile?.size || 0);
+    }, 0);
+    
+    const encodingSettings = getOptimalEncodingSettings(
+      totalFileSize, 
+      timelineData.totalDuration, 
+      exportConfig.format, 
+      exportConfig.quality
+    );
+    
+    console.log('⚡ Using ULTRA-FAST encoding settings:', encodingSettings);
 
-    // 2. 处理每个媒体元素，应用裁剪并创建片段
+    updateProgress(10, 200);
+
+    // 2. 高性能处理策略
     const segments: string[] = [];
     const totalElements = mediaElements.length;
-    const processingProgressStart = 10;
-    const processingProgressEnd = 70;
-    const processingProgressRange = processingProgressEnd - processingProgressStart;
     
-    for (let i = 0; i < mediaElements.length; i++) {
-      const element = mediaElements[i];
-      const originalInputName = `input_${i}.mp4`;
-      const processedInputName = `processed_${i}.mp4`;
+    // 检查是否可以使用无损拼接（所有片段格式兼容且无需裁剪）
+    const canUseStreamCopy = mediaElements.every(el => 
+      el.trimStart === 0 && el.trimEnd === 0 && el.mediaType === 'video'
+    );
+    
+    if (canUseStreamCopy && mediaElements.length <= 3) {
+      console.log('🚀 Using STREAM COPY mode for maximum speed!');
       
-      inputNames.push(originalInputName);
-      tempFiles.push(originalInputName, processedInputName);
-      
-      // 更新进度 - 每个元素处理占用一定比例
-      const elementProgress = processingProgressStart + (processingProgressRange * (i + 0.3) / totalElements);
-      updateProgress(elementProgress, 500);
-      
-      let mediaFile: File | null = null;
-      
-      // 获取媒体文件
-      if (element.mediaFile) {
-        mediaFile = element.mediaFile;
-        console.log(`📁 Using timeline media file: ${element.mediaFile.name}`);
-      } else if (element.mediaUrl) {
-        try {
+      // 超高速模式：直接复制流，不重新编码
+      for (let i = 0; i < mediaElements.length; i++) {
+        const element = mediaElements[i];
+        const inputName = `input_${i}.mp4`;
+        inputNames.push(inputName);
+        tempFiles.push(inputName);
+        
+        updateProgress(10 + (60 * i / totalElements), 300);
+        
+        let mediaFile: File | null = null;
+        if (element.mediaFile) {
+          mediaFile = element.mediaFile;
+        } else if (element.mediaUrl) {
           const response = await fetch(element.mediaUrl);
           const blob = await response.blob();
           mediaFile = new File([blob], `media_${i}.mp4`, { type: blob.type });
-          console.log(`📁 Downloaded media from URL: ${element.mediaUrl}`);
-        } catch (error) {
-          console.error(`Failed to download media from URL: ${element.mediaUrl}`, error);
-          throw new Error(`Failed to access media file for element ${element.id}`);
+        } else {
+          throw new Error(`No media file available for element ${element.id}`);
         }
-      } else {
-        throw new Error(`No media file available for element ${element.id}`);
-      }
 
-      // 写入原始文件
-      console.log(`📝 Writing input file ${originalInputName}...`);
-      await ffmpeg.writeFile(originalInputName, new Uint8Array(await mediaFile.arrayBuffer()));
-
-      // 处理裁剪和标准化
-      const resolutionMap = {
-        '480p': '854:480',
-        '720p': '1280:720', 
-        '1080p': '1920:1080',
-        '4k': '3840:2160'
-      };
-      const outputResolution = resolutionMap[exportConfig.resolution];
-      
-      const qualitySettings = {
-        'low': { crf: '35', preset: 'ultrafast' },
-        'medium': { crf: '28', preset: 'veryfast' },
-        'high': { crf: '20', preset: 'fast' }
-      };
-      const quality = qualitySettings[exportConfig.quality];
-
-      // 构建处理命令
-      const processCommand = ['-i', originalInputName];
-      
-      // 应用裁剪（如果需要）
-      if (element.trimStart > 0) {
-        processCommand.push('-ss', element.trimStart.toString());
-      }
-      if (element.trimEnd > 0) {
-        const trimmedDuration = element.duration - element.trimStart - element.trimEnd;
-        processCommand.push('-t', trimmedDuration.toString());
+        console.log(`📝 Writing input file ${inputName} (STREAM COPY mode)...`);
+        await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
+        segments.push(inputName);
       }
       
-      // 标准化视频设置
-      processCommand.push(
-        '-vf', `scale=${outputResolution}:flags=lanczos,fps=${exportConfig.frameRate}`,
-        '-c:v', 'libx264',
-        '-crf', quality.crf,
-        '-preset', quality.preset,
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-y', processedInputName
-      );
+      updateProgress(70, 300);
+      
+    } else {
+      console.log('🔄 Using OPTIMIZED PROCESSING mode');
+      
+      // 优化处理模式：最小化重编码
+      for (let i = 0; i < mediaElements.length; i++) {
+        const element = mediaElements[i];
+        const originalInputName = `input_${i}.mp4`;
+        const processedInputName = `processed_${i}.mp4`;
+        
+        inputNames.push(originalInputName);
+        tempFiles.push(originalInputName, processedInputName);
+        
+        updateProgress(10 + (50 * i / totalElements), 400);
+        
+        let mediaFile: File | null = null;
+        if (element.mediaFile) {
+          mediaFile = element.mediaFile;
+        } else if (element.mediaUrl) {
+          const response = await fetch(element.mediaUrl);
+          const blob = await response.blob();
+          mediaFile = new File([blob], `media_${i}.mp4`, { type: blob.type });
+        } else {
+          throw new Error(`No media file available for element ${element.id}`);
+        }
 
-      console.log(`🔄 Processing segment ${i + 1}/${mediaElements.length}:`, processCommand.slice(0, 8), '...');
-      await ffmpeg.exec(processCommand);
+        console.log(`📝 Writing input file ${originalInputName}...`);
+        await ffmpeg.writeFile(originalInputName, new Uint8Array(await mediaFile.arrayBuffer()));
+
+        // 使用超高速编码设置
+        const resolutionMap = {
+          '480p': '854:480',
+          '720p': '1280:720', 
+          '1080p': '1920:1080',
+          '4k': '3840:2160'
+        };
+        const outputResolution = resolutionMap[exportConfig.resolution];
+
+        // 构建超高速处理命令
+        const processCommand = ['-i', originalInputName];
+        
+        // 应用裁剪（如果需要）
+        if (element.trimStart > 0) {
+          processCommand.push('-ss', element.trimStart.toString());
+        }
+        if (element.trimEnd > 0) {
+          const trimmedDuration = element.duration - element.trimStart - element.trimEnd;
+          processCommand.push('-t', trimmedDuration.toString());
+        }
+        
+        // 超高速编码参数
+        processCommand.push(
+          // 视频编码 - 使用最快设置
+          '-c:v', encodingSettings.videoCodec,
+          '-crf', encodingSettings.crf,
+          '-preset', encodingSettings.preset, // ultrafast for small files
+          '-tune', encodingSettings.tune,
+          '-threads', '0', // 使用所有可用线程
+          '-g', encodingSettings.g,
+          '-keyint_min', encodingSettings.keyint_min,
+          '-sc_threshold', encodingSettings.sc_threshold,
+          '-bf', encodingSettings.bf,
+          '-refs', encodingSettings.refs,
+          '-flags', encodingSettings.flags,
+          
+          // 快速缩放和帧率
+          '-vf', `scale=${outputResolution}:flags=fast_bilinear,fps=${exportConfig.frameRate}`,
+          
+          // 音频编码 - 快速设置
+          '-c:a', encodingSettings.audioCodec,
+          '-b:a', '96k', // 降低音频比特率以提升速度
+          
+          // 输出优化
+          '-movflags', '+faststart+frag_keyframe+empty_moov',
+          '-y', processedInputName
+        );
+
+        console.log(`⚡ ULTRA-FAST processing segment ${i + 1}/${mediaElements.length}`);
+        await ffmpeg.exec(processCommand);
+        
+        segments.push(processedInputName);
+      }
       
-      segments.push(processedInputName);
-      
-      // 完成当前元素处理的进度
-      const completedElementProgress = processingProgressStart + (processingProgressRange * (i + 1) / totalElements);
-      updateProgress(completedElementProgress, 200);
+      updateProgress(60, 300);
     }
 
-    updateProgress(75, 500);
-
-    // 3. 处理时间间隔 - 在片段之间插入黑色视频
+    // 3. 智能间隔处理 - 只在必要时创建
     const finalSegments: string[] = [];
+    let needsGapProcessing = false;
     
     for (let i = 0; i < segments.length; i++) {
       const element = mediaElements[i];
       
-      // 如果不是第一个元素，检查是否需要插入间隔
+      // 检查是否需要插入间隔
       if (i > 0) {
         const prevElement = mediaElements[i - 1];
         const gap = element.startTime - prevElement.endTime;
         
-        if (gap > 0.1) { // 如果间隔大于0.1秒
+        if (gap > 0.5) { // 只对大于0.5秒的间隔处理
+          needsGapProcessing = true;
           const blackSegmentName = `black_${i}.mp4`;
           tempFiles.push(blackSegmentName);
           
-          console.log(`⚫ Creating ${gap}s black segment between elements`);
+          console.log(`⚫ Creating ${gap}s gap (FAST mode)`);
           
           const resolutionMap = {
             '480p': '854:480',
@@ -939,13 +979,17 @@ export const exportTimeline = async (
           };
           const outputResolution = resolutionMap[exportConfig.resolution];
           
+          // 超快速黑屏生成
           await ffmpeg.exec([
             '-f', 'lavfi',
             '-i', `color=black:size=${outputResolution}:duration=${gap}:rate=${exportConfig.frameRate}`,
             '-f', 'lavfi',
             '-i', `anullsrc=channel_layout=stereo:sample_rate=44100`,
-            '-c:v', 'libx264',
-            '-c:a', 'aac',
+            '-c:v', encodingSettings.videoCodec,
+            '-c:a', encodingSettings.audioCodec,
+            '-crf', '40', // 高压缩比，黑屏不需要质量
+            '-preset', 'ultrafast',
+            '-tune', 'fastdecode',
             '-shortest',
             '-y', blackSegmentName
           ]);
@@ -957,9 +1001,9 @@ export const exportTimeline = async (
       finalSegments.push(segments[i]);
     }
 
-    updateProgress(85, 500);
+    updateProgress(75, 200);
 
-    // 4. 使用concat demuxer连接所有片段
+    // 4. 超高速合并
     const concatFile = 'concat.txt';
     const concatContent = finalSegments.map(name => `file '${name}'`).join('\n');
     
@@ -969,23 +1013,45 @@ export const exportTimeline = async (
 
     const outputName = `timeline_output.${exportConfig.format}`;
     
-    const concatCommand = [
-      '-f', 'concat',
-      '-safe', '0',
-      '-i', concatFile,
-      '-c', 'copy', // 使用copy避免重新编码
-      '-y', outputName
-    ];
+    // 根据情况选择合并策略
+    let concatCommand: string[];
+    
+    if (canUseStreamCopy && !needsGapProcessing) {
+      // 纯流复制，最快速度
+      console.log('🚀 Using STREAM COPY concat for maximum speed!');
+      concatCommand = [
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatFile,
+        '-c', 'copy', // 纯复制，无重编码
+        '-y', outputName
+      ];
+    } else {
+      // 快速重编码合并
+      console.log('⚡ Using FAST RE-ENCODE concat');
+      concatCommand = [
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatFile,
+        '-c:v', encodingSettings.videoCodec,
+        '-c:a', encodingSettings.audioCodec,
+        '-crf', encodingSettings.crf,
+        '-preset', 'ultrafast', // 强制使用最快预设
+        '-tune', 'fastdecode',
+        '-movflags', '+faststart',
+        '-y', outputName
+      ];
+    }
 
-    console.log('🔧 Executing concat command:', concatCommand);
-    updateProgress(90, 800);
+    console.log('🔧 Executing ULTRA-FAST concat:', concatCommand.slice(0, 8), '...');
+    updateProgress(85, 500);
 
     // 执行最终合并
     const execStart = performance.now();
     await ffmpeg.exec(concatCommand);
-    console.log(`🔧 Concat execution completed in ${(performance.now() - execStart).toFixed(2)}ms`);
+    console.log(`🔧 ULTRA-FAST concat completed in ${(performance.now() - execStart).toFixed(2)}ms`);
 
-    updateProgress(95, 300);
+    updateProgress(95, 200);
 
     // 5. 读取输出文件
     console.log('📖 Reading output file...');
@@ -998,11 +1064,12 @@ export const exportTimeline = async (
     
     const blob = new Blob([data], { type: mimeType });
 
-    updateProgress(100, 200);
+    updateProgress(100, 100);
 
     const totalTime = performance.now() - startTime;
-    console.log(`✅ Reliable timeline export completed in ${totalTime.toFixed(2)}ms`);
+    console.log(`✅ ULTRA-FAST timeline export completed in ${totalTime.toFixed(2)}ms`);
     console.log(`📊 Output size: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+    console.log(`⚡ Speed: ${((blob.size / 1024 / 1024) / (totalTime / 1000)).toFixed(2)} MB/s`);
 
     // 6. 清理临时文件
     try {
@@ -1026,7 +1093,7 @@ export const exportTimeline = async (
     return blob;
 
   } catch (error) {
-    console.error('❌ Reliable timeline export failed:', error);
+    console.error('❌ ULTRA-FAST timeline export failed:', error);
     
     // 清理进度定时器
     if (progressInterval) {
