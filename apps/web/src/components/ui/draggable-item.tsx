@@ -133,10 +133,13 @@ export function DraggableMediaItem({
             draggable={true}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onClick?.();
+            onMouseDown={(e) => {
+              // 只处理左键点击，不阻止右键菜单
+              if (e.button === 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                onClick?.();
+              }
             }}
           >
             {preview}

@@ -217,7 +217,6 @@ export function MediaView() {
               alt={item.name}
               className="w-full h-full object-cover select-none"
               draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex flex-col items-center justify-center text-gray-400">
@@ -236,7 +235,6 @@ export function MediaView() {
               alt={item.name}
               className="w-full h-full object-cover select-none"
               draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex flex-col items-center justify-center text-gray-400">

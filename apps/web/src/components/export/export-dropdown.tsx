@@ -94,39 +94,34 @@ export function ExportDropdown({
         video.addEventListener("loadedmetadata", () => {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
-          
-          // 使用时间线中的时间点，考虑trimStart
-          const timelineTime = firstMediaElement.startTime + firstMediaElement.trimStart;
-          const videoTime = Math.min(timelineTime, video.duration * 0.1);
-          video.currentTime = videoTime;
+          // 使用时间线中的时间点，如果超出视频长度则使用10%位置
+          const targetTime = Math.min(firstMediaElement.startTime, video.duration * 0.1);
+          video.currentTime = targetTime;
         });
 
         video.addEventListener("seeked", () => {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-          const thumbnailUrl = canvas.toDataURL("image/jpeg", 0.8)
-          setVideoCover(thumbnailUrl)
-          
-          // 清理
-          video.remove()
-          canvas.remove()
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
+          setVideoCover(coverUrl);
+          video.remove();
+          canvas.remove();
         });
 
         video.addEventListener("error", () => {
-          console.error("Could not load video for timeline cover generation")
-          video.remove()
-          canvas.remove()
+          console.error("Failed to generate timeline cover");
+          video.remove();
+          canvas.remove();
         });
 
-        video.src = URL.createObjectURL(mediaItem.file)
-        video.load()
+        video.src = URL.createObjectURL(mediaItem.file);
+        video.load();
       } catch (error) {
-        console.error("Failed to generate timeline cover:", error)
-        setVideoCover(null)
+        console.error("Error generating timeline cover:", error);
       }
-    }
+    };
 
-    generateTimelineCover()
-  }, [mediaItems])
+    generateTimelineCover();
+  }, [mediaItems]);
 
   const handleShareForReview = () => {
     console.log("Share for Review")
@@ -146,8 +141,9 @@ export function ExportDropdown({
     // TODO: 实现社交平台分享功能
   }
 
-  const handleDownload = () => {
-    console.log("Download - Show Settings")
+  // 直接显示设置页面的处理函数
+  const handleShowSettings = () => {
+    console.log("Show Settings Directly")
     
     // 检查是否有活动项目
     if (!activeProject) {
@@ -225,226 +221,143 @@ export function ExportDropdown({
         className="w-80 p-4 space-y-4"
         sideOffset={8}
       >
-        {!showSettings ? (
-          // 主导出菜单
-          <>
-            {/* 标题 */}
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-foreground">Export</h3>
-            </div>
-
-            {/* 分享以供審閱 */}
-            <ExportOptionCard
-              icon={<MessageCircle className="w-5 h-5" />}
-              title="Share for Review"
-              description="People can add comments to your video."
-              onClick={handleShareForReview}
-            />
-            
-            {/* 作為簡報分享 */}
-            <ExportOptionCard
-              icon={<Play className="w-5 h-5" />}
-              title="Share as Presentation"
-              description="People can only watch your video."
-              onClick={handleShareAsPresentation}
-            />
-            
-            {/* 分享到社群平台 */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground text-sm">Share to Social Platforms</h4>
-              <div className="grid grid-cols-4 gap-2">
-                <SocialPlatformCard 
-                  platform="tiktok" 
-                  name="TikTok" 
-                  onClick={() => handleSocialPlatformClick('tiktok')}
-                  className="min-h-[60px]"
+        {/* 直接显示导出设置页面 */}
+        <>
+          {/* 标题和关闭按钮 */}
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-foreground">Export Settings</h3>
+            <button
+              onClick={handleClose}
+              className="p-1 hover:bg-accent/50 rounded transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          
+          {/* 影片封面 */}
+          <div className="space-y-2">
+            <Label htmlFor="video-cover" className="text-sm font-medium">
+              Video Cover
+            </Label>
+            <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
+              {videoCover ? (
+                <img 
+                  src={videoCover} 
+                  alt="Video Cover" 
+                  className="w-full h-full object-cover"
                 />
-                <SocialPlatformCard 
-                  platform="tiktok-ads" 
-                  name="TikTok Ads Manager" 
-                  onClick={() => handleSocialPlatformClick('tiktok-ads')}
-                  className="min-h-[60px]"
-                />
-                <SocialPlatformCard 
-                  platform="youtube" 
-                  name="YouTube" 
-                  onClick={() => handleSocialPlatformClick('youtube')}
-                  className="min-h-[60px]"
-                />
-                <SocialPlatformCard 
-                  platform="youtube-shorts" 
-                  name="YouTube Shorts" 
-                  onClick={() => handleSocialPlatformClick('youtube-shorts')}
-                  className="min-h-[60px]"
-                />
-                <SocialPlatformCard 
-                  platform="facebook" 
-                  name="Facebook Page" 
-                  onClick={() => handleSocialPlatformClick('facebook')}
-                  className="min-h-[60px]"
-                />
-                <SocialPlatformCard 
-                  platform="instagram" 
-                  name="Instagram Reels" 
-                  onClick={() => handleSocialPlatformClick('instagram')}
-                  className="min-h-[60px]"
-                />
-                <SocialPlatformCard 
-                  platform="schedule" 
-                  name="Schedule" 
-                  badge="Free"
-                  onClick={() => handleSocialPlatformClick('schedule')}
-                  className="min-h-[60px]"
-                />
-                {/* 更多选项按钮 */}
-                <button className="relative flex flex-col items-center gap-1.5 p-2.5 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors min-h-[60px] w-full">
-                  <MoreHorizontal className="w-6 h-6 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-            
-            {/* 下載 */}
-            <ExportOptionCard
-              icon={<Download className="w-5 h-5" />}
-              title="Download"
-              onClick={handleDownload}
-            />
-          </>
-        ) : (
-          // 导出设置页面
-          <>
-            {/* 标题栏 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleBack}
-                  className="p-1 rounded-md hover:bg-accent transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <h3 className="font-semibold text-foreground">Export Settings</h3>
-              </div>
-              <button
-                onClick={handleClose}
-                className="p-1 rounded-md hover:bg-accent transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Video Cover */}
-              <div className="space-y-2">
-                <Label>Video Cover</Label>
-                <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
-                  {videoCover ? (
-                    <img 
-                      src={videoCover} 
-                      alt="Video Cover" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-                      <div className="text-white text-sm font-medium">Video Cover Preview</div>
-                    </div>
-                  )}
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                  <div className="text-white text-sm font-medium">Video Cover Preview</div>
                 </div>
-              </div>
-              
-              {/* Name */}
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input 
-                  value={exportConfig.name}
-                  onChange={(e) => setExportConfig(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder={generateDefaultName()}
-                />
-              </div>
-              
-              {/* Resolution */}
-              <div className="space-y-2">
-                <Label>Resolution</Label>
-                <Select 
-                  value={exportConfig.resolution}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, resolution: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="720p" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="480p">480p</SelectItem>
-                    <SelectItem value="720p">720p</SelectItem>
-                    <SelectItem value="1080p">1080p</SelectItem>
-                    <SelectItem value="4k">4K</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Quality */}
-              <div className="space-y-2">
-                <Label>Quality</Label>
-                <Select 
-                  value={exportConfig.quality}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, quality: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Recommended Quality" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low Quality</SelectItem>
-                    <SelectItem value="medium">Recommended Quality</SelectItem>
-                    <SelectItem value="high">High Quality</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Frame Rate */}
-              <div className="space-y-2">
-                <Label>Frame Rate</Label>
-                <Select 
-                  value={exportConfig.frameRate}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, frameRate: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="30fps" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="24">24fps</SelectItem>
-                    <SelectItem value="30">30fps</SelectItem>
-                    <SelectItem value="60">60fps</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Format */}
-              <div className="space-y-2">
-                <Label>Format</Label>
-                <Select 
-                  value={exportConfig.format}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, format: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="MP4" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mp4">MP4</SelectItem>
-                    <SelectItem value="webm">WebM</SelectItem>
-                    <SelectItem value="avi">AVI</SelectItem>
-                    <SelectItem value="mov">MOV</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Export button */}
-              <Button 
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-white" 
-                onClick={handleExport}
-              >
-                Export
-              </Button>
+              )}
             </div>
-          </>
-        )}
+          </div>
+          
+          {/* 名稱 */}
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-sm font-medium">
+              Name
+            </Label>
+            <Input 
+              id="name"
+              value={exportConfig.name}
+              onChange={(e) => setExportConfig(prev => ({ ...prev, name: e.target.value }))}
+              placeholder={generateDefaultName()}
+              className="h-9"
+            />
+          </div>
+          
+          {/* 解析度 */}
+          <div className="space-y-2">
+            <Label htmlFor="resolution" className="text-sm font-medium">
+              Resolution
+            </Label>
+            <Select 
+              value={exportConfig.resolution}
+              onValueChange={(value) => setExportConfig(prev => ({ ...prev, resolution: value }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="480p">480p</SelectItem>
+                <SelectItem value="720p">720p</SelectItem>
+                <SelectItem value="1080p">1080p</SelectItem>
+                <SelectItem value="4k">4K</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* 品質 */}
+          <div className="space-y-2">
+            <Label htmlFor="quality" className="text-sm font-medium">
+              Quality
+            </Label>
+            <Select 
+              value={exportConfig.quality}
+              onValueChange={(value) => setExportConfig(prev => ({ ...prev, quality: value }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low Quality</SelectItem>
+                <SelectItem value="medium">Recommended Quality</SelectItem>
+                <SelectItem value="high">High Quality</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* 畫面速率 */}
+          <div className="space-y-2">
+            <Label htmlFor="frameRate" className="text-sm font-medium">
+              Frame Rate
+            </Label>
+            <Select 
+              value={exportConfig.frameRate}
+              onValueChange={(value) => setExportConfig(prev => ({ ...prev, frameRate: value }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24">24fps</SelectItem>
+                <SelectItem value="30">30fps</SelectItem>
+                <SelectItem value="60">60fps</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* 格式 */}
+          <div className="space-y-2">
+            <Label htmlFor="format" className="text-sm font-medium">
+              Format
+            </Label>
+            <Select 
+              value={exportConfig.format}
+              onValueChange={(value) => setExportConfig(prev => ({ ...prev, format: value }))}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mp4">MP4</SelectItem>
+                <SelectItem value="webm">WebM</SelectItem>
+                <SelectItem value="avi">AVI</SelectItem>
+                <SelectItem value="mov">MOV</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* 导出按钮 */}
+          <Button 
+            onClick={handleExport}
+            className="w-full bg-cyan-500 hover:bg-cyan-600 text-white" 
+          >
+            Export
+          </Button>
+        </>
       </DropdownMenuContent>
     </DropdownMenu>
   )
