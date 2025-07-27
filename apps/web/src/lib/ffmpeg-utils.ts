@@ -9,7 +9,7 @@
 // 导入 FFmpeg 视频处理库
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 // 导入 FFmpeg 视频处理库
-import { toBlobURL } from '@ffmpeg/util';
+import { toBlobURL, fetchFile } from '@ffmpeg/util';
 
 // 变量定义 - 可修改的值
 
@@ -23,24 +23,43 @@ export const initFFmpeg = async (): Promise<FFmpeg> => {
 
   try {
     console.log('Initializing FFmpeg...');
+    
+    // 创建FFmpeg实例
     ffmpeg = new FFmpeg();
     
-    // Use locally hosted files instead of CDN
-    // 常量定义 - 不可变的值
-    const baseURL = '/ffmpeg';
+    // 检查FFmpeg对象是否正确创建
+    if (!ffmpeg) {
+      throw new Error('Failed to create FFmpeg instance');
+    }
     
     console.log('Loading FFmpeg core files...');
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    });
+    
+    // 使用最简单的加载方式
+    await ffmpeg.load();
     
     console.log('FFmpeg initialized successfully');
     return ffmpeg;
   } catch (error) {
     console.error('Failed to initialize FFmpeg:', error);
     ffmpeg = null;
-    throw new Error(`FFmpeg initialization failed: ${error}`);
+    
+    // 提供更详细的错误信息
+    let errorMessage = 'FFmpeg initialization failed';
+    if (error instanceof Error) {
+      if (error.message.includes('setLogger')) {
+        errorMessage = 'FFmpeg library version incompatible - please update @ffmpeg/ffmpeg to latest version';
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Failed to load FFmpeg core files - check network connection';
+      } else if (error.message.includes('wasm')) {
+        errorMessage = 'WebAssembly not supported or failed to load';
+      } else if (error.message.includes('load method not found')) {
+        errorMessage = 'FFmpeg API incompatible - please check library version';
+      } else {
+        errorMessage = `FFmpeg initialization failed: ${error.message}`;
+      }
+    }
+    
+    throw new Error(errorMessage);
   }
 };
 
@@ -237,44 +256,87 @@ export const convertToWebM = async (
   // 常量定义 - 不可变的值
   const ffmpeg = await initFFmpeg();
   
-  // 常量定义 - 不可变的值
+  // 动态生成文件名，避免冲突
+  const timestamp = Date.now();
+  const inputName = `input_${timestamp}.${videoFile.name.split('.').pop() || 'mp4'}`;
+  const outputName = `output_${timestamp}.webm`;
   
-// 常量定义 - 模块内部使用的固定值
-  const inputName = 'input.mp4';
-  // 常量定义 - 不可变的值
-  const outputName = 'output.webm';
-  
-  // Set up progress callback
-  if (onProgress) {
-    ffmpeg.on('progress', ({ progress }) => {
-      onProgress(progress * 100);
+  try {
+    console.log('Starting video conversion:', {
+      fileName: videoFile.name,
+      fileSize: videoFile.size,
+      fileType: videoFile.type,
+      inputName,
+      outputName
     });
+    
+    // Set up progress callback
+    if (onProgress) {
+      ffmpeg.on('progress', ({ progress }) => {
+        onProgress(progress * 100);
+      });
+    }
+    
+    // Write input file
+    console.log('Writing input file...');
+    await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+    
+    // Convert to WebM with more robust settings
+    console.log('Executing FFmpeg conversion...');
+    const result = await ffmpeg.exec([
+      '-i', inputName,
+      '-c:v', 'libvpx-vp9',
+      '-crf', '30',
+      '-b:v', '0',
+      '-c:a', 'libopus',
+      '-preset', 'fast', // 使用快速预设
+      '-deadline', 'realtime', // 实时处理
+      '-cpu-used', '4', // 更快的编码
+      outputName
+    ]);
+    
+    console.log('FFmpeg execution completed:', result);
+    
+    // Read output file
+    console.log('Reading output file...');
+    const data = await ffmpeg.readFile(outputName);
+    const blob = new Blob([data], { type: 'video/webm' });
+    
+    console.log('Conversion successful, blob size:', blob.size);
+    
+    // Cleanup
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(outputName);
+    
+    return blob;
+    
+  } catch (error) {
+    console.error('FFmpeg conversion failed:', error);
+    
+    // 尝试清理文件
+    try {
+      await ffmpeg.deleteFile(inputName);
+      await ffmpeg.deleteFile(outputName);
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup files:', cleanupError);
+    }
+    
+    // 提供更详细的错误信息
+    let errorMessage = 'Video processing failed';
+    if (error instanceof Error) {
+      if (error.message.includes('FFmpeg')) {
+        errorMessage = `FFmpeg error: ${error.message}`;
+      } else if (error.message.includes('format')) {
+        errorMessage = `Unsupported video format: ${videoFile.type || 'unknown'}`;
+      } else if (error.message.includes('memory')) {
+        errorMessage = 'Insufficient memory for video processing';
+      } else {
+        errorMessage = `Processing error: ${error.message}`;
+      }
+    }
+    
+    throw new Error(errorMessage);
   }
-  
-  // Write input file
-  await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
-  
-  // Convert to WebM
-  await ffmpeg.exec([
-    '-i', inputName,
-    '-c:v', 'libvpx-vp9',
-    '-crf', '30',
-    '-b:v', '0',
-    '-c:a', 'libopus',
-    outputName
-  ]);
-  
-  // Read output file
-  // 常量定义 - 不可变的值
-  const data = await ffmpeg.readFile(outputName);
-  // 常量定义 - 不可变的值
-  const blob = new Blob([data], { type: 'video/webm' });
-  
-  // Cleanup
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
-  
-  return blob;
 };
 
 // 导出常量 - 固定的配置值
@@ -316,4 +378,181 @@ export const extractAudio = async (
   await ffmpeg.deleteFile(outputName);
   
   return blob;
+};
+
+// 导出常量对象 - 包含多个相关常量的对象
+export const exportVideo = async (
+  videoFile: File,
+  format: 'mp4' | 'webm' | 'avi' | 'mov' = 'mp4',
+  quality: 'low' | 'medium' | 'high' = 'medium',
+  onProgress?: (progress: number) => void
+): Promise<Blob> => {
+  const ffmpeg = await initFFmpeg();
+  
+  // 动态生成文件名
+  const timestamp = Date.now();
+  const fileExtension = videoFile.name.split('.').pop() || 'mp4';
+  const inputName = `input_${timestamp}.${fileExtension}`;
+  const outputName = `output_${timestamp}.${format}`;
+  
+  // 根据格式和质量设置编码参数
+  const getEncodingSettings = () => {
+    switch (format) {
+      case 'webm':
+        return {
+          videoCodec: 'libvpx-vp9',
+          audioCodec: 'libopus',
+          crf: quality === 'high' ? '20' : quality === 'medium' ? '30' : '40',
+          preset: 'fast',
+          deadline: 'realtime',
+          cpuUsed: '4'
+        };
+      case 'mp4':
+        return {
+          videoCodec: 'libx264',
+          audioCodec: 'aac',
+          crf: quality === 'high' ? '18' : quality === 'medium' ? '23' : '28',
+          preset: 'fast'
+        };
+      case 'avi':
+        return {
+          videoCodec: 'libx264',
+          audioCodec: 'mp3',
+          crf: quality === 'high' ? '18' : quality === 'medium' ? '23' : '28',
+          preset: 'fast'
+        };
+      case 'mov':
+        return {
+          videoCodec: 'libx264',
+          audioCodec: 'aac',
+          crf: quality === 'high' ? '18' : quality === 'medium' ? '23' : '28',
+          preset: 'fast'
+        };
+      default:
+        return {
+          videoCodec: 'libx264',
+          audioCodec: 'aac',
+          crf: '23',
+          preset: 'fast'
+        };
+    }
+  };
+  
+  const settings = getEncodingSettings();
+  
+  try {
+    console.log('Starting video export:', {
+      fileName: videoFile.name,
+      fileSize: videoFile.size,
+      fileType: videoFile.type,
+      format,
+      quality,
+      inputName,
+      outputName,
+      settings
+    });
+    
+    // Set up progress callback
+    if (onProgress) {
+      ffmpeg.on('progress', ({ progress }) => {
+        onProgress(progress * 100);
+      });
+    }
+    
+    // Write input file
+    console.log('Writing input file...');
+    await ffmpeg.writeFile(inputName, new Uint8Array(await videoFile.arrayBuffer()));
+    
+    // Build FFmpeg command
+    const command = [
+      '-i', inputName,
+      '-c:v', settings.videoCodec,
+      '-crf', settings.crf,
+      '-preset', settings.preset
+    ];
+    
+    // Add format-specific options
+    if (format === 'webm' && settings.deadline && settings.cpuUsed) {
+      command.push('-deadline', settings.deadline, '-cpu-used', settings.cpuUsed);
+    }
+    
+    // Add audio codec
+    command.push('-c:a', settings.audioCodec);
+    
+    // Add output file
+    command.push(outputName);
+    
+    console.log('Executing FFmpeg command:', command);
+    const result = await ffmpeg.exec(command);
+    
+    console.log('FFmpeg execution completed:', result);
+    
+    // Read output file
+    console.log('Reading output file...');
+    const data = await ffmpeg.readFile(outputName);
+    const mimeType = format === 'webm' ? 'video/webm' : 
+                    format === 'mp4' ? 'video/mp4' :
+                    format === 'avi' ? 'video/x-msvideo' :
+                    'video/quicktime';
+    const blob = new Blob([data], { type: mimeType });
+    
+    console.log('Export successful, blob size:', blob.size);
+    
+    // Cleanup
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(outputName);
+    
+    return blob;
+    
+  } catch (error) {
+    console.error('Video export failed:', error);
+    
+    // 尝试清理文件
+    try {
+      await ffmpeg.deleteFile(inputName);
+      await ffmpeg.deleteFile(outputName);
+    } catch (cleanupError) {
+      console.warn('Failed to cleanup files:', cleanupError);
+    }
+    
+    // 提供更详细的错误信息
+    let errorMessage = 'Video export failed';
+    if (error instanceof Error) {
+      if (error.message.includes('FFmpeg')) {
+        errorMessage = `FFmpeg processing error: ${error.message}`;
+      } else if (error.message.includes('format')) {
+        errorMessage = `Unsupported video format: ${videoFile.type || 'unknown'}`;
+      } else if (error.message.includes('memory')) {
+        errorMessage = 'Insufficient memory for video processing';
+      } else if (error.message.includes('codec')) {
+        errorMessage = `Codec error: ${error.message}`;
+      } else {
+        errorMessage = `Export error: ${error.message}`;
+      }
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
+// 测试函数 - 验证FFmpeg是否能正确初始化
+export const testFFmpeg = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log('Testing FFmpeg initialization...');
+    const ffmpeg = await initFFmpeg();
+    
+    if (!ffmpeg) {
+      return { success: false, error: 'FFmpeg instance is null' };
+    }
+    
+    console.log('FFmpeg test successful');
+    return { success: true };
+    
+  } catch (error) {
+    console.error('FFmpeg test failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
 };

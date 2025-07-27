@@ -57,34 +57,57 @@
 
 ### 任务 1.2: 完善导出系统
 
-**任务描述**: 基于现有 FFmpeg 集成，实现完整的视频导出功能
+**任务描述**: 基于现有 FFmpeg 集成，实现完整的视频导出和分享功能，包括多种导出选项和社交媒体平台集成
 
 **技术要点**:
 - 扩展 `src/lib/ffmpeg-utils.ts`
-- 新增导出配置管理
-- 实现导出进度跟踪
+- 新增导出配置管理和分享功能
+- 实现导出进度跟踪和社交媒体集成
+- 创建多层级导出界面
 
 **Cursor 提示词**:
 ```
-基于 OpenCut 现有的 FFmpeg.wasm 集成，我需要实现完整的导出系统：
+基于 OpenCut 现有的 FFmpeg.wasm 集成，我需要实现完整的导出和分享系统：
 
 1. 扩展 src/lib/ffmpeg-utils.ts：
    - 实现 exportVideo 函数，支持多种格式(MP4/WebM/AVI/MOV)
    - 添加 generateExportCommands 函数生成 FFmpeg 命令序列
    - 实现导出质量配置(480p/720p/1080p/4K)和帧率控制(24/30/60fps)
    - 添加导出进度回调机制
+   - 实现 generateVideoCover 函数生成视频封面
 
 2. 创建 src/stores/export-store.ts：
-   - 管理导出配置状态(分辨率、格式、质量等)
+   - 管理导出配置状态(分辨率、格式、质量、帧率等)
    - 跟踪导出进度和状态
    - 处理导出任务队列
+   - 管理分享设置和社交媒体配置
 
-3. 创建 src/components/export-dialog.tsx：
-   - 导出设置面板(格式、质量、预设选择)
-   - 实时进度显示
-   - 导出预览功能
+3. 创建 src/components/export/export-dialog.tsx (主导出弹窗)：
+   - 实现多层级导出选项界面
+   - 支持分享以供審閱、作為簡報分享、分享到社群平台、下載等功能
+   - 集成社交媒体平台图标和链接
+   - 支持排程功能(免费标签)
 
-请确保与现有的 timeline-store 和 media-store 数据流集成，支持当前项目的时间线数据导出。
+4. 创建 src/components/export/export-settings.tsx (导出设置弹窗)：
+   - 影片封面设置和预览
+   - 名称输入框(默认使用时间戳)
+   - 解析度选择(720p等)
+   - 品質选择(建議畫質等)
+   - 畫面速率选择(30fps等)
+   - 格式选择(MP4等)
+   - 导出按钮
+
+5. 创建 src/lib/social-platforms/ 目录：
+   - 实现各平台分享功能(TikTok, YouTube, Facebook, Instagram等)
+   - 支持平台特定的视频格式和参数
+   - 实现排程发布功能
+
+6. 创建 src/components/export/social-share-panel.tsx：
+   - 社交媒体平台选择界面
+   - 平台特定的导出参数设置
+   - 分享链接生成和预览
+
+请确保与现有的 timeline-store 和 media-store 数据流集成，支持当前项目的时间线数据导出.。
 ```
 
 **验收标准**:
@@ -92,6 +115,10 @@
 - [ ] 支持 480p-4K 分辨率选择
 - [ ] 导出进度准确显示
 - [ ] 1080p 视频导出时间 < 实际时长的2倍
+- [ ] 支持6+个社交媒体平台分享
+- [ ] 导出设置界面完整且用户友好
+- [ ] 视频封面生成功能正常
+- [ ] 排程功能正常工作
 
 ---
 

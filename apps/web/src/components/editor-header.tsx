@@ -33,7 +33,10 @@ import { useMediaStore } from "@/stores/media-store";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入 FFmpeg 视频处理库
-import { convertToWebM } from "@/lib/ffmpeg-utils";
+import { convertToWebM, exportVideo } from "@/lib/ffmpeg-utils";
+// 导入导出系统组件
+import { ExportDropdown } from "./export/export-dropdown";
+import { ExportSettings, ExportProgress, ExportSuccess } from "./export/index";
 
 // EditorHeader 函数
 // 导出组件 - 可复用的 UI 组件
@@ -53,76 +56,192 @@ export function EditorHeader() {
 // 常量定义 - 模块内部使用的固定值
   const inputRef = useRef<HTMLInputElement>(null);
 
-// 常量定义 - 模块内部使用的固定值
-  const handleExport = async () => {
+  // 导出系统状态管理
+  const [exportProgressOpen, setExportProgressOpen] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
+  const [exportSuccessOpen, setExportSuccessOpen] = useState(false);
+  const [exportedFileName, setExportedFileName] = useState('');
+  const [exportedVideoCover, setExportedVideoCover] = useState<string>('');
+
+// 导出进度处理
+  const handleExportProgressOpen = async () => {
     if (!activeProject) {
-      toast.error("没有活动项目");
+      toast.error("No active project");
       return;
     }
 
-    // 检查是否有媒体文件
-    if (mediaItems.length === 0) {
-      toast.error("请先添加媒体文件到项目中");
+    // 检查是否有时间线内容
+    const timelineStore = useTimelineStore.getState();
+    const { tracks, getTotalDuration } = timelineStore;
+    
+    if (tracks.length === 0 || getTotalDuration() === 0) {
+      toast.error("No timeline content to export. Please add media to the timeline first.");
       return;
     }
 
+    setExportProgressOpen(true);
     setIsExporting(true);
     
     try {
-      // 获取第一个视频文件作为导出源
+      console.log('Starting timeline export...', {
+        totalDuration: getTotalDuration(),
+        tracksCount: tracks.length,
+        elementsCount: tracks.reduce((sum, track) => sum + track.elements.length, 0)
+      });
+
+      // TODO: 实现真正的时间线导出
+      // 这里应该：
+      // 1. 收集时间线上的所有媒体元素
+      // 2. 按照时间线顺序组合视频
+      // 3. 应用剪辑、文本、特效等
+      // 4. 使用FFmpeg合成最终视频
+      
+      // 临时实现：导出第一个视频文件作为占位符
       const videoItem = mediaItems.find(item => item.type === "video");
       
       if (!videoItem || !videoItem.file) {
-        toast.error("没有找到可导出的视频文件");
+        toast.error("No video file found for export");
+        setExportProgressOpen(false);
         return;
       }
 
-      console.log('Starting video export...', {
-        fileName: videoItem.name,
-        fileSize: videoItem.file.size,
-        fileType: videoItem.file.type
-      });
-
-      toast.info("正在导出视频，请稍候...");
-
-      // 使用 FFmpeg 转换视频
-      const videoBlob = await convertToWebM(videoItem.file, (progress) => {
-        console.log(`导出进度: ${progress.toFixed(1)}%`);
-      });
+      // 使用新的 exportVideo 函数，支持多种格式
+      const videoBlob = await exportVideo(
+        videoItem.file,
+        'mp4', // 默认导出为MP4格式
+        'medium', // 中等质量
+        (progress) => {
+          console.log(`导出进度: ${progress.toFixed(1)}%`);
+          setExportProgress(progress);
+        }
+      );
 
       console.log('Video conversion completed, blob size:', videoBlob.size);
 
-      // 创建下载链接
-      const url = URL.createObjectURL(videoBlob);
-// 常量定义 - 模块内部使用的固定值
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${activeProject.name || "opencut-project"}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // 设置导出文件名
+      const fileName = `${activeProject?.name || "opencut-project"}.mp4`;
+      setExportedFileName(fileName);
 
-      toast.success("视频导出成功！");
-      console.log('Video export completed successfully');
+      // 生成视频封面
+      const generateVideoCover = async () => {
+        try {
+          const video = document.createElement('video');
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          if (!ctx) return '';
+          
+          video.addEventListener('loadedmetadata', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            video.currentTime = Math.min(1, video.duration * 0.1); // 取视频10%位置的帧
+          });
+          
+          video.addEventListener('seeked', () => {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const coverUrl = canvas.toDataURL('image/jpeg', 0.8);
+            setExportedVideoCover(coverUrl);
+            video.remove();
+            canvas.remove();
+          });
+          
+          video.addEventListener('error', () => {
+            console.error('Failed to generate video cover');
+            video.remove();
+            canvas.remove();
+          });
+          
+          video.src = URL.createObjectURL(videoBlob);
+          video.load();
+        } catch (error) {
+          console.error('Error generating video cover:', error);
+        }
+      };
+      
+      // 生成视频封面
+      generateVideoCover();
+
+      // 保存视频blob到全局变量，供下载使用
+      (window as any).lastExportedVideo = videoBlob;
+
+      // 自动下载视频
+      const autoDownload = () => {
+        const url = URL.createObjectURL(videoBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Video downloaded successfully!");
+      };
+
+      // 显示成功弹窗并自动下载
+      setExportSuccessOpen(true);
+      autoDownload(); // 自动下载
+      console.log('Timeline export completed successfully');
+      
+      // 关闭进度弹窗
+      setTimeout(() => {
+        setExportProgressOpen(false);
+        setExportProgress(0);
+      }, 500);
+      
     } catch (error) {
-      console.error("导出失败:", error);
+      console.error("Export failed:", error);
       
       // 提供更具体的错误信息
-      let errorMessage = "导出失败，请重试";
+      let errorMessage = "Export failed, please try again";
       if (error instanceof Error) {
-        if (error.message.includes('FFmpeg')) {
-          errorMessage = "视频处理失败，请检查文件格式";
+        if (error.message.includes('FFmpeg processing error')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('Unsupported video format')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('Insufficient memory')) {
+          errorMessage = "Video file too large, please try a smaller file";
+        } else if (error.message.includes('Codec error')) {
+          errorMessage = "Video codec not supported, please try a different file";
         } else if (error.message.includes('network')) {
-          errorMessage = "网络错误，请检查连接";
+          errorMessage = "Network error, please check connection";
         } else {
-          errorMessage = `导出失败: ${error.message}`;
+          errorMessage = `Export failed: ${error.message}`;
         }
       }
       
       toast.error(errorMessage);
+      setExportProgressOpen(false);
+      setExportProgress(0);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+
+
+  // 取消导出
+  const handleCancelExport = () => {
+    setExportProgressOpen(false);
+    setExportProgress(0);
+    setIsExporting(false);
+  };
+
+  // 处理下载
+  const handleDownload = () => {
+    const videoBlob = (window as any).lastExportedVideo;
+    if (videoBlob) {
+      const url = URL.createObjectURL(videoBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = exportedFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Video downloaded successfully!");
+    } else {
+      toast.error("No video available for download");
     }
   };
 
@@ -210,25 +329,46 @@ export function EditorHeader() {
   const rightContent = (
     <nav className="flex items-center gap-2">
       <KeyboardShortcutsHelp />
+      <ExportDropdown onExportProgressOpen={handleExportProgressOpen}>
       <Button
         size="sm"
         variant="primary"
         className="h-7 text-xs"
-        onClick={handleExport}
         disabled={isExporting}
       >
         <Download className="h-4 w-4" />
-        <span className="text-sm">{isExporting ? "导出中..." : "Export"}</span>
+          <span className="text-sm">{isExporting ? "Exporting..." : "Export"}</span>
       </Button>
+      </ExportDropdown>
     </nav>
   );
 
   return (
+    <>
     <HeaderBase
       leftContent={leftContent}
       centerContent={centerContent}
       rightContent={rightContent}
       className="bg-background h-[3.2rem] px-4 items-center"
     />
+
+      {/* 导出系统弹窗 */}
+      <ExportProgress
+        open={exportProgressOpen}
+        onOpenChange={setExportProgressOpen}
+        progress={exportProgress}
+        status={isExporting ? "Saving..." : "Completed"}
+        onCancel={handleCancelExport}
+      />
+
+      {/* 导出成功弹窗 */}
+      <ExportSuccess
+        open={exportSuccessOpen}
+        onOpenChange={setExportSuccessOpen}
+        fileName={exportedFileName}
+        videoCover={exportedVideoCover}
+        onDownload={handleDownload}
+      />
+    </>
   );
 }

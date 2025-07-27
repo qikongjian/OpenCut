@@ -31,8 +31,6 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-// 导入项目模块
-import { Input } from "@/components/ui/input";
 // 导入模块
 import {
   Select,
@@ -77,7 +75,6 @@ export function MediaView() {
   // 本地状态
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState("all");
   const [addedToTimeline, setAddedToTimeline] = useState<Set<string>>(new Set());
 
@@ -206,10 +203,7 @@ export function MediaView() {
   // 过滤媒体项目
   const filteredMediaItems = mediaItems.filter((item) => {
     const matchesFilter = mediaFilter === "all" || item.type === mediaFilter;
-    const matchesSearch = 
-      searchQuery === "" ||
-      item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return matchesFilter;
   });
 
   // 渲染预览
@@ -221,7 +215,9 @@ export function MediaView() {
             <img
               src={item.thumbnailUrl}
               alt={item.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover select-none"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 flex flex-col items-center justify-center text-gray-400">
@@ -238,7 +234,9 @@ export function MediaView() {
             <img
               src={item.url}
               alt={item.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover select-none"
+              draggable={false}
+              onContextMenu={(e) => e.preventDefault()}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex flex-col items-center justify-center text-gray-400">
@@ -274,11 +272,11 @@ export function MediaView() {
       />
 
       <div
-        className={`h-full flex flex-col gap-1 transition-colors relative ${isDragOver ? "bg-accent/30" : ""}`}
+        className={`media-panel h-full flex flex-col gap-1 transition-colors relative ${isDragOver ? "bg-accent/30" : ""}`}
         {...dragProps}
       >
         <div className="px-2 pt-2 pb-1">
-          {/* Search and filter controls */}
+          {/* Filter controls */}
           <div className="flex gap-1.5 mb-1.5">
             <Select value={mediaFilter} onValueChange={setMediaFilter}>
               <SelectTrigger className="w-[80px] h-9 text-xs">
@@ -291,13 +289,6 @@ export function MediaView() {
                 <SelectItem value="image">Image</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              type="text"
-              placeholder="Search media..."
-              className="min-w-[60px] flex-1 h-9 text-xs"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
             
             {/* 统一的导入按钮组 */}
             <div className="flex gap-1">
@@ -396,7 +387,7 @@ export function MediaView() {
                       <div className="relative bg-gray-900/40 rounded-md overflow-hidden transition-colors duration-200 hover:bg-gray-900/60 border border-gray-700/20">
                         {/* 已添加标签 */}
                         {addedToTimeline.has(item.id) && (
-                          <div className="absolute left-2 top-2 z-20 bg-green-600 text-white text-xs px-2 py-0.5 rounded-sm">
+                          <div className="absolute left-2 top-2 z-20 text-white text-xs">
                             已添加
                           </div>
                         )}
@@ -428,7 +419,7 @@ export function MediaView() {
                             aspectRatio={16/9}
                             rounded={false}
                             showLabel={false}
-                            showPlusOnDrag={true}
+                            showPlusOnDrag={false}
                           />
                           
                           {/* 时长显示 - 左下角 */}

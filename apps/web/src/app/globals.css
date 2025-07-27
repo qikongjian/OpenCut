@@ -86,3 +86,42 @@
     overscroll-behavior-x: contain;
   }
 }
+
+/* 隐藏浏览器扩展注入的搜索图标 */
+@layer utilities {
+  /* 隐藏常见的以图搜图扩展元素 */
+  [class*="search-by-image"],
+  [class*="image-search"],
+  [class*="reverse-search"],
+  [id*="search-by-image"],
+  [id*="image-search"],
+  [data-src*="chrome-extension"],
+  [src*="chrome-extension"],
+  /* 特定扩展ID的元素 */
+  [src*="lopnbnfpjmgpbppclhclehhgafnifija"],
+  [data-src*="lopnbnfpjmgpbppclhclehhgafnifija"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* 阻止在媒体面板图片上注入扩展元素 */
+  .media-panel img,
+  .media-panel img::before,
+  .media-panel img::after {
+    position: relative;
+  }
+  
+  /* 针对媒体面板的额外保护 */
+  .media-panel [role="img"],
+  .media-panel img {
+    pointer-events: none;
+    user-select: none;
+  }
+  
+  .media-panel .group:hover [role="img"],
+  .media-panel .group:hover img {
+    pointer-events: auto;
+  }
+}
