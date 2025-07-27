@@ -15,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog"
-import { X } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -27,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select"
+import { useProjectStore } from "../../stores/project-store"
+import { useTimelineStore } from "../../stores/timeline-store"
+import { useMediaStore } from "../../stores/media-store"
+import { exportTimeline } from "../../lib/ffmpeg-utils"
+import { toast } from "sonner"
 
 interface ExportSettingsProps {
   open: boolean
@@ -41,27 +45,177 @@ export function ExportSettings({
   onBack,
   onExportProgressOpen
 }: ExportSettingsProps) {
+  const { activeProject } = useProjectStore()
+  const { tracks, getTotalDuration } = useTimelineStore()
+  const { mediaItems } = useMediaStore()
+  
   const [exportConfig, setExportConfig] = React.useState({
     name: "202507271044",
-    resolution: "720p",
-    quality: "medium",
+    resolution: "720p" as const,
+    quality: "medium" as const,
     frameRate: "30",
-    format: "mp4"
+    format: "mp4" as const
   })
+  
+  const [videoCover, setVideoCover] = React.useState<string | null>(null)
+  const [isExporting, setIsExporting] = React.useState(false)
 
-  const handleExport = () => {
-    console.log("开始导出:", exportConfig)
-    onExportProgressOpen?.()
-  }
+  // 生成视频封面
+  React.useEffect(() => {
+    const generateVideoCover = async () => {
+      try {
+        // 找到时间线中第一个媒体元素
+        const firstMediaElement = tracks
+          .flatMap(track => track.elements)
+          .filter(element => element.type === "media")
+          .sort((a, b) => a.startTime - b.startTime)[0]
 
-  const generateDefaultName = () => {
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    const hour = String(now.getHours()).padStart(2, '0')
-    const minute = String(now.getMinutes()).padStart(2, '0')
-    return `${year}${month}${day}${hour}${minute}`
+        if (!firstMediaElement) {
+          console.log("没有找到媒体元素")
+          return
+        }
+
+        // 通过mediaId找到对应的媒体项
+        const mediaItem = mediaItems.find(item => item.id === firstMediaElement.mediaId)
+        
+        if (mediaItem && mediaItem.thumbnailUrl) {
+          // 使用已有的缩略图
+          setVideoCover(mediaItem.thumbnailUrl)
+          return
+        }
+
+        if (mediaItem && mediaItem.file && mediaItem.type === "video") {
+          // 动态生成视频封面
+          const video = document.createElement("video")
+          const canvas = document.createElement("canvas")
+          const ctx = canvas.getContext("2d")
+
+          if (!ctx) return
+
+          video.addEventListener("loadedmetadata", () => {
+            canvas.width = video.videoWidth
+            canvas.height = video.videoHeight
+            // 使用时间线中的时间点
+            const targetTime = Math.min(firstMediaElement.startTime, video.duration * 0.1)
+            video.currentTime = targetTime
+          })
+
+          video.addEventListener("seeked", () => {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+            const coverUrl = canvas.toDataURL("image/jpeg", 0.8)
+            setVideoCover(coverUrl)
+            video.remove()
+            canvas.remove()
+          })
+
+          video.addEventListener("error", () => {
+            console.error("视频封面生成失败")
+            video.remove()
+            canvas.remove()
+          })
+
+          video.src = URL.createObjectURL(mediaItem.file)
+          video.load()
+        }
+      } catch (error) {
+        console.error("生成视频封面时出错:", error)
+      }
+    }
+
+    if (open) {
+      generateVideoCover()
+    }
+  }, [open, tracks, mediaItems])
+
+  // 生成默认文件名
+  React.useEffect(() => {
+    const generateDefaultName = () => {
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const hour = String(now.getHours()).padStart(2, '0')
+      const minute = String(now.getMinutes()).padStart(2, '0')
+      return `${year}${month}${day}${hour}${minute}`
+    }
+
+    if (open) {
+      setExportConfig(prev => ({ ...prev, name: generateDefaultName() }))
+    }
+  }, [open])
+
+  const handleExport = async () => {
+    if (!activeProject) {
+      toast.error("没有活动项目")
+      return
+    }
+
+    // 检查是否有时间线内容
+    if (tracks.length === 0 || getTotalDuration() === 0) {
+      toast.error("时间线没有内容可导出，请先添加媒体到时间线")
+      return
+    }
+
+    setIsExporting(true)
+    onOpenChange(false) // 关闭设置弹窗
+    onExportProgressOpen?.() // 打开进度弹窗
+
+    try {
+      console.log("🚀 开始按设置参数导出:", exportConfig)
+      
+      // 准备时间线数据
+      const timelineData = {
+        tracks: tracks,
+        totalDuration: getTotalDuration()
+      }
+
+      // 映射质量设置到具体参数
+      const qualityMap = {
+        'low': 'low' as const,
+        'medium': 'medium' as const, 
+        'high': 'high' as const
+      }
+
+      // 使用用户配置的参数进行导出
+      const finalExportConfig = {
+        format: exportConfig.format,
+        resolution: exportConfig.resolution,
+        quality: qualityMap[exportConfig.quality],
+        frameRate: exportConfig.frameRate
+      }
+
+      console.log("📝 最终导出配置:", finalExportConfig)
+
+      // 执行导出
+      const videoBlob = await exportTimeline(
+        timelineData,
+        finalExportConfig,
+        (progress) => {
+          console.log(`导出进度: ${progress.toFixed(1)}%`)
+          // 这里可以通过全局状态或事件传递进度
+        }
+      )
+
+      console.log("✅ 导出完成，文件大小:", videoBlob.size)
+
+      // 自动下载文件
+      const url = URL.createObjectURL(videoBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${exportConfig.name}.${exportConfig.format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success("视频导出并下载成功！")
+      
+    } catch (error) {
+      console.error("导出失败:", error)
+      toast.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`)
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   return (
@@ -77,7 +231,7 @@ export function ExportSettings({
           <div className="p-6">
             <DialogHeader className="mb-6">
               <div className="flex items-center gap-2">
-                <Button variant="text" size="sm" onClick={onBack}>
+                <Button variant="outline" size="sm" onClick={onBack}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <DialogTitle>Export Settings</DialogTitle>
@@ -85,32 +239,42 @@ export function ExportSettings({
             </DialogHeader>
             
             <div className="space-y-4">
-              {/* 影片封面 */}
+              {/* 视频封面 */}
               <div className="space-y-2">
                 <Label>Video Cover</Label>
                 <div className="aspect-video bg-muted rounded-lg overflow-hidden border border-border">
-                  <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-                    <div className="text-white text-sm font-medium">Video Cover Preview</div>
-                  </div>
+                  {videoCover ? (
+                    <img 
+                      src={videoCover} 
+                      alt="Video Cover" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                      <div className="text-white text-sm font-medium">正在生成封面...</div>
+                    </div>
+                  )}
                 </div>
               </div>
               
-              {/* 名稱 */}
+              {/* 文件名 */}
               <div className="space-y-2">
                 <Label>Name</Label>
                 <Input 
                   value={exportConfig.name}
                   onChange={(e) => setExportConfig(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder={generateDefaultName()}
+                  placeholder="输入文件名"
                 />
               </div>
               
-              {/* 解析度 */}
+              {/* 分辨率 */}
               <div className="space-y-2">
                 <Label>Resolution</Label>
                 <Select 
                   value={exportConfig.resolution}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, resolution: value }))}
+                  onValueChange={(value: "480p" | "720p" | "1080p" | "4k") => 
+                    setExportConfig(prev => ({ ...prev, resolution: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="720p" />
@@ -124,12 +288,14 @@ export function ExportSettings({
                 </Select>
               </div>
               
-              {/* 品質 */}
+              {/* 质量 */}
               <div className="space-y-2">
                 <Label>Quality</Label>
                 <Select 
                   value={exportConfig.quality}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, quality: value }))}
+                  onValueChange={(value: "low" | "medium" | "high") => 
+                    setExportConfig(prev => ({ ...prev, quality: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Recommended Quality" />
@@ -142,7 +308,7 @@ export function ExportSettings({
                 </Select>
               </div>
               
-              {/* 畫面速率 */}
+              {/* 帧率 */}
               <div className="space-y-2">
                 <Label>Frame Rate</Label>
                 <Select 
@@ -165,7 +331,9 @@ export function ExportSettings({
                 <Label>Format</Label>
                 <Select 
                   value={exportConfig.format}
-                  onValueChange={(value) => setExportConfig(prev => ({ ...prev, format: value }))}
+                  onValueChange={(value: "mp4" | "webm" | "avi" | "mov") => 
+                    setExportConfig(prev => ({ ...prev, format: value }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="MP4" />
@@ -183,8 +351,9 @@ export function ExportSettings({
               <Button 
                 className="w-full bg-cyan-500 hover:bg-cyan-600 text-white" 
                 onClick={handleExport}
+                disabled={isExporting}
               >
-                Export
+                {isExporting ? "导出中..." : "Export"}
               </Button>
             </div>
           </div>

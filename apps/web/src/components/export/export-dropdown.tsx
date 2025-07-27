@@ -28,6 +28,7 @@ import { useMediaStore } from "../../stores/media-store"
 import { useProjectStore } from "../../stores/project-store"
 import { toast } from "sonner"
 import { useTimelineStore } from "../../stores/timeline-store"
+import { exportTimeline } from "../../lib/ffmpeg-utils"
 
 interface ExportDropdownProps {
   children: React.ReactNode
@@ -244,22 +245,80 @@ export function ExportDropdown({
   }
 
   const handleExport = async () => {
-    console.log("Start export:", exportConfig)
+    if (!activeProject) {
+      toast.error("没有活动项目")
+      return
+    }
     
     // 检查是否有时间线内容
     const timelineStore = useTimelineStore.getState();
     const { tracks, getTotalDuration } = timelineStore;
     
     if (tracks.length === 0 || getTotalDuration() === 0) {
-      toast.error("No timeline content to export. Please add media to the timeline first.")
+      toast.error("时间线没有内容可导出，请先添加媒体到时间线")
       return
     }
 
     setOpen(false)
     setShowSettings(false)
     
-    // 触发导出进度
+    // 触发导出进度弹窗
     onExportProgressOpen?.()
+
+    try {
+      console.log("🚀 开始按设置参数导出:", exportConfig)
+      
+      // 准备时间线数据
+      const timelineData = {
+        tracks: tracks,
+        totalDuration: getTotalDuration()
+      }
+
+      // 映射质量设置到具体参数
+      const qualityMap = {
+        'low': 'low' as const,
+        'medium': 'medium' as const, 
+        'high': 'high' as const
+      }
+
+      // 使用用户配置的参数进行导出
+      const finalExportConfig = {
+        format: exportConfig.format,
+        resolution: exportConfig.resolution,
+        quality: qualityMap[exportConfig.quality],
+        frameRate: exportConfig.frameRate
+      }
+
+      console.log("📝 最终导出配置:", finalExportConfig)
+
+      // 执行导出
+      const videoBlob = await exportTimeline(
+        timelineData,
+        finalExportConfig,
+        (progress) => {
+          console.log(`导出进度: ${progress.toFixed(1)}%`)
+          // 这里可以通过全局状态或事件传递进度
+        }
+      )
+
+      console.log("✅ 导出完成，文件大小:", videoBlob.size)
+
+      // 自动下载文件
+      const url = URL.createObjectURL(videoBlob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `${exportConfig.name}.${exportConfig.format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success("视频导出并下载成功！")
+      
+    } catch (error) {
+      console.error("导出失败:", error)
+      toast.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`)
+    }
   }
 
   const handleClose = () => {

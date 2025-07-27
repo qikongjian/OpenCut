@@ -20,57 +20,60 @@ let ffmpegInitPromise: Promise<FFmpeg> | null = null;
 const exportCache = new Map<string, Blob>();
 const thumbnailCache = new Map<string, string>();
 
-// 性能优化配置 - 极致速度预设
+// 性能优化配置 - 修复视频卡顿问题
 const PERFORMANCE_CONFIG = {
-  // 超快速预设 - 小文件专用，极速导出
+  // 超快速预设 - 优化质量和流畅度平衡
   ULTRA_FAST: {
     videoCodec: 'libx264',
     audioCodec: 'aac',
-    crf: '35',           // 高压缩比，极快编码
-    preset: 'ultrafast', // 最快预设
-    tune: 'fastdecode',  // 优化解码速度
+    crf: '23',           // 降低CRF提升质量 (原35改为23)
+    preset: 'veryfast',  // 改为veryfast以提升质量 (原ultrafast)
+    tune: 'film',        // 改为film优化视频质量 (原fastdecode)
     threads: 'auto',     // 自动线程数
-    g: '30',            // 小GOP，快速编码
-    keyint_min: '15',   // 最小关键帧间隔
-    sc_threshold: '0',  // 禁用场景切换检测
-    bf: '0',           // 无B帧，最快编码
-    refs: '1',         // 最少参考帧
+    g: '60',            // 增加GOP大小提高效率 (原30改为60)
+    keyint_min: '30',   // 增加最小关键帧间隔 (原15改为30)
+    sc_threshold: '40', // 启用场景切换检测 (原0改为40)
+    bf: '2',           // 添加B帧提升流畅度 (原0改为2)
+    refs: '3',         // 增加参考帧数量 (原1改为3)
     flags: '+cgop',    // 优化GOP结构
-    movflags: '+faststart' // 快速启动
+    movflags: '+faststart', // 快速启动
+    pixfmt: 'yuv420p'  // 确保兼容性
   },
   
   // 快速预设 - 平衡选择
   FAST: {
     videoCodec: 'libx264',
     audioCodec: 'aac',
-    crf: '28',
-    preset: 'veryfast',
-    tune: 'fastdecode',
+    crf: '20',         // 更好的质量
+    preset: 'fast',    // 平衡速度和质量
+    tune: 'film',      // 视频优化
     threads: 'auto',
-    g: '60',
-    keyint_min: '30',
-    sc_threshold: '0',
-    bf: '2',
-    refs: '3',
+    g: '120',          // 更大的GOP
+    keyint_min: '60',
+    sc_threshold: '40',
+    bf: '3',
+    refs: '4',
     flags: '+cgop',
-    movflags: '+faststart'
+    movflags: '+faststart',
+    pixfmt: 'yuv420p'
   },
   
   // 质量预设 - 大文件优化
   QUALITY: {
     videoCodec: 'libx264',
     audioCodec: 'aac',
-    crf: '23',
-    preset: 'fast',
-    tune: 'fastdecode',
+    crf: '18',         // 高质量
+    preset: 'medium',  // 更好的压缩
+    tune: 'film',
     threads: 'auto',
-    g: '120',
-    keyint_min: '60',
+    g: '250',          // 大GOP
+    keyint_min: '25',
     sc_threshold: '40',
     bf: '3',
     refs: '6',
     flags: '+cgop',
-    movflags: '+faststart'
+    movflags: '+faststart',
+    pixfmt: 'yuv420p'
   }
 };
 
@@ -688,7 +691,8 @@ export const testFFmpeg = async (): Promise<{ success: boolean; error?: string }
     const testOutput = 'test_output.txt';
     
     // Write a simple test file
-    await ffmpeg.writeFile(testInput, new TextEncoder().encode('Hello FFmpeg!'));
+    const testData = new Uint8Array(new TextEncoder().encode('Hello FFmpeg!'));
+    await ffmpeg.writeFile(testInput, testData as any);
     
     // Execute a simple command
     await ffmpeg.exec(['-i', testInput, testOutput]);
@@ -832,45 +836,48 @@ export const exportTimeline = async (
     const segments: string[] = [];
     const totalElements = mediaElements.length;
     
-    // 检查是否可以使用无损拼接（所有片段格式兼容且无需裁剪）
-    const canUseStreamCopy = mediaElements.every(el => 
-      el.trimStart === 0 && el.trimEnd === 0 && el.mediaType === 'video'
-    );
+    // 修复多视频片段问题：严格限制流复制模式的使用
+    // 只有在单个视频且无任何处理需求时才使用流复制
+    const canUseStreamCopy = mediaElements.length === 1 && 
+                            mediaElements.every(el => 
+                              el.trimStart === 0 && 
+                              el.trimEnd === 0 && 
+                              el.mediaType === 'video'
+                            );
     
-    if (canUseStreamCopy && mediaElements.length <= 3) {
-      console.log('🚀 Using STREAM COPY mode for maximum speed!');
+    // 对于多个视频片段，强制使用重编码模式以确保兼容性
+    if (canUseStreamCopy && mediaElements.length === 1) {
+      console.log('🚀 Using STREAM COPY mode for single video (maximum speed)!');
       
-      // 超高速模式：直接复制流，不重新编码
-      for (let i = 0; i < mediaElements.length; i++) {
-        const element = mediaElements[i];
-        const inputName = `input_${i}.mp4`;
-        inputNames.push(inputName);
-        tempFiles.push(inputName);
-        
-        updateProgress(10 + (60 * i / totalElements), 300);
-        
-        let mediaFile: File | null = null;
-        if (element.mediaFile) {
-          mediaFile = element.mediaFile;
-        } else if (element.mediaUrl) {
-          const response = await fetch(element.mediaUrl);
-          const blob = await response.blob();
-          mediaFile = new File([blob], `media_${i}.mp4`, { type: blob.type });
-        } else {
-          throw new Error(`No media file available for element ${element.id}`);
-        }
-
-        console.log(`📝 Writing input file ${inputName} (STREAM COPY mode)...`);
-        await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
-        segments.push(inputName);
+      // 超高速模式：仅适用于单个视频文件
+      const element = mediaElements[0];
+      const inputName = `input_0.mp4`;
+      inputNames.push(inputName);
+      tempFiles.push(inputName);
+      
+      updateProgress(10, 300);
+      
+      let mediaFile: File | null = null;
+      if (element.mediaFile) {
+        mediaFile = element.mediaFile;
+      } else if (element.mediaUrl) {
+        const response = await fetch(element.mediaUrl);
+        const blob = await response.blob();
+        mediaFile = new File([blob], `media_0.mp4`, { type: blob.type });
+      } else {
+        throw new Error(`No media file available for element ${element.id}`);
       }
+
+      console.log(`📝 Writing input file ${inputName} (STREAM COPY mode)...`);
+      await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
+      segments.push(inputName);
       
       updateProgress(70, 300);
       
     } else {
-      console.log('🔄 Using OPTIMIZED PROCESSING mode');
+      // 优化重编码模式：适用于多视频片段或需要处理的情况
+      console.log('🔄 Using OPTIMIZED RE-ENCODE mode for multiple videos');
       
-      // 优化处理模式：最小化重编码
       for (let i = 0; i < mediaElements.length; i++) {
         const element = mediaElements[i];
         const originalInputName = `input_${i}.mp4`;
@@ -895,7 +902,7 @@ export const exportTimeline = async (
         console.log(`📝 Writing input file ${originalInputName}...`);
         await ffmpeg.writeFile(originalInputName, new Uint8Array(await mediaFile.arrayBuffer()));
 
-        // 使用超高速编码设置
+        // 获取分辨率映射
         const resolutionMap = {
           '480p': '854:480',
           '720p': '1280:720', 
@@ -904,7 +911,7 @@ export const exportTimeline = async (
         };
         const outputResolution = resolutionMap[exportConfig.resolution];
 
-        // 构建超高速处理命令
+        // 构建统一重编码命令 - 关键修复
         const processCommand = ['-i', originalInputName];
         
         // 应用裁剪（如果需要）
@@ -916,14 +923,15 @@ export const exportTimeline = async (
           processCommand.push('-t', trimmedDuration.toString());
         }
         
-        // 超高速编码参数
+        // 统一编码参数 - 确保所有片段兼容
         processCommand.push(
-          // 视频编码 - 使用最快设置
+          // 视频编码 - 使用优化设置
           '-c:v', encodingSettings.videoCodec,
           '-crf', encodingSettings.crf,
-          '-preset', encodingSettings.preset, // ultrafast for small files
+          '-preset', encodingSettings.preset,
           '-tune', encodingSettings.tune,
-          '-threads', '0', // 使用所有可用线程
+          '-pix_fmt', encodingSettings.pixfmt, // 统一像素格式
+          '-threads', '0',
           '-g', encodingSettings.g,
           '-keyint_min', encodingSettings.keyint_min,
           '-sc_threshold', encodingSettings.sc_threshold,
@@ -931,19 +939,24 @@ export const exportTimeline = async (
           '-refs', encodingSettings.refs,
           '-flags', encodingSettings.flags,
           
-          // 快速缩放和帧率
-          '-vf', `scale=${outputResolution}:flags=fast_bilinear,fps=${exportConfig.frameRate}`,
+          // 统一输出参数 - 关键修复
+          '-r', exportConfig.frameRate,      // 统一帧率
+          '-s', outputResolution,            // 统一分辨率
+          '-vsync', 'cfr',                   // 恒定帧率
           
-          // 音频编码 - 快速设置
+          // 音频编码 - 统一设置
           '-c:a', encodingSettings.audioCodec,
-          '-b:a', '96k', // 降低音频比特率以提升速度
+          '-b:a', '128k',
+          '-ar', '44100',
           
           // 输出优化
           '-movflags', '+faststart+frag_keyframe+empty_moov',
+          '-avoid_negative_ts', 'make_zero', // 统一时间基准
+          '-fflags', '+genpts',              // 重新生成时间戳
           '-y', processedInputName
         );
 
-        console.log(`⚡ ULTRA-FAST processing segment ${i + 1}/${mediaElements.length}`);
+        console.log(`⚡ OPTIMIZED processing segment ${i + 1}/${mediaElements.length}`);
         await ffmpeg.exec(processCommand);
         
         segments.push(processedInputName);
@@ -1013,12 +1026,13 @@ export const exportTimeline = async (
 
     const outputName = `timeline_output.${exportConfig.format}`;
     
-    // 根据情况选择合并策略
+    // 根据情况选择合并策略 - 修复多视频片段问题
     let concatCommand: string[];
     
-    if (canUseStreamCopy && !needsGapProcessing) {
-      // 纯流复制，最快速度
-      console.log('🚀 Using STREAM COPY concat for maximum speed!');
+    // 只有单个视频且无间隔时才使用流复制
+    if (canUseStreamCopy && mediaElements.length === 1 && !needsGapProcessing) {
+      // 单视频流复制模式
+      console.log('🚀 Using STREAM COPY concat for single video!');
       concatCommand = [
         '-f', 'concat',
         '-safe', '0',
@@ -1027,17 +1041,49 @@ export const exportTimeline = async (
         '-y', outputName
       ];
     } else {
-      // 快速重编码合并
-      console.log('⚡ Using FAST RE-ENCODE concat');
+      // 多视频重编码合并模式 - 修复画面静止问题
+      console.log('⚡ Using OPTIMIZED RE-ENCODE concat for multiple videos');
+      
+      // 获取分辨率映射
+      const resolutionMap = {
+        '480p': '854:480',
+        '720p': '1280:720', 
+        '1080p': '1920:1080',
+        '4k': '3840:2160'
+      };
+      const outputResolution = resolutionMap[exportConfig.resolution];
+      
       concatCommand = [
         '-f', 'concat',
         '-safe', '0',
         '-i', concatFile,
+        
+        // 视频编码 - 统一参数
         '-c:v', encodingSettings.videoCodec,
-        '-c:a', encodingSettings.audioCodec,
         '-crf', encodingSettings.crf,
-        '-preset', 'ultrafast', // 强制使用最快预设
-        '-tune', 'fastdecode',
+        '-preset', encodingSettings.preset,
+        '-tune', encodingSettings.tune,
+        '-pix_fmt', encodingSettings.pixfmt, // 统一像素格式
+        
+        // 关键修复：统一输出参数
+        '-r', exportConfig.frameRate,      // 统一帧率
+        '-s', outputResolution,            // 统一分辨率
+        '-vsync', 'cfr',                   // 恒定帧率，防止画面静止
+        
+        // 音频编码统一
+        '-c:a', encodingSettings.audioCodec,
+        '-b:a', '128k',
+        '-ar', '44100',
+        
+        // GOP和帧结构统一
+        '-g', encodingSettings.g,
+        '-keyint_min', encodingSettings.keyint_min,
+        '-bf', encodingSettings.bf,
+        '-refs', encodingSettings.refs,
+        
+        // 时间戳和同步修复
+        '-avoid_negative_ts', 'make_zero', // 避免负时间戳
+        '-fflags', '+genpts',              // 重新生成时间戳
         '-movflags', '+faststart',
         '-y', outputName
       ];
