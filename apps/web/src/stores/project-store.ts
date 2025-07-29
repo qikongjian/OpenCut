@@ -88,27 +88,29 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   loadProject: async (id: string) => {
     if (!get().isInitialized) {
-      // 设置状态 - 更新状态值
-
       set({ isLoading: true });
     }
 
-    // Clear media and timeline immediately to prevent flickering when switching projects
-    const mediaStore = useMediaStore.getState();
-// 常量定义 - 模块内部使用的固定值
-    const timelineStore = useTimelineStore.getState();
-    mediaStore.clearAllMedia();
-    timelineStore.clearTimeline();
+    // 只有在切换到不同项目时才清空媒体和时间线
+    const currentProject = get().activeProject;
+    const isProjectSwitch = !currentProject || currentProject.id !== id;
+    
+    if (isProjectSwitch) {
+      // Clear media and timeline when switching to a different project
+      const mediaStore = useMediaStore.getState();
+      const timelineStore = useTimelineStore.getState();
+      mediaStore.clearAllMedia();
+      timelineStore.clearTimeline();
+    }
 
     try {
-// 常量定义 - 模块内部使用的固定值
       const project = await storageService.loadProject(id);
       if (project) {
-        // 设置状态 - 更新状态值
-
         set({ activeProject: project });
 
         // Load project-specific data in parallel
+        const mediaStore = useMediaStore.getState();
+        const timelineStore = useTimelineStore.getState();
         await Promise.all([
           mediaStore.loadProjectMedia(id),
           timelineStore.loadProjectTimeline(id),
@@ -120,8 +122,6 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       console.error("Failed to load project:", error);
       throw error; // Re-throw so the editor page can handle it
     } finally {
-      // 设置状态 - 更新状态值
-
       set({ isLoading: false });
     }
   },

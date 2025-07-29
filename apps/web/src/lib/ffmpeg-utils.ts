@@ -11,10 +11,39 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 // 导入 FFmpeg 视频处理库
 import { toBlobURL, fetchFile } from '@ffmpeg/util';
 
-// 变量定义 - 可修改的值
+// 全局变量
 let ffmpeg: FFmpeg | null = null;
 let ffmpegInitializing = false;
 let ffmpegInitPromise: Promise<FFmpeg> | null = null;
+
+// 导出取消控制
+let exportCancelled = false;
+let currentExportController: AbortController | null = null;
+
+// 重置导出取消状态
+export const resetExportCancellation = () => {
+  exportCancelled = false;
+  if (currentExportController) {
+    currentExportController.abort();
+  }
+  currentExportController = new AbortController();
+};
+
+// 取消当前导出
+export const cancelCurrentExport = () => {
+  console.log('🛑 Cancelling current export...');
+  exportCancelled = true;
+  if (currentExportController) {
+    currentExportController.abort();
+  }
+};
+
+// 检查是否已取消
+const checkCancellation = () => {
+  if (exportCancelled || currentExportController?.signal.aborted) {
+    throw new Error('Export cancelled by user');
+  }
+};
 
 // 缓存系统 - 极致优化
 const exportCache = new Map<string, Blob>();
@@ -749,6 +778,9 @@ export const exportTimeline = async (
   },
   onProgress?: (progress: number) => void
 ): Promise<Blob> => {
+  // 重置取消状态并开始新的导出
+  resetExportCancellation();
+  
   const startTime = performance.now();
   console.log(`🚀 Starting ULTRA-FAST timeline export...`, {
     totalDuration: timelineData.totalDuration,
@@ -767,6 +799,9 @@ export const exportTimeline = async (
   let progressInterval: NodeJS.Timeout | null = null;
   
   const updateProgress = (targetProgress: number, duration: number = 500) => {
+    // 检查是否已取消
+    checkCancellation();
+    
     if (!onProgress) return;
     
     const startProgress = currentProgress;
@@ -778,6 +813,17 @@ export const exportTimeline = async (
     }
     
     progressInterval = setInterval(() => {
+      // 在进度更新中也检查取消状态
+      try {
+        checkCancellation();
+      } catch (error) {
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          progressInterval = null;
+        }
+        return;
+      }
+      
       const elapsed = performance.now() - startTimestamp;
       const progressRatio = Math.min(elapsed / duration, 1);
       
@@ -836,6 +882,9 @@ export const exportTimeline = async (
     const segments: string[] = [];
     const totalElements = mediaElements.length;
     
+    // 检查取消状态
+    checkCancellation();
+    
     // 修复多视频片段问题：严格限制流复制模式的使用
     // 只有在单个视频且无任何处理需求时才使用流复制
     const canUseStreamCopy = mediaElements.length === 1 && 
@@ -880,6 +929,10 @@ export const exportTimeline = async (
       
       for (let i = 0; i < mediaElements.length; i++) {
         const element = mediaElements[i];
+        
+        // 在每个元素处理前检查取消状态
+        checkCancellation();
+        
         const originalInputName = `input_${i}.mp4`;
         const processedInputName = `processed_${i}.mp4`;
         

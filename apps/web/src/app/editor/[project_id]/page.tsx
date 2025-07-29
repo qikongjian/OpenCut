@@ -33,6 +33,8 @@ import { usePanelStore } from "@/stores/panel-store";
 // 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
 // 导入项目模块
+import { useEditorStore } from "@/stores/editor-store";
+// 导入项目模块
 import { EditorProvider } from "@/components/editor-provider";
 // 导入项目模块
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
@@ -71,11 +73,11 @@ export default function Editor() {
 
 // 副作用处理 - 处理组件生命周期中的副作用操作
   useEffect(() => {
-// 常量定义 - 模块内部使用的固定值
     const initProject = async () => {
       if (!projectId) return;
 
-      if (activeProject?.id === projectId) {
+      // 如果当前活动项目ID已经匹配，且项目存在，则不需要重新加载
+      if (activeProject?.id === projectId && activeProject) {
         return;
       }
 
@@ -88,7 +90,6 @@ export default function Editor() {
       } catch (error) {
         handledProjectIds.current.add(projectId);
 
-// 常量定义 - 模块内部使用的固定值
         const newProjectId = await createNewProject("Untitled Project");
         router.replace(`/editor/${newProjectId}`);
         return;
@@ -96,7 +97,7 @@ export default function Editor() {
     };
 
     initProject();
-  }, [projectId, activeProject?.id, loadProject, createNewProject, router]);
+  }, [projectId, loadProject, createNewProject, router]); // 移除 activeProject?.id 依赖项
 
   return (
     <EditorProvider>

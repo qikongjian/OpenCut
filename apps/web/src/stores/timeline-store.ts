@@ -115,6 +115,10 @@ interface TimelineStore {
   updateDragTime: (currentTime: number) => void;
   endDrag: () => void;
 
+  // 导出状态管理
+  isExporting: boolean;
+  setExporting: (exporting: boolean) => void;
+
   // Actions
   addTrack: (type: TrackType) => string;
   insertTrackAt: (type: TrackType, index: number) => string;
@@ -249,9 +253,10 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
   // Helper to auto-save timeline changes
   const autoSaveTimeline = async () => {
-// 常量定义 - 模块内部使用的固定值
     const activeProject = useProjectStore.getState().activeProject;
-    if (activeProject) {
+    // 检查是否在导出中，如果是则跳过自动保存
+    const isExporting = get().isExporting;
+    if (activeProject && !isExporting) {
       try {
         await storageService.saveTimeline(activeProject.id, get()._tracks);
       } catch (error) {
@@ -1759,6 +1764,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           "opacity" in item && item.opacity !== undefined ? item.opacity : 1,
       });
       return true;
+    },
+    
+    // 导出状态管理
+    isExporting: false,
+    setExporting: (exporting: boolean) => {
+      set({ isExporting: exporting });
     },
   };
 });

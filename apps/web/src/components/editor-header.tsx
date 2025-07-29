@@ -33,7 +33,7 @@ import { useMediaStore } from "@/stores/media-store";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入 FFmpeg 视频处理库
-import { convertToWebM, exportVideo, exportTimeline } from "@/lib/ffmpeg-utils";
+import { convertToWebM, exportVideo, exportTimeline, cancelCurrentExport } from "@/lib/ffmpeg-utils";
 // 导入导出系统组件
 import { ExportDropdown } from "./export/export-dropdown";
 import { ExportSettings, ExportProgress, ExportSuccess } from "./export/index";
@@ -72,13 +72,15 @@ export function EditorHeader() {
 
     // 检查是否有时间线内容
     const timelineStore = useTimelineStore.getState();
-    const { tracks, getTotalDuration } = timelineStore;
+    const { tracks, getTotalDuration, setExporting } = timelineStore;
     
     if (tracks.length === 0 || getTotalDuration() === 0) {
       toast.error("No timeline content to export. Please add media to the timeline first.");
       return;
     }
 
+    // 设置导出状态，禁用自动保存
+    setExporting(true);
     setExportProgressOpen(true);
     setIsExporting(true);
     
@@ -191,28 +193,36 @@ export function EditorHeader() {
     } catch (error) {
       console.error("Export failed:", error);
       
-      // 提供更具体的错误信息
-      let errorMessage = "Export failed, please try again";
-      if (error instanceof Error) {
-        if (error.message.includes('FFmpeg processing error')) {
-          errorMessage = error.message;
-        } else if (error.message.includes('Unsupported video format')) {
-          errorMessage = error.message;
-        } else if (error.message.includes('Insufficient memory')) {
-          errorMessage = "Video file too large, please try a smaller file";
-        } else if (error.message.includes('Codec error')) {
-          errorMessage = "Video codec not supported, please try a different file";
-        } else if (error.message.includes('network')) {
-          errorMessage = "Network error, please check connection";
-        } else {
-          errorMessage = `Export failed: ${error.message}`;
+      // 处理用户取消的情况
+      if (error instanceof Error && error.message.includes('Export cancelled by user')) {
+        toast.info("Export cancelled by user");
+      } else {
+        // 提供更具体的错误信息
+        let errorMessage = "Export failed, please try again";
+        if (error instanceof Error) {
+          if (error.message.includes('FFmpeg processing error')) {
+            errorMessage = error.message;
+          } else if (error.message.includes('Unsupported video format')) {
+            errorMessage = error.message;
+          } else if (error.message.includes('Insufficient memory')) {
+            errorMessage = "Video file too large, please try a smaller file";
+          } else if (error.message.includes('Codec error')) {
+            errorMessage = "Video codec not supported, please try a different file";
+          } else if (error.message.includes('network')) {
+            errorMessage = "Network error, please check connection";
+          } else {
+            errorMessage = `Export failed: ${error.message}`;
+          }
         }
+        toast.error(errorMessage);
       }
       
-      toast.error(errorMessage);
       setExportProgressOpen(false);
       setExportProgress(0);
     } finally {
+      // 重置导出状态，恢复自动保存
+      const timelineStore = useTimelineStore.getState();
+      timelineStore.setExporting(false);
       setIsExporting(false);
     }
   };
@@ -221,9 +231,20 @@ export function EditorHeader() {
 
   // 取消导出
   const handleCancelExport = () => {
+    console.log('🛑 User cancelled export');
+    // 取消FFmpeg处理
+    cancelCurrentExport();
+    
+    // 重置导出状态
+    const timelineStore = useTimelineStore.getState();
+    timelineStore.setExporting(false);
+    
+    // 重置UI状态
     setExportProgressOpen(false);
     setExportProgress(0);
     setIsExporting(false);
+    
+    toast.info("Export cancelled");
   };
 
   // 处理下载
