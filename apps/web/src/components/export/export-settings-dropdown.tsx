@@ -28,8 +28,22 @@ import { toast } from "sonner"
 
 interface ExportSettingsDropdownProps {
   children: React.ReactNode
-  onExportProgressOpen?: () => void
+  onExportProgressOpen?: (exportSettings?: {
+    name?: string;
+    format?: 'mp4' | 'webm' | 'avi' | 'mov';
+    resolution?: '480p' | '720p' | '1080p' | '4k';
+    quality?: 'low' | 'medium' | 'high';
+    frameRate?: string;
+  }) => void
   onBack?: () => void
+}
+
+interface ExportConfig {
+  name: string;
+  resolution: '480p' | '720p' | '1080p' | '4k';
+  quality: 'low' | 'medium' | 'high';
+  frameRate: string;
+  format: 'mp4' | 'webm' | 'avi' | 'mov';
 }
 
 export function ExportSettingsDropdown({
@@ -42,12 +56,12 @@ export function ExportSettingsDropdown({
   const { mediaItems } = useMediaStore()
   
   const [open, setOpen] = React.useState(false)
-  const [exportConfig, setExportConfig] = React.useState({
+  const [exportConfig, setExportConfig] = React.useState<ExportConfig>({
     name: "202507271044",
-    resolution: "720p" as const,
-    quality: "medium" as const,
+    resolution: "720p",
+    quality: "medium",
     frameRate: "30",
-    format: "mp4" as const
+    format: "mp4"
   })
   
   const [videoCover, setVideoCover] = React.useState<string | null>(null)
@@ -151,64 +165,7 @@ export function ExportSettingsDropdown({
 
     setIsExporting(true)
     setOpen(false) // 关闭下拉菜单
-    onExportProgressOpen?.() // 打开进度弹窗
-
-    try {
-      console.log("🚀 开始按设置参数导出:", exportConfig)
-      
-      // 准备时间线数据
-      const timelineData = {
-        tracks: tracks,
-        totalDuration: getTotalDuration()
-      }
-
-      // 映射质量设置到具体参数
-      const qualityMap = {
-        'low': 'low' as const,
-        'medium': 'medium' as const, 
-        'high': 'high' as const
-      }
-
-      // 使用用户配置的参数进行导出
-      const finalExportConfig = {
-        format: exportConfig.format,
-        resolution: exportConfig.resolution,
-        quality: qualityMap[exportConfig.quality],
-        frameRate: exportConfig.frameRate
-      }
-
-      console.log("📝 最终导出配置:", finalExportConfig)
-
-      // 执行导出
-      const videoBlob = await exportTimeline(
-        timelineData,
-        finalExportConfig,
-        (progress) => {
-          console.log(`导出进度: ${progress.toFixed(1)}%`)
-          // 这里可以通过全局状态或事件传递进度
-        }
-      )
-
-      console.log("✅ 导出完成，文件大小:", videoBlob.size)
-
-      // 自动下载文件
-      const url = URL.createObjectURL(videoBlob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `${exportConfig.name}.${exportConfig.format}`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      toast.success("视频导出并下载成功！")
-      
-    } catch (error) {
-      console.error("导出失败:", error)
-      toast.error(`导出失败: ${error instanceof Error ? error.message : "未知错误"}`)
-    } finally {
-      setIsExporting(false)
-    }
+    onExportProgressOpen?.(exportConfig) // 触发统一的导出处理
   }
 
   const handleBack = () => {

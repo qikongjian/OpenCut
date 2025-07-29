@@ -43,6 +43,22 @@ export function ExportProgress({
     onOpenChange(false)
   }
 
+  // 根据进度显示不同的描述文字
+  const getProgressDescription = () => {
+    if (progress < 20) {
+      return "Preparing media files..."
+    } else if (progress < 50) {
+      return "Processing video segments..."
+    } else if (progress < 85) {
+      return "Combining segments..."
+    } else if (progress < 99) {
+      return "Finalizing video export..."
+    } else if (progress >= 99) {
+      return "Almost done, please wait..."
+    }
+    return "Saving video, please wait a moment"
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -81,7 +97,7 @@ export function ExportProgress({
               
               {/* 描述文字 */}
               <div className="text-sm text-muted-foreground">
-                Saving video, please wait a moment
+                {getProgressDescription()}
               </div>
               
               {/* 取消按钮 */}
@@ -89,6 +105,7 @@ export function ExportProgress({
                 variant="outline" 
                 onClick={handleCancel}
                 className="mt-6"
+                disabled={progress >= 99} // 当进度接近100%时禁用取消按钮
               >
                 Cancel Export
               </Button>

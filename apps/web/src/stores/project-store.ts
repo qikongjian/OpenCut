@@ -97,10 +97,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     
     if (isProjectSwitch) {
       // Clear media and timeline when switching to a different project
-      const mediaStore = useMediaStore.getState();
-      const timelineStore = useTimelineStore.getState();
-      mediaStore.clearAllMedia();
-      timelineStore.clearTimeline();
+    const mediaStore = useMediaStore.getState();
+    const timelineStore = useTimelineStore.getState();
+    mediaStore.clearAllMedia();
+    timelineStore.clearTimeline();
     }
 
     try {

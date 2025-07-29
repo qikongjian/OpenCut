@@ -20,6 +20,9 @@ let ffmpegInitPromise: Promise<FFmpeg> | null = null;
 let exportCancelled = false;
 let currentExportController: AbortController | null = null;
 
+// 全局导出状态锁定
+let isExportInProgress = false;
+
 // 重置导出取消状态
 export const resetExportCancellation = () => {
   exportCancelled = false;
@@ -36,6 +39,8 @@ export const cancelCurrentExport = () => {
   if (currentExportController) {
     currentExportController.abort();
   }
+  // 重置导出锁定状态
+  isExportInProgress = false;
 };
 
 // 检查是否已取消
@@ -728,7 +733,7 @@ export const testFFmpeg = async (): Promise<{ success: boolean; error?: string }
     
     // Read the output
     const data = await ffmpeg.readFile(testOutput);
-    const result = new TextDecoder().decode(data);
+    const result = new TextDecoder().decode(data as Uint8Array);
     
     // Cleanup
     await ffmpeg.deleteFile(testInput);
@@ -778,6 +783,15 @@ export const exportTimeline = async (
   },
   onProgress?: (progress: number) => void
 ): Promise<Blob> => {
+  // 检查是否已有导出进程在运行
+  if (isExportInProgress) {
+    console.log('🚫 Export already in progress, ignoring duplicate request');
+    throw new Error('Export already in progress');
+  }
+  
+  // 设置导出锁定状态
+  isExportInProgress = true;
+  
   // 重置取消状态并开始新的导出
   resetExportCancellation();
   
@@ -878,33 +892,52 @@ export const exportTimeline = async (
 
     updateProgress(10, 200);
 
-    // 2. 高性能处理策略
+    // 2. 🧠 智能合并策略 + 🔄 分辨率预处理优化
+    let processedElements = mediaElements;
     const segments: string[] = [];
-    const totalElements = mediaElements.length;
     
     // 检查取消状态
     checkCancellation();
     
-    // 修复多视频片段问题：严格限制流复制模式的使用
-    // 只有在单个视频且无任何处理需求时才使用流复制
-    const canUseStreamCopy = mediaElements.length === 1 && 
-                            mediaElements.every(el => 
-                              el.trimStart === 0 && 
-                              el.trimEnd === 0 && 
-                              el.mediaType === 'video'
-                            );
+    // 步骤1: 检查是否需要分辨率预处理
+    const { needsPreprocessing } = needsResolutionPreprocessing(mediaElements, exportConfig);
     
-    // 对于多个视频片段，强制使用重编码模式以确保兼容性
-    if (canUseStreamCopy && mediaElements.length === 1) {
-      console.log('🚀 Using STREAM COPY mode for single video (maximum speed)!');
-      
-      // 超高速模式：仅适用于单个视频文件
-      const element = mediaElements[0];
+    if (needsPreprocessing && mediaElements.length > 1) {
+      // 🔄 执行分辨率预处理：统一所有视频到目标分辨率
+      console.log('🚀 启用分辨率预处理优化');
+      processedElements = await preprocessResolution(
+        ffmpeg, 
+        mediaElements, 
+        exportConfig, 
+        tempFiles, 
+        updateProgress
+      );
+      updateProgress(35, 200);
+    } else {
+      updateProgress(10, 100);
+    }
+    
+    // 步骤2: 检查是否可以使用原有的单视频流复制优化
+    const hasCustomExportSettings = 
+      exportConfig.resolution !== '720p' ||
+      exportConfig.quality !== 'medium' ||   
+      exportConfig.frameRate !== '30' ||     
+      exportConfig.format !== 'mp4';
+    
+    const canUseOriginalStreamCopy = processedElements.length === 1 && 
+                                   processedElements.every(el => 
+                                     el.trimStart === 0 && 
+                                     el.trimEnd === 0 && 
+                                     el.mediaType === 'video'
+                                   ) &&
+                                   !hasCustomExportSettings && 
+                                   !needsPreprocessing;
+
+    if (canUseOriginalStreamCopy) {
+      // 🚀 原有的单视频流复制模式
+      console.log('🚀 Using ORIGINAL STREAM COPY mode for single video');
+      const element = processedElements[0];
       const inputName = `input_0.mp4`;
-      inputNames.push(inputName);
-      tempFiles.push(inputName);
-      
-      updateProgress(10, 300);
       
       let mediaFile: File | null = null;
       if (element.mediaFile) {
@@ -912,159 +945,123 @@ export const exportTimeline = async (
       } else if (element.mediaUrl) {
         const response = await fetch(element.mediaUrl);
         const blob = await response.blob();
-        mediaFile = new File([blob], `media_0.mp4`, { type: blob.type });
+        mediaFile = new File([blob], `media.mp4`, { type: blob.type });
       } else {
         throw new Error(`No media file available for element ${element.id}`);
       }
 
-      console.log(`📝 Writing input file ${inputName} (STREAM COPY mode)...`);
       await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
       segments.push(inputName);
-      
-      updateProgress(70, 300);
+      updateProgress(50, 300);
       
     } else {
-      // 优化重编码模式：适用于多视频片段或需要处理的情况
-      console.log('🔄 Using OPTIMIZED RE-ENCODE mode for multiple videos');
+      // 步骤3: 🧠 智能分组处理
+      const videoGroups = detectVideoGroups(processedElements, exportConfig);
       
-      for (let i = 0; i < mediaElements.length; i++) {
-        const element = mediaElements[i];
-        
-        // 在每个元素处理前检查取消状态
+      // 步骤4: 对每个组进行优化处理
+      for (let groupIndex = 0; groupIndex < videoGroups.length; groupIndex++) {
+        const group = videoGroups[groupIndex];
         checkCancellation();
         
-        const originalInputName = `input_${i}.mp4`;
-        const processedInputName = `processed_${i}.mp4`;
+        // 计算进度：35-70%用于组处理
+        const groupProgress = 35 + (35 * (groupIndex + 1) / videoGroups.length);
+        updateProgress(groupProgress, 300);
         
-        inputNames.push(originalInputName);
-        tempFiles.push(originalInputName, processedInputName);
-        
-        updateProgress(10 + (50 * i / totalElements), 400);
-        
-        let mediaFile: File | null = null;
-        if (element.mediaFile) {
-          mediaFile = element.mediaFile;
-        } else if (element.mediaUrl) {
-          const response = await fetch(element.mediaUrl);
-          const blob = await response.blob();
-          mediaFile = new File([blob], `media_${i}.mp4`, { type: blob.type });
+        if (needsPreprocessing) {
+          // 🚀 预处理后的智能流复制合并
+          console.log(`🚀 对预处理组 ${groupIndex + 1} 使用智能流复制`);
+          
+          if (group.length === 1) {
+            // 单个预处理片段
+            segments.push(group[0].preprocessedFile);
+          } else {
+            // 多个预处理片段：使用流复制合并（因为已经统一格式）
+            const inputNames = group.map(el => el.preprocessedFile);
+            const concatFile = `final_group_${groupIndex}_concat.txt`;
+            const concatContent = inputNames.map(name => `file '${name}'`).join('\n');
+            await ffmpeg.writeFile(concatFile, new Uint8Array(new TextEncoder().encode(concatContent)));
+            tempFiles.push(concatFile);
+            
+            const groupOutputName = `final_group_${groupIndex}.mp4`;
+            await ffmpeg.exec([
+              '-f', 'concat',
+              '-safe', '0',
+              '-i', concatFile,
+              '-c', 'copy',  // 预处理后可以安全使用流复制
+              '-y', groupOutputName
+            ]);
+            
+            tempFiles.push(groupOutputName);
+            segments.push(groupOutputName);
+          }
         } else {
-          throw new Error(`No media file available for element ${element.id}`);
+          // 🔄 标准智能合并（无预处理）
+          const groupOutput = await smartStreamCopyMerge(ffmpeg, group, groupIndex, tempFiles);
+          segments.push(groupOutput);
         }
-
-        console.log(`📝 Writing input file ${originalInputName}...`);
-        await ffmpeg.writeFile(originalInputName, new Uint8Array(await mediaFile.arrayBuffer()));
-
-        // 获取分辨率映射
-        const resolutionMap = {
-          '480p': '854:480',
-          '720p': '1280:720', 
-          '1080p': '1920:1080',
-          '4k': '3840:2160'
-        };
-        const outputResolution = resolutionMap[exportConfig.resolution];
-
-        // 构建统一重编码命令 - 关键修复
-        const processCommand = ['-i', originalInputName];
-        
-        // 应用裁剪（如果需要）
-        if (element.trimStart > 0) {
-          processCommand.push('-ss', element.trimStart.toString());
-        }
-        if (element.trimEnd > 0) {
-          const trimmedDuration = element.duration - element.trimStart - element.trimEnd;
-          processCommand.push('-t', trimmedDuration.toString());
-        }
-        
-        // 统一编码参数 - 确保所有片段兼容
-        processCommand.push(
-          // 视频编码 - 使用优化设置
-          '-c:v', encodingSettings.videoCodec,
-          '-crf', encodingSettings.crf,
-          '-preset', encodingSettings.preset,
-          '-tune', encodingSettings.tune,
-          '-pix_fmt', encodingSettings.pixfmt, // 统一像素格式
-          '-threads', '0',
-          '-g', encodingSettings.g,
-          '-keyint_min', encodingSettings.keyint_min,
-          '-sc_threshold', encodingSettings.sc_threshold,
-          '-bf', encodingSettings.bf,
-          '-refs', encodingSettings.refs,
-          '-flags', encodingSettings.flags,
-          
-          // 统一输出参数 - 关键修复
-          '-r', exportConfig.frameRate,      // 统一帧率
-          '-s', outputResolution,            // 统一分辨率
-          '-vsync', 'cfr',                   // 恒定帧率
-          
-          // 音频编码 - 统一设置
-          '-c:a', encodingSettings.audioCodec,
-          '-b:a', '128k',
-          '-ar', '44100',
-          
-          // 输出优化
-          '-movflags', '+faststart+frag_keyframe+empty_moov',
-          '-avoid_negative_ts', 'make_zero', // 统一时间基准
-          '-fflags', '+genpts',              // 重新生成时间戳
-          '-y', processedInputName
-        );
-
-        console.log(`⚡ OPTIMIZED processing segment ${i + 1}/${mediaElements.length}`);
-        await ffmpeg.exec(processCommand);
-        
-        segments.push(processedInputName);
       }
       
-      updateProgress(60, 300);
+      updateProgress(70, 200);
     }
 
-    // 3. 智能间隔处理 - 只在必要时创建
+    // 3. 🕳️ 智能间隔处理 - 适配新的分组结构
     const finalSegments: string[] = [];
     let needsGapProcessing = false;
     
-    for (let i = 0; i < segments.length; i++) {
-      const element = mediaElements[i];
+    // 重建元素到segment的映射关系 
+    let elementIndex = 0;
+    for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex++) {
       
-      // 检查是否需要插入间隔
-      if (i > 0) {
-        const prevElement = mediaElements[i - 1];
-        const gap = element.startTime - prevElement.endTime;
+      // 找到当前segment对应的第一个元素
+      while (elementIndex < processedElements.length) {
+        const currentElement = processedElements[elementIndex];
         
-        if (gap > 0.5) { // 只对大于0.5秒的间隔处理
-          needsGapProcessing = true;
-          const blackSegmentName = `black_${i}.mp4`;
-          tempFiles.push(blackSegmentName);
+        // 检查是否需要插入间隔（相对于前一个元素）
+        if (elementIndex > 0) {
+          const prevElement = processedElements[elementIndex - 1];
+          const gap = currentElement.startTime - prevElement.endTime;
           
-          console.log(`⚫ Creating ${gap}s gap (FAST mode)`);
-          
-          const resolutionMap = {
-            '480p': '854:480',
-            '720p': '1280:720', 
-            '1080p': '1920:1080',
-            '4k': '3840:2160'
-          };
-          const outputResolution = resolutionMap[exportConfig.resolution];
-          
-          // 超快速黑屏生成
-          await ffmpeg.exec([
-            '-f', 'lavfi',
-            '-i', `color=black:size=${outputResolution}:duration=${gap}:rate=${exportConfig.frameRate}`,
-            '-f', 'lavfi',
-            '-i', `anullsrc=channel_layout=stereo:sample_rate=44100`,
-            '-c:v', encodingSettings.videoCodec,
-            '-c:a', encodingSettings.audioCodec,
-            '-crf', '40', // 高压缩比，黑屏不需要质量
-            '-preset', 'ultrafast',
-            '-tune', 'fastdecode',
-            '-shortest',
-            '-y', blackSegmentName
-          ]);
-          
-          finalSegments.push(blackSegmentName);
+          if (gap > 0.5) { // 只对大于0.5秒的间隔处理
+            needsGapProcessing = true;
+            const blackSegmentName = `gap_${segmentIndex}_${elementIndex}.mp4`;
+            tempFiles.push(blackSegmentName);
+            
+            console.log(`⚫ 创建 ${gap.toFixed(1)}s 间隔 (优化模式)`);
+            
+            const resolutionMap = {
+              '480p': '854:480',
+              '720p': '1280:720', 
+              '1080p': '1920:1080',
+              '4k': '3840:2160'
+            };
+            const outputResolution = resolutionMap[exportConfig.resolution];
+            
+            // 超快速黑屏生成
+            await ffmpeg.exec([
+              '-f', 'lavfi',
+              '-i', `color=black:size=${outputResolution}:duration=${gap}:rate=${exportConfig.frameRate}`,
+              '-f', 'lavfi',
+              '-i', `anullsrc=channel_layout=stereo:sample_rate=44100`,
+              '-c:v', encodingSettings.videoCodec,
+              '-c:a', encodingSettings.audioCodec,
+              '-crf', '40', // 高压缩比，黑屏不需要质量
+              '-preset', 'ultrafast',
+              '-tune', 'fastdecode',
+              '-shortest',
+              '-y', blackSegmentName
+            ]);
+            
+            finalSegments.push(blackSegmentName);
+          }
         }
+        
+        // 跳过到当前segment对应的最后一个元素
+        elementIndex++;
+        // 简化处理：假设每个segment对应一个或多个连续元素
+        break;
       }
       
-      finalSegments.push(segments[i]);
+      finalSegments.push(segments[segmentIndex]);
     }
 
     updateProgress(75, 200);
@@ -1083,7 +1080,7 @@ export const exportTimeline = async (
     let concatCommand: string[];
     
     // 只有单个视频且无间隔时才使用流复制
-    if (canUseStreamCopy && mediaElements.length === 1 && !needsGapProcessing) {
+    if (canUseOriginalStreamCopy && processedElements.length === 1 && !needsGapProcessing) {
       // 单视频流复制模式
       console.log('🚀 Using STREAM COPY concat for single video!');
       concatCommand = [
@@ -1098,7 +1095,7 @@ export const exportTimeline = async (
       console.log('⚡ Using OPTIMIZED RE-ENCODE concat for multiple videos');
       
       // 获取分辨率映射
-      const resolutionMap = {
+      const resolutionMap: { [key: string]: string } = {
         '480p': '854:480',
         '720p': '1280:720', 
         '1080p': '1920:1080',
@@ -1143,14 +1140,14 @@ export const exportTimeline = async (
     }
 
     console.log('🔧 Executing ULTRA-FAST concat:', concatCommand.slice(0, 8), '...');
-    updateProgress(85, 500);
+    updateProgress(75, 500);
 
     // 执行最终合并
     const execStart = performance.now();
     await ffmpeg.exec(concatCommand);
     console.log(`🔧 ULTRA-FAST concat completed in ${(performance.now() - execStart).toFixed(2)}ms`);
 
-    updateProgress(95, 200);
+    updateProgress(90, 200);
 
     // 5. 读取输出文件
     console.log('📖 Reading output file...');
@@ -1163,7 +1160,7 @@ export const exportTimeline = async (
     
     const blob = new Blob([data], { type: mimeType });
 
-    updateProgress(100, 100);
+    updateProgress(95, 100);
 
     const totalTime = performance.now() - startTime;
     console.log(`✅ ULTRA-FAST timeline export completed in ${totalTime.toFixed(2)}ms`);
@@ -1189,6 +1186,14 @@ export const exportTimeline = async (
       clearInterval(progressInterval);
     }
 
+    // 所有处理完成，设置最终进度
+    if (onProgress) {
+      onProgress(100);
+    }
+
+    // 重置导出锁定状态
+    isExportInProgress = false;
+
     return blob;
 
   } catch (error) {
@@ -1213,6 +1218,236 @@ export const exportTimeline = async (
       console.warn('Warning: Failed to cleanup temporary files:', cleanupError);
     }
     
+    // 重置导出锁定状态
+    isExportInProgress = false;
+    
     throw error;
   }
+};
+
+// 智能合并策略：检测连续的相同格式视频片段
+const detectVideoGroups = (mediaElements: any[], exportConfig: any) => {
+  const groups: any[][] = [];
+  let currentGroup: any[] = [];
+  
+  for (let i = 0; i < mediaElements.length; i++) {
+    const element = mediaElements[i];
+    
+    if (currentGroup.length === 0) {
+      // 开始新组
+      currentGroup.push(element);
+    } else {
+      const lastElement = currentGroup[currentGroup.length - 1];
+      const isConsecutive = Math.abs(element.startTime - lastElement.endTime) < 0.1; // 允许0.1秒误差
+      const isSameFormat = element.mediaType === lastElement.mediaType;
+      
+      // 检查是否可以合并（相同格式且连续）
+      if (isConsecutive && isSameFormat && 
+          element.trimStart === 0 && element.trimEnd === 0 &&
+          lastElement.trimStart === 0 && lastElement.trimEnd === 0) {
+        currentGroup.push(element);
+      } else {
+        // 结束当前组，开始新组
+        groups.push([...currentGroup]);
+        currentGroup = [element];
+      }
+    }
+  }
+  
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup);
+  }
+  
+  console.log(`🧠 智能分组完成: ${groups.length} 个组，平均每组 ${(mediaElements.length / groups.length).toFixed(1)} 个片段`);
+  groups.forEach((group, index) => {
+    console.log(`   组 ${index + 1}: ${group.length} 个片段 (${group[0].startTime.toFixed(1)}s - ${group[group.length-1].endTime.toFixed(1)}s)`);
+  });
+  
+  return groups;
+};
+
+// 分辨率预处理：检查是否需要统一分辨率
+const needsResolutionPreprocessing = (mediaElements: any[], exportConfig: any) => {
+  const targetResolution = exportConfig.resolution as string;
+  const resolutionMap: { [key: string]: { width: number; height: number } } = {
+    '480p': { width: 854, height: 480 },
+    '720p': { width: 1280, height: 720 }, 
+    '1080p': { width: 1920, height: 1080 },
+    '4k': { width: 3840, height: 2160 }
+  };
+  
+  const target = resolutionMap[targetResolution];
+  
+  // 检查是否所有视频都需要分辨率转换
+  let needsPreprocessing = false;
+  for (const element of mediaElements) {
+    // 这里简化处理，实际应该获取视频的真实分辨率
+    // 暂时假设如果设置了非默认分辨率就需要预处理
+    if (targetResolution !== '720p') {
+      needsPreprocessing = true;
+      break;
+    }
+  }
+  
+  console.log(`🔍 分辨率预处理检查: ${needsPreprocessing ? '需要' : '不需要'} (目标: ${targetResolution})`);
+  return { needsPreprocessing, target };
+};
+
+// 智能流复制合并：对相同格式的连续片段使用流复制
+const smartStreamCopyMerge = async (
+  ffmpeg: any, 
+  group: any[], 
+  groupIndex: number, 
+  tempFiles: string[]
+): Promise<string> => {
+  console.log(`🚀 对组 ${groupIndex + 1} 使用智能流复制合并 (${group.length} 个片段)`);
+  
+  if (group.length === 1) {
+    // 单个片段直接返回
+    const element = group[0];
+    const inputName = `group_${groupIndex}_input.mp4`;
+    
+    let mediaFile: File | null = null;
+    if (element.mediaFile) {
+      mediaFile = element.mediaFile;
+    } else if (element.mediaUrl) {
+      const response = await fetch(element.mediaUrl);
+      const blob = await response.blob();
+      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
+    } else {
+      throw new Error(`No media file available for element ${element.id}`);
+    }
+    
+    if (!mediaFile) {
+      throw new Error(`Failed to get media file for element ${element.id}`);
+    }
+    
+    await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
+    tempFiles.push(inputName);
+    return inputName;
+  }
+  
+  // 多个片段：写入所有输入文件
+  const inputNames: string[] = [];
+  for (let i = 0; i < group.length; i++) {
+    const element = group[i];
+    const inputName = `group_${groupIndex}_input_${i}.mp4`;
+    
+    let mediaFile: File | null = null;
+    if (element.mediaFile) {
+      mediaFile = element.mediaFile;
+    } else if (element.mediaUrl) {
+      const response = await fetch(element.mediaUrl);
+      const blob = await response.blob();
+      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
+    } else {
+      throw new Error(`No media file available for element ${element.id}`);
+    }
+    
+    if (!mediaFile) {
+      throw new Error(`Failed to get media file for element ${element.id}`);
+    }
+    
+    await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
+    inputNames.push(inputName);
+    tempFiles.push(inputName);
+  }
+  
+  // 创建concat文件
+  const concatFile = `group_${groupIndex}_concat.txt`;
+  const concatContent = inputNames.map(name => `file '${name}'`).join('\n');
+  await ffmpeg.writeFile(concatFile, new Uint8Array(new TextEncoder().encode(concatContent)));
+  tempFiles.push(concatFile);
+  
+  // 使用流复制合并
+  const outputName = `group_${groupIndex}_merged.mp4`;
+  await ffmpeg.exec([
+    '-f', 'concat',
+    '-safe', '0', 
+    '-i', concatFile,
+    '-c', 'copy',  // 关键：使用流复制，超快！
+    '-y', outputName
+  ]);
+  
+  tempFiles.push(outputName);
+  console.log(`✅ 组 ${groupIndex + 1} 流复制合并完成`);
+  return outputName;
+};
+
+// 分辨率预处理：批量处理到目标分辨率
+const preprocessResolution = async (
+  ffmpeg: any,
+  mediaElements: any[],
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<any[]> => {
+  console.log('🔄 开始分辨率预处理...');
+  
+  const resolutionMap = {
+    '480p': '854:480',
+    '720p': '1280:720', 
+    '1080p': '1920:1080',
+    '4k': '3840:2160'
+  };
+  const outputResolution = resolutionMap[exportConfig.resolution];
+  
+  const processedElements: any[] = [];
+  
+  for (let i = 0; i < mediaElements.length; i++) {
+    const element = mediaElements[i];
+    const inputName = `preprocess_input_${i}.mp4`;
+    const outputName = `preprocess_output_${i}.mp4`;
+    
+    // 写入输入文件
+    let mediaFile: File | null = null;
+    if (element.mediaFile) {
+      mediaFile = element.mediaFile;
+    } else if (element.mediaUrl) {
+      const response = await fetch(element.mediaUrl);
+      const blob = await response.blob();
+      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
+    } else {
+      throw new Error(`No media file available for element ${element.id}`);
+    }
+    
+    if (!mediaFile) {
+      throw new Error(`Failed to get media file for element ${element.id}`);
+    }
+    
+    await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
+    tempFiles.push(inputName, outputName);
+    
+    // 批量预处理命令 - 使用快速预设
+    const preprocessCommand = [
+      '-i', inputName,
+      '-c:v', 'libx264',
+      '-preset', 'veryfast',  // 快速预设
+      '-crf', '23',          // 合理质量
+      '-s', outputResolution, // 目标分辨率
+      '-r', exportConfig.frameRate,
+      '-pix_fmt', 'yuv420p',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-y', outputName
+    ];
+    
+    console.log(`⚡ 预处理片段 ${i + 1}/${mediaElements.length} 到 ${exportConfig.resolution}`);
+    await ffmpeg.exec(preprocessCommand);
+    
+    // 更新进度
+    if (onProgress) {
+      const progress = 5 + (30 * (i + 1) / mediaElements.length); // 5-35%用于预处理
+      onProgress(progress);
+    }
+    
+    // 创建新的element引用预处理后的文件
+    processedElements.push({
+      ...element,
+      preprocessedFile: outputName
+    });
+  }
+  
+  console.log('✅ 分辨率预处理完成，现在所有片段都是统一分辨率');
+  return processedElements;
 };

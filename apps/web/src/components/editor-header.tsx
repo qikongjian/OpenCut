@@ -64,7 +64,13 @@ export function EditorHeader() {
   const [exportedVideoCover, setExportedVideoCover] = useState<string>('');
 
 // 导出进度处理
-  const handleExportProgressOpen = async () => {
+  const handleExportProgressOpen = async (exportSettings?: {
+    name?: string;
+    format?: 'mp4' | 'webm' | 'avi' | 'mov';
+    resolution?: '480p' | '720p' | '1080p' | '4k';
+    quality?: 'low' | 'medium' | 'high';
+    frameRate?: string;
+  }) => {
     if (!activeProject) {
       toast.error("No active project");
       return;
@@ -100,13 +106,15 @@ export function EditorHeader() {
         totalDuration: getTotalDuration()
       };
       
-      // 导出配置
+      // 使用用户配置的导出设置，如果没有则使用默认值
       const exportConfig = {
-        format: 'mp4' as const,
-        resolution: '720p' as const,
-        quality: 'medium' as const,
-        frameRate: '30'
+        format: exportSettings?.format || 'mp4' as const,
+        resolution: exportSettings?.resolution || '720p' as const,
+        quality: exportSettings?.quality || 'medium' as const,
+        frameRate: exportSettings?.frameRate || '30'
       };
+
+      console.log('🚀 Using export settings:', exportConfig);
 
       // 使用新的 exportTimeline 函数，导出整个时间轴
       const videoBlob = await exportTimeline(
@@ -120,8 +128,10 @@ export function EditorHeader() {
 
       console.log('Video conversion completed, blob size:', videoBlob.size);
 
-      // 设置导出文件名
-      const fileName = `${activeProject?.name || "opencut-project"}.mp4`;
+      // 使用用户设置的文件名，如果没有则使用项目名称
+      const fileName = exportSettings?.name 
+        ? `${exportSettings.name}.${exportConfig.format}`
+        : `${activeProject?.name || "opencut-project"}.${exportConfig.format}`;
       setExportedFileName(fileName);
 
       // 生成视频封面
@@ -197,22 +207,22 @@ export function EditorHeader() {
       if (error instanceof Error && error.message.includes('Export cancelled by user')) {
         toast.info("Export cancelled by user");
       } else {
-        // 提供更具体的错误信息
-        let errorMessage = "Export failed, please try again";
-        if (error instanceof Error) {
-          if (error.message.includes('FFmpeg processing error')) {
-            errorMessage = error.message;
-          } else if (error.message.includes('Unsupported video format')) {
-            errorMessage = error.message;
-          } else if (error.message.includes('Insufficient memory')) {
-            errorMessage = "Video file too large, please try a smaller file";
-          } else if (error.message.includes('Codec error')) {
-            errorMessage = "Video codec not supported, please try a different file";
-          } else if (error.message.includes('network')) {
-            errorMessage = "Network error, please check connection";
-          } else {
-            errorMessage = `Export failed: ${error.message}`;
-          }
+      // 提供更具体的错误信息
+      let errorMessage = "Export failed, please try again";
+      if (error instanceof Error) {
+        if (error.message.includes('FFmpeg processing error')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('Unsupported video format')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('Insufficient memory')) {
+          errorMessage = "Video file too large, please try a smaller file";
+        } else if (error.message.includes('Codec error')) {
+          errorMessage = "Video codec not supported, please try a different file";
+        } else if (error.message.includes('network')) {
+          errorMessage = "Network error, please check connection";
+        } else {
+          errorMessage = `Export failed: ${error.message}`;
+        }
         }
         toast.error(errorMessage);
       }
@@ -378,7 +388,11 @@ export function EditorHeader() {
         open={exportProgressOpen}
         onOpenChange={setExportProgressOpen}
         progress={exportProgress}
-        status={isExporting ? "Saving..." : "Completed"}
+        status={isExporting 
+          ? exportProgress < 99 
+            ? "Processing..." 
+            : "Finalizing..." 
+          : "Completed"}
         onCancel={handleCancelExport}
       />
 
