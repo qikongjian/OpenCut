@@ -61,7 +61,8 @@ export type Action =
   | "duplicate-selected" // 复制选中的元素
   | "toggle-snapping" // 切换吸附功能
   | "undo" // 撤销上一步操作
-  | "redo"; // 重做上一步撤销的操作
+  | "redo" // 重做上一步撤销的操作
+  | "flip-horizontal"; // 水平翻转选中的元素
 
 /**
  * 定义动作参数映射类型

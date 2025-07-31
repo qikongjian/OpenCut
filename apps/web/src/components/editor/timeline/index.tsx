@@ -88,6 +88,8 @@ import {
 } from "@/constants/timeline-constants";
 // 导入滑块组件，用于缩放控制
 import { Slider } from "@/components/ui/slider";
+// 导入自定义图标
+import { CustomFlipHorizontal } from "@/components/ui/icons";
 
 // 时间线组件 - 显示所有轨道（视频、音频、特效）及其元素
 // 用户可以拖拽媒体文件到这里添加到项目中
@@ -897,6 +899,7 @@ function TimelineToolbar({
     toggleSnapping,
     rippleEditingEnabled,
     toggleRippleEditing,
+    flipSelectedElements,
   } = useTimelineStore();
 // 常量定义 - 模块内部使用的固定值
   const { currentTime, duration, isPlaying, toggle } = usePlaybackStore();
@@ -1111,6 +1114,7 @@ function TimelineToolbar({
                         startTime: 0,
                         trimStart: 0,
                         trimEnd: 0,
+                        horizontalFlip: false,
                       });
                     }}
                     className="text-xs"
@@ -1190,6 +1194,19 @@ function TimelineToolbar({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Delete element (Delete)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="text"
+                size="icon"
+                onClick={flipSelectedElements}
+                className={selectedElements.length > 0 ? "text-primary" : ""}
+              >
+                <CustomFlipHorizontal className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>水平翻转 (H)</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>

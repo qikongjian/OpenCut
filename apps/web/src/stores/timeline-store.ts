@@ -15,6 +15,7 @@ import {
   CreateTimelineElement,
   TimelineTrack,
   TextElement,
+  MediaElement,
   DragData,
   sortTracksByOrder,
   ensureMainTrack,
@@ -220,6 +221,7 @@ interface TimelineStore {
         | "y"
         | "rotation"
         | "opacity"
+        | "horizontalFlip"
       >
     >
   ) => void;
@@ -234,6 +236,9 @@ interface TimelineStore {
   addTextAtTime: (item: TextElement, currentTime?: number) => boolean;
   addMediaToNewTrack: (item: MediaItem) => boolean;
   addTextToNewTrack: (item: TextElement | DragData) => boolean;
+  
+  // 水平翻转功能
+  flipSelectedElements: () => void;
 }
 
 // 导出常量对象 - 包含多个相关常量的对象
@@ -1665,6 +1670,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         mediaWidth: item.width,
         mediaHeight: item.height,
         mediaFps: item.fps,
+        horizontalFlip: false,
       });
       return true;
     },
@@ -1695,6 +1701,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         y: item.y || 0,
         rotation: item.rotation || 0,
         opacity: item.opacity !== undefined ? item.opacity : 1,
+        horizontalFlip: false,
       });
       return true;
     },
@@ -1723,6 +1730,7 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         mediaWidth: item.width,
         mediaHeight: item.height,
         mediaFps: item.fps,
+        horizontalFlip: false,
       });
       return true;
     },
@@ -1762,8 +1770,48 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         rotation: ("rotation" in item ? item.rotation : 0) || 0,
         opacity:
           "opacity" in item && item.opacity !== undefined ? item.opacity : 1,
+        horizontalFlip: false,
       });
       return true;
+    },
+    
+    // 水平翻转选中的元素
+    flipSelectedElements: () => {
+      const selectedElements = get().selectedElements;
+      if (selectedElements.length === 0) {
+        toast.info("No elements selected to flip.");
+        return;
+      }
+
+      const selectedElementIds = selectedElements.map(
+        (item) => `${item.trackId}-${item.elementId}`
+      );
+
+      updateTracksAndSave(
+        get()._tracks.map((track) => ({
+          ...track,
+          elements: track.elements.map((element) => {
+            if (selectedElementIds.includes(`${track.id}-${element.id}`)) {
+              if (element.type === "text") {
+                return {
+                  ...element,
+                  horizontalFlip: !(element as TextElement).horizontalFlip,
+                };
+              } else if (element.type === "media") {
+                return {
+                  ...element,
+                  horizontalFlip: !(element as any).horizontalFlip,
+                };
+              }
+            }
+            return element;
+          }),
+        }))
+      );
+      
+      window.dispatchEvent(new CustomEvent("elements-flipped", { 
+        detail: { elementIds: selectedElementIds } 
+      }));
     },
     
     // 导出状态管理

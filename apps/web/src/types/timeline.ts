@@ -33,6 +33,7 @@ export interface MediaElement extends BaseTimelineElement {
   mediaWidth?: number; // 媒体宽度
   mediaHeight?: number; // 媒体高度
   mediaFps?: number; // 视频帧率
+  horizontalFlip: boolean; // 水平翻转
 }
 
 // 文本元素接口 - 包含嵌入的文本数据
@@ -51,6 +52,7 @@ export interface TextElement extends BaseTimelineElement {
   y: number; // 相对于画布中心的Y坐标
   rotation: number; // 旋转角度（度）
   opacity: number; // 透明度（0-1）
+  horizontalFlip: boolean; // 水平翻转
 }
 
 // 时间线元素联合类型

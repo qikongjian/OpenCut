@@ -40,6 +40,7 @@ export const defaultKeybindings: KeybindingConfig = {
   "ctrl+y": "redo",
   delete: "delete-selected",
   backspace: "delete-selected",
+  h: "flip-horizontal",
 };
 
 // 接口定义 - 定义对象的结构和属性类型

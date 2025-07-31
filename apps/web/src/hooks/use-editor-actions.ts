@@ -194,4 +194,9 @@ export function useEditorActions() {
   useActionHandler("redo", () => {
     redo();
   });
+
+  useActionHandler("flip-horizontal", () => {
+    const { flipSelectedElements } = useTimelineStore.getState();
+    flipSelectedElements();
+  });
 }
