@@ -9,7 +9,13 @@ import { MediaType } from "@/stores/media-store";
 import { generateUUID } from "@/lib/utils";
 
 // 轨道类型定义
-export type TrackType = "media" | "text" | "audio";
+export type TrackType = "media" | "text" | "audio" | "transition";
+
+// 转场类型定义
+export type TransitionType = "fade" | "slide" | "zoom" | "wipe" | "dissolve";
+
+// 转场方向定义
+export type TransitionDirection = "left" | "right" | "up" | "down" | "in" | "out";
 
 // 基础时间线元素属性接口
 interface BaseTimelineElement {
@@ -55,15 +61,35 @@ export interface TextElement extends BaseTimelineElement {
   horizontalFlip: boolean; // 水平翻转
 }
 
+// 转场元素接口 - 连接两个媒体元素
+export interface TransitionElement extends BaseTimelineElement {
+  type: "transition"; // 元素类型标识
+  transitionType: TransitionType; // 转场类型
+  direction: TransitionDirection; // 转场方向
+  easing: "linear" | "ease-in" | "ease-out" | "ease-in-out"; // 缓动函数
+  // 转场连接的两个元素
+  fromElementId: string; // 起始元素ID
+  toElementId: string; // 目标元素ID
+  fromTrackId: string; // 起始轨道ID
+  toTrackId: string; // 目标轨道ID
+  // 转场参数
+  intensity: number; // 转场强度 (0-1)
+  blur: number; // 模糊程度 (0-1)
+  // 预览相关
+  previewUrl?: string; // 转场预览URL
+}
+
 // 时间线元素联合类型
-export type TimelineElement = MediaElement | TextElement;
+export type TimelineElement = MediaElement | TextElement | TransitionElement;
 
 // 创建类型（不包含id，用于添加到轨道）
 export type CreateMediaElement = Omit<MediaElement, "id">;
 // 类型定义 - 创建类型别名或联合类型
 export type CreateTextElement = Omit<TextElement, "id">;
+// 类型定义 - 创建转场元素类型
+export type CreateTransitionElement = Omit<TransitionElement, "id">;
 // 类型定义 - 创建类型别名或联合类型
-export type CreateTimelineElement = CreateMediaElement | CreateTextElement;
+export type CreateTimelineElement = CreateMediaElement | CreateTextElement | CreateTransitionElement;
 
 // 时间线元素组件属性接口
 export interface TimelineElementProps {
@@ -168,20 +194,22 @@ export function ensureMainTrack(tracks: TimelineTrack[]): TimelineTrack[] {
 
 // Timeline validation utilities
 export function canElementGoOnTrack(
-  elementType: "text" | "media",
+  elementType: "text" | "media" | "transition",
   trackType: TrackType
 ): boolean {
   if (elementType === "text") {
     return trackType === "text";
   } else if (elementType === "media") {
     return trackType === "media" || trackType === "audio";
+  } else if (elementType === "transition") {
+    return trackType === "transition";
   }
   return false;
 }
 
 // validateElementTrackCompatibility 组件 - 可复用的 UI 组件，可以在其他文件中导入使用
 export function validateElementTrackCompatibility(
-  element: { type: "text" | "media" },
+  element: { type: "text" | "media" | "transition" },
   track: { type: TrackType }
 ): { isValid: boolean; errorMessage?: string } {
 // 常量定义 - 模块内部使用的固定值
@@ -189,10 +217,14 @@ export function validateElementTrackCompatibility(
 
   if (!isValid) {
 // 常量定义 - 模块内部使用的固定值
-    const errorMessage =
-      element.type === "text"
-        ? "Text elements can only be placed on text tracks"
-        : "Media elements can only be placed on media or audio tracks";
+    let errorMessage = "";
+    if (element.type === "text") {
+      errorMessage = "Text elements can only be placed on text tracks";
+    } else if (element.type === "media") {
+      errorMessage = "Media elements can only be placed on media or audio tracks";
+    } else if (element.type === "transition") {
+      errorMessage = "Transition elements can only be placed on transition tracks";
+    }
 
     return { isValid: false, errorMessage };
   }

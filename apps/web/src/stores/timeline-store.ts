@@ -20,6 +20,9 @@ import {
   sortTracksByOrder,
   ensureMainTrack,
   validateElementTrackCompatibility,
+  CreateTransitionElement,
+  TransitionType,
+  TransitionDirection,
 } from "@/types/timeline";
 // 导入本地模块
 import { useEditorStore } from "./editor-store";
@@ -236,6 +239,35 @@ interface TimelineStore {
   addTextAtTime: (item: TextElement, currentTime?: number) => boolean;
   addMediaToNewTrack: (item: MediaItem) => boolean;
   addTextToNewTrack: (item: TextElement | DragData) => boolean;
+  
+  // 转场相关功能
+  addTransitionBetweenElements: (
+    fromTrackId: string,
+    fromElementId: string,
+    toTrackId: string,
+    toElementId: string,
+    transitionType: TransitionType,
+    transitionParams: {
+      direction: TransitionDirection;
+      duration: number;
+      easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+      intensity?: number;
+      blur?: number;
+    }
+  ) => string | null;
+  
+  updateTransitionElement: (
+    trackId: string,
+    elementId: string,
+    updates: Partial<{
+      transitionType: TransitionType;
+      direction: TransitionDirection;
+      easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+      intensity: number;
+      blur: number;
+      duration: number;
+    }>
+  ) => void;
   
   // 水平翻转功能
   flipSelectedElements: () => void;
@@ -1773,6 +1805,114 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         horizontalFlip: false,
       });
       return true;
+    },
+    
+    // 转场相关功能
+    addTransitionBetweenElements: (
+      fromTrackId: string,
+      fromElementId: string,
+      toTrackId: string,
+      toElementId: string,
+      transitionType: TransitionType,
+      transitionParams: {
+        direction: TransitionDirection;
+        duration: number;
+        easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+        intensity?: number;
+        blur?: number;
+      }
+    ) => {
+      // 获取状态 - 读取状态值
+      get().pushHistory();
+
+      // 获取要添加转场的元素信息
+      const fromTrack = get()._tracks.find(t => t.id === fromTrackId);
+      const fromElement = fromTrack?.elements.find(e => e.id === fromElementId);
+      const toTrack = get()._tracks.find(t => t.id === toTrackId);
+      const toElement = toTrack?.elements.find(e => e.id === toElementId);
+
+      if (!fromElement || !toElement) return null;
+
+      // 获取状态 - 读取状态值
+      const newTransitionElementId = generateUUID();
+
+      // 创建转场轨道（如果不存在）
+      let transitionTrack = get()._tracks.find(t => t.type === "transition");
+      if (!transitionTrack) {
+        const trackId = generateUUID();
+        transitionTrack = {
+          id: trackId,
+          name: "转场轨道",
+          type: "transition",
+          elements: [],
+        };
+        updateTracksAndSave([...get()._tracks, transitionTrack]);
+      }
+
+      // 创建转场元素
+      const transitionElement: CreateTransitionElement = {
+        name: `${transitionType} 转场`,
+        type: "transition",
+        transitionType,
+        direction: transitionParams.direction,
+        easing: transitionParams.easing,
+        duration: transitionParams.duration,
+        startTime: fromElement.startTime + fromElement.duration - transitionParams.duration / 2,
+        trimStart: 0,
+        trimEnd: 0,
+        fromElementId,
+        toElementId,
+        fromTrackId,
+        toTrackId,
+        intensity: transitionParams.intensity || 1.0,
+        blur: transitionParams.blur || 0.0,
+      };
+
+      // 添加转场元素到转场轨道
+      const newTracks = get()._tracks.map(track => 
+        track.id === transitionTrack!.id
+          ? {
+              ...track,
+              elements: [...track.elements, { ...transitionElement, id: generateUUID() }]
+            }
+          : track
+      );
+
+      updateTracksAndSave(newTracks);
+      return generateUUID();
+    },
+
+    updateTransitionElement: (
+      trackId: string,
+      elementId: string,
+      updates: Partial<{
+        transitionType: TransitionType;
+        direction: TransitionDirection;
+        easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+        intensity: number;
+        blur: number;
+        duration: number;
+      }>
+    ) => {
+      // 获取状态 - 读取状态值
+      updateTracksAndSave(
+        // 获取状态 - 读取状态值
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId && element.type === "transition"
+                    ? {
+                        ...element,
+                        ...updates,
+                      }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
     },
     
     // 水平翻转选中的元素

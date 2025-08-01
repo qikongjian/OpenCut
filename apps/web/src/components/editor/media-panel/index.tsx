@@ -18,6 +18,8 @@ import { useMediaPanelStore, Tab } from "./store";
 import { TextView } from "./views/text";
 // 导入音频视图组件，显示音频文件
 import { AudioView } from "./views/audio";
+// 导入转场视图组件，显示转场效果
+import { TransitionsView } from "./views/transitions";
 
 // 媒体面板组件 - 编辑器左侧的媒体资源管理面板
 // 导出组件 - 可复用的 UI 组件
@@ -47,12 +49,8 @@ export function MediaPanel() {
         Effects view coming soon...
       </div>
     ),
-    // 转场标签页 - 暂未实现
-    transitions: (
-      <div className="p-4 text-muted-foreground">
-        Transitions view coming soon...
-      </div>
-    ),
+    // 转场标签页 - 显示转场效果
+    transitions: <TransitionsView />,
     // 字幕标签页 - 暂未实现
     captions: (
       <div className="p-4 text-muted-foreground">
