@@ -6,76 +6,18 @@
 "use client";
 
 import React from "react";
-import { TransitionElement } from "@/types/timeline";
-import { 
-  FadeIn, 
-  FadeOut, 
-  MoveHorizontal, 
-  MoveVertical,
-  Zap,
-  Sparkles
-} from "lucide-react";
+import { TransitionElement as TransitionElementType } from "@/types/timeline";
+import { getTransitionIcon, getTransitionColor, getTransitionName } from "@/lib/transition-utils";
 
 interface TransitionElementProps {
-  element: TransitionElement;
+  element: TransitionElementType;
   isSelected: boolean;
   zoomLevel: number;
   onMouseDown: (e: React.MouseEvent) => void;
   onClick: (e: React.MouseEvent) => void;
 }
 
-// 获取转场图标
-function getTransitionIcon(type: string, direction: string) {
-  switch (type) {
-    case "fade":
-      return direction === "in" ? <FadeIn className="h-4 w-4" /> : <FadeOut className="h-4 w-4" />;
-    case "slide":
-      return <MoveHorizontal className="h-4 w-4" />;
-    case "zoom":
-      return <Zap className="h-4 w-4" />;
-    case "dissolve":
-      return <Sparkles className="h-4 w-4" />;
-    default:
-      return <FadeIn className="h-4 w-4" />;
-  }
-}
-
-// 获取转场颜色
-function getTransitionColor(type: string) {
-  switch (type) {
-    case "fade":
-      return "bg-blue-500";
-    case "slide":
-      return "bg-green-500";
-    case "zoom":
-      return "bg-purple-500";
-    case "dissolve":
-      return "bg-orange-500";
-    default:
-      return "bg-gray-500";
-  }
-}
-
-// 获取转场方向文本
-function getDirectionText(direction: string) {
-  switch (direction) {
-    case "left":
-      return "左";
-    case "right":
-      return "右";
-    case "up":
-      return "上";
-    case "down":
-      return "下";
-    case "in":
-      return "入";
-    case "out":
-      return "出";
-    default:
-      return "";
-  }
-}
-
+// 转场元素组件 - 显示为两个视频之间的连接元素
 export function TransitionElementComponent({
   element,
   isSelected,
@@ -90,30 +32,31 @@ export function TransitionElementComponent({
 
   const icon = getTransitionIcon(element.transitionType, element.direction);
   const colorClass = getTransitionColor(element.transitionType);
-  const directionText = getDirectionText(element.direction);
+  const transitionName = getTransitionName(element.transitionType, element.direction);
 
   return (
     <div
-      className={`absolute h-full rounded border-2 border-dashed ${colorClass} ${
-        isSelected ? "ring-2 ring-primary ring-offset-2" : ""
-      } cursor-pointer transition-all hover:opacity-80`}
+      className={`absolute top-1/2 transform -translate-y-1/2 h-8 rounded-lg border-2 border-dashed ${colorClass} ${
+        isSelected ? "ring-2 ring-primary ring-offset-1" : ""
+      } cursor-pointer transition-all hover:scale-105 hover:shadow-lg bg-gradient-to-r from-purple-500/20 to-purple-600/20 backdrop-blur-sm`}
       style={style}
       onMouseDown={onMouseDown}
       onClick={onClick}
-      title={`${element.name} (${element.duration}s)`}
+      title={`${transitionName} (${element.duration}s)`}
     >
-      <div className="flex items-center justify-center h-full p-1">
-        <div className="flex flex-col items-center gap-1 text-white">
+      <div className="flex items-center justify-center h-full px-2">
+        <div className="flex items-center gap-1 text-white">
+          <div className="w-4 h-4 flex items-center justify-center">
           {icon}
-          <div className="text-xs font-medium text-center">
-            {element.transitionType}
-            {directionText && ` ${directionText}`}
           </div>
-          <div className="text-xs opacity-75">
-            {element.duration.toFixed(1)}s
+          <div className="text-xs font-medium whitespace-nowrap">
+            {transitionName}
           </div>
         </div>
       </div>
+      
+      {/* 转场指示线 */}
+      <div className="absolute top-full left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-60"></div>
     </div>
   );
 } 

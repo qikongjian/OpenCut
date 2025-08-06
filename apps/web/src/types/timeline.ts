@@ -12,7 +12,7 @@ import { generateUUID } from "@/lib/utils";
 export type TrackType = "media" | "text" | "audio" | "transition";
 
 // 转场类型定义
-export type TransitionType = "fade" | "slide" | "zoom" | "wipe" | "dissolve";
+export type TransitionType = "fade" | "slide" | "zoom" | "wipe" | "dissolve" | "flash";
 
 // 转场方向定义
 export type TransitionDirection = "left" | "right" | "up" | "down" | "in" | "out";

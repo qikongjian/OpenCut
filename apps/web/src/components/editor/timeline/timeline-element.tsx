@@ -36,7 +36,7 @@ import AudioWaveform from "../audio-waveform";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入项目模块
-import { TimelineElementProps, TrackType } from "@/types/timeline";
+import { TimelineElementProps, TrackType, MediaElement } from "@/types/timeline";
 // 导入项目模块
 import { useTimelineElementResize } from "@/hooks/use-timeline-element-resize";
 // 导入模块
@@ -64,6 +64,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "../../ui/context-menu";
+import { TransitionElementComponent } from "./transition-element";
 
 // TimelineElement 函数
 // 导出组件 - 可复用的 UI 组件
@@ -220,6 +221,16 @@ export function TimelineElement({
           </span>
         </div>
       );
+    }
+
+    if (element.type === "transition") {
+      return <TransitionElementComponent
+        element={element}
+        isSelected={isSelected}
+        zoomLevel={zoomLevel}
+        onMouseDown={onElementMouseDown}
+        onClick={onElementClick}
+      />;
     }
 
     // Render media element ->

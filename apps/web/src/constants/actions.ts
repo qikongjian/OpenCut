@@ -62,7 +62,10 @@ export type Action =
   | "toggle-snapping" // 切换吸附功能
   | "undo" // 撤销上一步操作
   | "redo" // 重做上一步撤销的操作
-  | "flip-horizontal"; // 水平翻转选中的元素
+  | "flip-horizontal" // 水平翻转选中的元素
+  | "add-transition-dissolve" // 添加叠化转场
+  | "add-transition-flash-black" // 添加闪黑转场
+  | "add-transition-flash-white"; // 添加闪白转场
 
 /**
  * 定义动作参数映射类型
@@ -79,6 +82,9 @@ type ActionArgsMap = {
   "seek-backward": { seconds: number } | undefined; // 向后跳转需要的参数（默认：1秒）
   "jump-forward": { seconds: number } | undefined; // 向前跳转需要的参数（默认：5秒）
   "jump-backward": { seconds: number } | undefined; // 向后跳转需要的参数（默认：5秒）
+  "add-transition-dissolve": { duration?: number } | undefined; // 叠化转场参数（默认：2秒）
+  "add-transition-flash-black": { duration?: number } | undefined; // 闪黑转场参数（默认：0.3秒）
+  "add-transition-flash-white": { duration?: number } | undefined; // 闪白转场参数（默认：0.3秒）
 };
 
 // 工具类型：获取值为 undefined 的键

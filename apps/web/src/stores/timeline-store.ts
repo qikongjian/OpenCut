@@ -1833,20 +1833,18 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
       if (!fromElement || !toElement) return null;
 
-      // 获取状态 - 读取状态值
-      const newTransitionElementId = generateUUID();
+      // 检查是否已经存在转场
+      const existingTransition = get()._tracks.some(track => 
+        track.elements.some(element => 
+          element.type === "transition" &&
+          element.fromElementId === fromElementId &&
+          element.toElementId === toElementId
+        )
+      );
 
-      // 创建转场轨道（如果不存在）
-      let transitionTrack = get()._tracks.find(t => t.type === "transition");
-      if (!transitionTrack) {
-        const trackId = generateUUID();
-        transitionTrack = {
-          id: trackId,
-          name: "转场轨道",
-          type: "transition",
-          elements: [],
-        };
-        updateTracksAndSave([...get()._tracks, transitionTrack]);
+      if (existingTransition) {
+        toast.error("这两个元素之间已经存在转场");
+        return null;
       }
 
       // 创建转场元素
@@ -1868,9 +1866,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         blur: transitionParams.blur || 0.0,
       };
 
-      // 添加转场元素到转场轨道
+      // 将转场添加到起始元素的轨道上（同一轨道显示）
       const newTracks = get()._tracks.map(track => 
-        track.id === transitionTrack!.id
+        track.id === fromTrackId
           ? {
               ...track,
               elements: [...track.elements, { ...transitionElement, id: generateUUID() }]

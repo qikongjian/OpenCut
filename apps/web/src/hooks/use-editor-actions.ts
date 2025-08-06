@@ -199,4 +199,137 @@ export function useEditorActions() {
     const { flipSelectedElements } = useTimelineStore.getState();
     flipSelectedElements();
   });
+
+  // 转场动作处理
+  useActionHandler("add-transition-dissolve", (args) => {
+    const { addTransitionBetweenElements } = useTimelineStore.getState();
+    const duration = args?.duration ?? 2.0;
+    
+    // 检查选中的元素
+    if (selectedElements.length !== 2) {
+      toast.error("请选择两个媒体元素来添加叠化转场");
+      return;
+    }
+
+    // 按时间排序选中的元素
+    const sortedElements = selectedElements.sort((a, b) => {
+      const trackA = tracks.find(t => t.id === a.trackId);
+      const trackB = tracks.find(t => t.id === b.trackId);
+      const elementA = trackA?.elements.find(e => e.id === a.elementId);
+      const elementB = trackB?.elements.find(e => e.id === b.elementId);
+      return (elementA?.startTime || 0) - (elementB?.startTime || 0);
+    });
+
+    const fromElement = sortedElements[0];
+    const toElement = sortedElements[1];
+
+    const transitionId = addTransitionBetweenElements(
+      fromElement.trackId,
+      fromElement.elementId,
+      toElement.trackId,
+      toElement.elementId,
+      "dissolve",
+      {
+        direction: "in",
+        duration,
+        easing: "linear",
+        intensity: 1.0,
+        blur: 0.1,
+      }
+    );
+
+    if (transitionId) {
+      toast.success(`已添加叠化转场 (${duration}s)`);
+    } else {
+      toast.error("添加叠化转场失败");
+    }
+  });
+
+  useActionHandler("add-transition-flash-black", (args) => {
+    const { addTransitionBetweenElements } = useTimelineStore.getState();
+    const duration = args?.duration ?? 0.3;
+    
+    // 检查选中的元素
+    if (selectedElements.length !== 2) {
+      toast.error("请选择两个媒体元素来添加闪黑转场");
+      return;
+    }
+
+    // 按时间排序选中的元素
+    const sortedElements = selectedElements.sort((a, b) => {
+      const trackA = tracks.find(t => t.id === a.trackId);
+      const trackB = tracks.find(t => t.id === b.trackId);
+      const elementA = trackA?.elements.find(e => e.id === a.elementId);
+      const elementB = trackB?.elements.find(e => e.id === b.elementId);
+      return (elementA?.startTime || 0) - (elementB?.startTime || 0);
+    });
+
+    const fromElement = sortedElements[0];
+    const toElement = sortedElements[1];
+
+    const transitionId = addTransitionBetweenElements(
+      fromElement.trackId,
+      fromElement.elementId,
+      toElement.trackId,
+      toElement.elementId,
+      "flash",
+      {
+        direction: "in",
+        duration,
+        easing: "linear",
+        intensity: 1.0,
+        blur: 0.0,
+      }
+    );
+
+    if (transitionId) {
+      toast.success(`已添加闪黑转场 (${duration}s)`);
+    } else {
+      toast.error("添加闪黑转场失败");
+    }
+  });
+
+  useActionHandler("add-transition-flash-white", (args) => {
+    const { addTransitionBetweenElements } = useTimelineStore.getState();
+    const duration = args?.duration ?? 0.3;
+    
+    // 检查选中的元素
+    if (selectedElements.length !== 2) {
+      toast.error("请选择两个媒体元素来添加闪白转场");
+      return;
+    }
+
+    // 按时间排序选中的元素
+    const sortedElements = selectedElements.sort((a, b) => {
+      const trackA = tracks.find(t => t.id === a.trackId);
+      const trackB = tracks.find(t => t.id === b.trackId);
+      const elementA = trackA?.elements.find(e => e.id === a.elementId);
+      const elementB = trackB?.elements.find(e => e.id === b.elementId);
+      return (elementA?.startTime || 0) - (elementB?.startTime || 0);
+    });
+
+    const fromElement = sortedElements[0];
+    const toElement = sortedElements[1];
+
+    const transitionId = addTransitionBetweenElements(
+      fromElement.trackId,
+      fromElement.elementId,
+      toElement.trackId,
+      toElement.elementId,
+      "flash",
+      {
+        direction: "out",
+        duration,
+        easing: "linear",
+        intensity: 1.0,
+        blur: 0.0,
+      }
+    );
+
+    if (transitionId) {
+      toast.success(`已添加闪白转场 (${duration}s)`);
+    } else {
+      toast.error("添加闪白转场失败");
+    }
+  });
 }

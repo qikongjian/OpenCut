@@ -771,6 +771,30 @@ export const exportTimeline = async (
         mediaHeight?: number;
         mediaFps?: number;
         thumbnailUrl?: string;
+        // 转场元素属性
+        transitionType?: string;
+        direction?: string;
+        fromElementId?: string;
+        toElementId?: string;
+        fromTrackId?: string;
+        toTrackId?: string;
+        intensity?: number;
+        blur?: number;
+        // 文本元素属性
+        content?: string;
+        fontSize?: number;
+        fontFamily?: string;
+        color?: string;
+        backgroundColor?: string;
+        textAlign?: string;
+        fontWeight?: string;
+        fontStyle?: string;
+        textDecoration?: string;
+        x?: number;
+        y?: number;
+        rotation?: number;
+        opacity?: number;
+        horizontalFlip?: boolean;
       }>;
     }>;
     totalDuration: number;
@@ -859,10 +883,9 @@ export const exportTimeline = async (
     // 初始化进度
     updateProgress(5, 100);
 
-    // 1. 收集所有媒体元素并按时间排序
-    const mediaElements = timelineData.tracks
+    // 1. 收集所有媒体元素、转场元素和文本元素并按时间排序
+    const allElements = timelineData.tracks
       .flatMap(track => track.elements)
-      .filter(element => element.type === "media")
       .map(element => ({
         ...element,
         endTime: element.startTime + (element.duration - element.trimStart - element.trimEnd),
@@ -870,7 +893,11 @@ export const exportTimeline = async (
       }))
       .sort((a, b) => a.startTime - b.startTime);
 
-    console.log(`📋 Found ${mediaElements.length} media elements to export`);
+    const mediaElements = allElements.filter(element => element.type === "media");
+    const transitionElements = allElements.filter(element => element.type === "transition");
+    const textElements = allElements.filter(element => element.type === "text");
+
+    console.log(`📋 Found ${mediaElements.length} media elements, ${transitionElements.length} transition elements, and ${textElements.length} text elements to export`);
 
     if (mediaElements.length === 0) {
       throw new Error("No media elements found in timeline");
@@ -892,7 +919,7 @@ export const exportTimeline = async (
 
     updateProgress(10, 200);
 
-    // 2. 🧠 智能合并策略 + 🔄 分辨率预处理优化
+    // 2. 🧠 智能合并策略 + 🔄 分辨率预处理优化 + 🎬 转场处理
     let processedElements = mediaElements;
     const segments: string[] = [];
     
@@ -931,7 +958,8 @@ export const exportTimeline = async (
                                      el.mediaType === 'video'
                                    ) &&
                                    !hasCustomExportSettings && 
-                                   !needsPreprocessing;
+                                   !needsPreprocessing &&
+                                   transitionElements.length === 0; // 没有转场时才可以使用流复制
 
     if (canUseOriginalStreamCopy) {
       // 🚀 原有的单视频流复制模式
@@ -955,10 +983,10 @@ export const exportTimeline = async (
       updateProgress(50, 300);
       
     } else {
-      // 步骤3: 🧠 智能分组处理
+      // 步骤3: 🧠 智能分组处理 + 🎬 转场处理
       const videoGroups = detectVideoGroups(processedElements, exportConfig);
       
-      // 步骤4: 对每个组进行优化处理
+      // 步骤4: 对每个组进行优化处理，并处理转场
       for (let groupIndex = 0; groupIndex < videoGroups.length; groupIndex++) {
         const group = videoGroups[groupIndex];
         checkCancellation();
@@ -1001,7 +1029,21 @@ export const exportTimeline = async (
         }
       }
       
-      updateProgress(70, 200);
+      // 步骤5: 🎬 处理转场效果
+      if (transitionElements.length > 0) {
+        console.log('🎬 Starting transition processing...');
+        const transitionSegments = await processTransitions(
+          ffmpeg,
+          processedElements,
+          transitionElements,
+          exportConfig,
+          tempFiles,
+          updateProgress
+        );
+        
+        // 将转场片段添加到segments中
+        segments.push(...transitionSegments);
+      }
     }
 
     // 3. 🕳️ 智能间隔处理 - 适配新的分组结构
@@ -1028,13 +1070,13 @@ export const exportTimeline = async (
             
             console.log(`⚫ 创建 ${gap.toFixed(1)}s 间隔 (优化模式)`);
             
-            const resolutionMap = {
+            const resolutionMap: { [key: string]: string } = {
               '480p': '854:480',
               '720p': '1280:720', 
               '1080p': '1920:1080',
               '4k': '3840:2160'
             };
-            const outputResolution = resolutionMap[exportConfig.resolution];
+            const outputResolution = resolutionMap[exportConfig.resolution] || '1280:720';
             
             // 超快速黑屏生成
             await ffmpeg.exec([
@@ -1101,7 +1143,7 @@ export const exportTimeline = async (
         '1080p': '1920:1080',
         '4k': '3840:2160'
       };
-      const outputResolution = resolutionMap[exportConfig.resolution];
+      const outputResolution = resolutionMap[exportConfig.resolution] || '1280:720';
       
       concatCommand = [
         '-f', 'concat',
@@ -1149,9 +1191,23 @@ export const exportTimeline = async (
 
     updateProgress(90, 200);
 
-    // 5. 读取输出文件
-    console.log('📖 Reading output file...');
-    const data = await ffmpeg.readFile(outputName);
+    // 5. 📝 渲染字幕到视频
+    let finalVideoFile = outputName;
+    if (textElements.length > 0) {
+      console.log('📝 Starting subtitle rendering...');
+      finalVideoFile = await renderSubtitlesToVideo(
+        ffmpeg,
+        outputName,
+        textElements,
+        exportConfig,
+        tempFiles,
+        updateProgress
+      );
+    }
+
+    // 6. 读取最终输出文件
+    console.log('📖 Reading final output file...');
+    const data = await ffmpeg.readFile(finalVideoFile);
     
     const mimeType = exportConfig.format === 'webm' ? 'video/webm' : 
                     exportConfig.format === 'mp4' ? 'video/mp4' :
@@ -1390,7 +1446,7 @@ const preprocessResolution = async (
     '1080p': '1920:1080',
     '4k': '3840:2160'
   };
-  const outputResolution = resolutionMap[exportConfig.resolution];
+  const outputResolution = resolutionMap[exportConfig.resolution] || '1280:720';
   
   const processedElements: any[] = [];
   
@@ -1450,4 +1506,251 @@ const preprocessResolution = async (
   
   console.log('✅ 分辨率预处理完成，现在所有片段都是统一分辨率');
   return processedElements;
+};
+
+// 转场处理函数 - 处理时间线中的转场效果
+const processTransitions = async (
+  ffmpeg: any,
+  mediaElements: any[],
+  transitionElements: any[],
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<string[]> => {
+  console.log('🎬 Processing transitions...');
+  
+  if (transitionElements.length === 0) {
+    console.log('No transitions to process');
+    return [];
+  }
+  
+  const processedSegments: string[] = [];
+  
+  // 按时间排序所有元素（媒体+转场）
+  const allElements = [...mediaElements, ...transitionElements]
+    .sort((a, b) => a.startTime - b.startTime);
+  
+  // 处理每个转场
+  for (let i = 0; i < transitionElements.length; i++) {
+    const transition = transitionElements[i];
+    console.log(`🎬 Processing transition ${i + 1}/${transitionElements.length}: ${transition.transitionType}`);
+    
+    // 找到转场前后的媒体元素
+    const fromElement = mediaElements.find(el => el.id === transition.fromElementId);
+    const toElement = mediaElements.find(el => el.id === transition.toElementId);
+    
+    if (!fromElement || !toElement) {
+      console.warn(`Cannot find media elements for transition ${transition.id}`);
+      continue;
+    }
+    
+    // 获取媒体文件
+    let fromFile: File | null = null;
+    let toFile: File | null = null;
+    
+    if (fromElement.mediaFile) {
+      fromFile = fromElement.mediaFile;
+    } else if (fromElement.mediaUrl) {
+      const response = await fetch(fromElement.mediaUrl);
+      const blob = await response.blob();
+      fromFile = new File([blob], `from_${transition.id}.mp4`, { type: blob.type });
+    }
+    
+    if (toElement.mediaFile) {
+      toFile = toElement.mediaFile;
+    } else if (toElement.mediaUrl) {
+      const response = await fetch(toElement.mediaUrl);
+      const blob = await response.blob();
+      toFile = new File([blob], `to_${transition.id}.mp4`, { type: blob.type });
+    }
+    
+    if (!fromFile || !toFile) {
+      console.warn(`Cannot get media files for transition ${transition.id}`);
+      continue;
+    }
+    
+    // 写入输入文件
+    const fromInputName = `from_${transition.id}.mp4`;
+    const toInputName = `to_${transition.id}.mp4`;
+    const outputName = `transition_${transition.id}.mp4`;
+    
+    await ffmpeg.writeFile(fromInputName, new Uint8Array(await fromFile.arrayBuffer()));
+    await ffmpeg.writeFile(toInputName, new Uint8Array(await toFile.arrayBuffer()));
+    tempFiles.push(fromInputName, toInputName, outputName);
+    
+    // 根据转场类型生成FFmpeg命令
+    let filterComplex = '';
+    let outputSettings = [];
+    
+    switch (transition.transitionType) {
+      case 'flash':
+        if (transition.direction === 'in') {
+          // 闪黑效果
+          filterComplex = `[0:v]fade=t=out:st=${transition.duration - 0.1}:d=0.1:color=black[fadeout];[1:v]fade=t=in:st=0:d=0.1:color=black[fadein];[fadeout][fadein]xfade=transition=fade:duration=0.1:offset=${transition.duration - 0.1}[v]`;
+        } else {
+          // 闪白效果
+          filterComplex = `[0:v]fade=t=out:st=${transition.duration - 0.1}:d=0.1:color=white[fadeout];[1:v]fade=t=in:st=0:d=0.1:color=white[fadein];[fadeout][fadein]xfade=transition=fade:duration=0.1:offset=${transition.duration - 0.1}[v]`;
+        }
+        break;
+        
+      case 'dissolve':
+        // 叠化效果
+        filterComplex = `[0:v][1:v]xfade=transition=dissolve:duration=${transition.duration}:offset=${transition.duration}[v]`;
+        break;
+        
+      case 'fade':
+        if (transition.direction === 'in') {
+          filterComplex = `[0:v]fade=t=in:st=0:d=${transition.duration}[fadein];[1:v]format=yuva420p[to];[fadein][to]overlay=format=yuv420p[v]`;
+        } else {
+          filterComplex = `[0:v]fade=t=out:st=${transition.duration}:d=${transition.duration}[fadeout];[1:v]format=yuva420p[to];[fadeout][to]overlay=format=yuv420p[v]`;
+        }
+        break;
+        
+      default:
+        console.warn(`Unsupported transition type: ${transition.transitionType}`);
+        continue;
+    }
+    
+    // 构建FFmpeg命令
+    const resolutionMap: { [key: string]: string } = {
+      '480p': '854:480',
+      '720p': '1280:720', 
+      '1080p': '1920:1080',
+      '4k': '3840:2160'
+    };
+    const outputResolution = resolutionMap[exportConfig.resolution as keyof typeof resolutionMap] || '1280:720';
+    
+    const command = [
+      '-i', fromInputName,
+      '-i', toInputName,
+      '-filter_complex', filterComplex,
+      '-map', '[v]',
+      '-c:v', 'libx264',
+      '-crf', '23',
+      '-preset', 'fast',
+      '-pix_fmt', 'yuv420p',
+      '-r', exportConfig.frameRate,
+      '-s', outputResolution,
+      '-y', outputName
+    ];
+    
+    console.log(`🎬 Executing transition command for ${transition.transitionType}`);
+    await ffmpeg.exec(command);
+    
+    processedSegments.push(outputName);
+    
+    // 更新进度
+    const progress = 50 + (30 * (i + 1) / transitionElements.length);
+    onProgress?.(progress);
+  }
+  
+  console.log(`🎬 Processed ${processedSegments.length} transitions`);
+  return processedSegments;
+};
+
+// 导出转场处理函数供外部使用
+export { processTransitions };
+
+// 字幕渲染函数 - 将字幕渲染到视频上
+const renderSubtitlesToVideo = async (
+  ffmpeg: any,
+  videoFile: string,
+  textElements: any[],
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  console.log('📝 Rendering subtitles to video...');
+  
+  if (textElements.length === 0) {
+    console.log('No subtitles to render');
+    return videoFile;
+  }
+  
+  const outputName = `video_with_subtitles.mp4`;
+  tempFiles.push(outputName);
+  
+  // 构建字幕滤镜链
+  const subtitleFilters = textElements.map((text, index) => {
+    const startTime = text.startTime;
+    const endTime = text.startTime + text.duration;
+    
+    // 计算字幕位置（转换为像素坐标）
+    const x = Math.max(0, Math.min(1920, (text.x || 0) + 960)); // 居中并限制范围
+    const y = Math.max(0, Math.min(1080, (text.y || 0) + 540));  // 居中并限制范围
+    
+    // 构建字幕样式
+    const fontSize = Math.max(12, Math.min(200, text.fontSize || 48));
+    const fontColor = text.color || '#ffffff';
+    const backgroundColor = text.backgroundColor !== 'transparent' ? text.backgroundColor : '';
+    
+    // 字幕文本内容（转义特殊字符）
+    const subtitleText = text.content
+      .replace(/'/g, "\\'")
+      .replace(/"/g, '\\"')
+      .replace(/:/g, '\\:')
+      .replace(/=/g, '\\=')
+      .replace(/,/g, '\\,')
+      .replace(/;/g, '\\;')
+      .replace(/\n/g, '\\n');
+    
+    // 构建drawtext滤镜
+    let filter = `drawtext=text='${subtitleText}':fontsize=${fontSize}:fontcolor=${fontColor}`;
+    
+    // 添加位置
+    filter += `:x=${x}:y=${y}`;
+    
+    // 添加字体（如果指定）
+    if (text.fontFamily && text.fontFamily !== 'Arial') {
+      filter += `:fontfile=/System/Library/Fonts/${text.fontFamily}.ttf`;
+    }
+    
+    // 添加背景色（如果有）
+    if (backgroundColor && backgroundColor !== 'transparent') {
+      filter += `:box=1:boxcolor=${backgroundColor}`;
+    }
+    
+    // 添加时间控制
+    filter += `:enable='between(t,${startTime},${endTime})'`;
+    
+    // 添加透明度
+    if (text.opacity !== undefined && text.opacity < 1) {
+      filter += `:alpha=${text.opacity}`;
+    }
+    
+    return filter;
+  });
+  
+  // 合并所有字幕滤镜
+  const subtitleFilterChain = subtitleFilters.join(',');
+  
+  // 构建FFmpeg命令
+  const resolutionMap: { [key: string]: string } = {
+    '480p': '854:480',
+    '720p': '1280:720', 
+    '1080p': '1920:1080',
+    '4k': '3840:2160'
+  };
+  const outputResolution = resolutionMap[exportConfig.resolution as keyof typeof resolutionMap] || '1280:720';
+  
+  const command = [
+    '-i', videoFile,
+    '-vf', subtitleFilterChain,
+    '-c:v', 'libx264',
+    '-crf', '23',
+    '-preset', 'fast',
+    '-pix_fmt', 'yuv420p',
+    '-r', exportConfig.frameRate,
+    '-s', outputResolution,
+    '-c:a', 'copy',
+    '-y', outputName
+  ];
+  
+  console.log('📝 Executing subtitle rendering command');
+  await ffmpeg.exec(command);
+  
+  onProgress?.(85);
+  
+  console.log('✅ Subtitles rendered successfully');
+  return outputName;
 };

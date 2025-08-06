@@ -30,6 +30,11 @@ export const TRACK_COLORS: Record<
     background: "bg-green-500/20",
     border: "border-white/80",
   },
+  transition: {
+    solid: "bg-purple-500",
+    background: "bg-purple-500/20",
+    border: "border-white/80",
+  },
 } as const;
 
 // Utility functions
@@ -50,7 +55,8 @@ export const TRACK_HEIGHTS: Record<TrackType, number> = {
   media: 65,
   text: 25,
   audio: 50,
-} as const;
+  transition: 40,
+};
 
 // for 函数
 // Utility function for track heights

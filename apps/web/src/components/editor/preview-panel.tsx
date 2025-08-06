@@ -11,7 +11,7 @@
 // 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
 // 导入项目模块
-import { TimelineElement, TimelineTrack } from "@/types/timeline";
+import { TimelineElement, TimelineTrack, TransitionElement } from "@/types/timeline";
 // 导入项目模块
 import { useMediaStore, type MediaItem } from "@/stores/media-store";
 // 导入项目模块
@@ -246,6 +246,7 @@ export function PreviewPanel() {
 
         if (currentTime >= elementStart && currentTime < elementEnd) {
           let mediaItem = null;
+          
           if (element.type === "media") {
             if (element.mediaId === "test") {
               mediaItem = null;
@@ -274,7 +275,13 @@ export function PreviewPanel() {
               }
             }
           }
+          
+          // 转场元素不需要mediaItem，直接添加
+          if (element.type === "transition") {
+            activeElements.push({ element, track, mediaItem: null });
+          } else {
           activeElements.push({ element, track, mediaItem });
+          }
         }
       });
     });
@@ -371,6 +378,90 @@ export function PreviewPanel() {
   const renderElement = (elementData: ActiveElement, index: number) => {
 // 常量定义 - 模块内部使用的固定值
     const { element, mediaItem } = elementData;
+
+    // 转场元素
+    if (element.type === "transition") {
+      const transitionElement = element as TransitionElement;
+      
+      // 获取转场相关的媒体元素
+      const fromTrack = tracks.find(t => t.id === transitionElement.fromTrackId);
+      const toTrack = tracks.find(t => t.id === transitionElement.toTrackId);
+      const fromElement = fromTrack?.elements.find(e => e.id === transitionElement.fromElementId);
+      const toElement = toTrack?.elements.find(e => e.id === transitionElement.toElementId);
+      
+      // 计算转场进度 (0-1)
+      const transitionProgress = (currentTime - element.startTime) / element.duration;
+      
+      // 根据转场类型渲染不同的效果
+      switch (transitionElement.transitionType) {
+        case "flash":
+          return (
+            <div
+              key={element.id}
+              className="absolute inset-0 flex items-center justify-center"
+              style={{
+                zIndex: 200 + index, // 转场元素在最顶层
+              }}
+            >
+              {transitionElement.direction === "in" ? (
+                // 闪黑效果
+                <div
+                  className="absolute inset-0 bg-black"
+                  style={{
+                    opacity: transitionProgress < 0.3 ? 1 - (transitionProgress / 0.3) : 0,
+                    transition: "opacity 0.1s ease-out",
+                  }}
+                />
+              ) : (
+                // 闪白效果
+                <div
+                  className="absolute inset-0 bg-white"
+                  style={{
+                    opacity: transitionProgress > 0.7 ? (transitionProgress - 0.7) / 0.3 : 0,
+                    transition: "opacity 0.1s ease-out",
+                  }}
+                />
+              )}
+            </div>
+          );
+          
+        case "dissolve":
+          return (
+            <div
+              key={element.id}
+              className="absolute inset-0"
+              style={{
+                zIndex: 200 + index,
+              }}
+            >
+              {/* 叠化效果 - 使用CSS混合模式 */}
+              <div
+                className="absolute inset-0 bg-black/50"
+                style={{
+                  opacity: Math.sin(transitionProgress * Math.PI),
+                  mixBlendMode: "multiply",
+                }}
+              />
+            </div>
+          );
+          
+        default:
+          return (
+            <div
+              key={element.id}
+              className="absolute inset-0 flex items-center justify-center bg-purple-500/20"
+              style={{
+                zIndex: 200 + index,
+              }}
+            >
+              <div className="text-center text-white">
+                <div className="text-lg mb-1">✨</div>
+                <p className="text-xs">{element.name}</p>
+              </div>
+            </div>
+          );
+      }
+    }
 
     // Text elements
     if (element.type === "text") {

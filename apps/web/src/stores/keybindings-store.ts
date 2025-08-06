@@ -41,6 +41,10 @@ export const defaultKeybindings: KeybindingConfig = {
   delete: "delete-selected",
   backspace: "delete-selected",
   h: "flip-horizontal",
+  // 转场快捷键
+  "ctrl+t": "add-transition-dissolve", // 叠化转场
+  "ctrl+shift+t": "add-transition-flash-black", // 闪黑转场
+  "alt+t": "add-transition-flash-white", // 闪白转场
 };
 
 // 接口定义 - 定义对象的结构和属性类型

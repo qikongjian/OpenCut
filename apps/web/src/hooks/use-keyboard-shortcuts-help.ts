@@ -74,6 +74,10 @@ const actionDescriptions: Record<
   "toggle-snapping": { description: "Toggle snapping", category: "Editing" },
   undo: { description: "Undo", category: "History" },
   redo: { description: "Redo", category: "History" },
+  "flip-horizontal": { description: "Flip selected elements horizontally", category: "Editing" },
+  "add-transition-dissolve": { description: "Add dissolve transition", category: "Transitions" },
+  "add-transition-flash-black": { description: "Add flash black transition", category: "Transitions" },
+  "add-transition-flash-white": { description: "Add flash white transition", category: "Transitions" },
 };
 
 // Convert key binding format to display format

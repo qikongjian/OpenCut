@@ -4,6 +4,7 @@
 // 最后更新: 2025/7/23
 
 import { TransitionType, TransitionDirection } from "@/types/timeline";
+import React from "react";
 
 // 转场参数接口
 export interface TransitionParams {
@@ -34,6 +35,8 @@ export function generateTransitionFilter(
       return generateWipeTransition(fromVideo, toVideo, params);
     case "dissolve":
       return generateDissolveTransition(fromVideo, toVideo, params);
+    case "flash":
+      return generateFlashTransition(fromVideo, toVideo, params);
     default:
       throw new Error(`不支持的转场类型: ${type}`);
   }
@@ -142,10 +145,29 @@ function generateDissolveTransition(
   toVideo: string,
   params: TransitionParams
 ): string {
-  const { duration, intensity } = params;
+  const { duration, intensity = 1.0 } = params;
   
-  // 使用像素化溶解效果
-  return `[0:v]pixelize=block_size=10:duration=${duration}[dissolveout];[1:v]format=yuva420p[to];[dissolveout][to]overlay=format=yuv420p`;
+  // 使用xfade滤镜实现叠化效果
+  return `[0:v][1:v]xfade=transition=dissolve:duration=${duration}:offset=${duration}[v]`;
+}
+
+// 生成闪黑/闪白转场
+function generateFlashTransition(
+  fromVideo: string,
+  toVideo: string,
+  params: TransitionParams
+): string {
+  const { direction, duration } = params;
+  
+  if (direction === "in") {
+    // 闪黑效果 - 快速闪黑然后切换
+    const flashDuration = Math.min(duration * 0.3, 0.2); // 闪黑时长不超过0.2秒
+    return `[0:v]fade=t=out:st=${duration - flashDuration}:d=${flashDuration}:color=black[fadeout];[1:v]fade=t=in:st=0:d=${flashDuration}:color=black[fadein];[fadeout][fadein]xfade=transition=fade:duration=${flashDuration}:offset=${duration - flashDuration}[v]`;
+  } else {
+    // 闪白效果 - 快速闪白然后切换
+    const flashDuration = Math.min(duration * 0.3, 0.2); // 闪白时长不超过0.2秒
+    return `[0:v]fade=t=out:st=${duration - flashDuration}:d=${flashDuration}:color=white[fadeout];[1:v]fade=t=in:st=0:d=${flashDuration}:color=white[fadein];[fadeout][fadein]xfade=transition=fade:duration=${flashDuration}:offset=${duration - flashDuration}[v]`;
+  }
 }
 
 // 生成完整的转场FFmpeg命令
@@ -161,7 +183,7 @@ export function generateTransitionCommand(
   }
 ): string {
   const { width, height, fps, duration } = videoSettings;
-  const { type, direction, transitionDuration } = transitionParams;
+  const { type, direction, duration: transitionDuration } = transitionParams;
   
   // 基础输入文件
   const inputs = inputFiles.map(file => `-i "${file}"`).join(" ");
@@ -285,8 +307,58 @@ export function getDefaultTransitionParams(type: TransitionType): TransitionPara
       easing: "linear",
       intensity: 1.0,
       blur: 0.1
+    },
+    flash: {
+      type: "flash",
+      direction: "in",
+      duration: 0.3,
+      easing: "linear",
+      intensity: 1.0,
+      blur: 0.0
     }
   };
   
   return defaults[type];
+}
+
+// 获取转场图标
+export function getTransitionIcon(type: TransitionType, direction: TransitionDirection): React.ReactNode {
+  const icons = {
+    fade: "🌅",
+    slide: direction === "left" ? "⬅️" : direction === "right" ? "➡️" : direction === "up" ? "⬆️" : "⬇️",
+    zoom: direction === "in" ? "🔍➕" : "🔍➖",
+    wipe: direction === "left" ? "🧹⬅️" : direction === "right" ? "🧹➡️" : direction === "up" ? "🧹⬆️" : "🧹⬇️",
+    dissolve: "💫",
+    flash: direction === "in" ? "⚡" : "⚡"
+  };
+  
+  return icons[type] || "🔄";
+}
+
+// 获取转场颜色类名
+export function getTransitionColor(type: TransitionType): string {
+  const colors = {
+    fade: "border-blue-400 bg-blue-500/20",
+    slide: "border-green-400 bg-green-500/20",
+    zoom: "border-yellow-400 bg-yellow-500/20",
+    wipe: "border-orange-400 bg-orange-500/20",
+    dissolve: "border-purple-400 bg-purple-500/20",
+    flash: "border-red-400 bg-red-500/20"
+  };
+  
+  return colors[type] || "border-gray-400 bg-gray-500/20";
+}
+
+// 获取转场名称
+export function getTransitionName(type: TransitionType, direction: TransitionDirection): string {
+  const names = {
+    fade: direction === "in" ? "淡入" : direction === "out" ? "淡出" : "交叉淡入淡出",
+    slide: `滑动${direction === "left" ? "向左" : direction === "right" ? "向右" : direction === "up" ? "向上" : "向下"}`,
+    zoom: direction === "in" ? "放大进入" : "缩小退出",
+    wipe: `擦除${direction === "left" ? "向左" : direction === "right" ? "向右" : direction === "up" ? "向上" : "向下"}`,
+    dissolve: "叠化",
+    flash: direction === "in" ? "闪黑" : "闪白"
+  };
+  
+  return names[type] || "转场";
 } 
