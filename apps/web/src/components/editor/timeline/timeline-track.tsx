@@ -932,6 +932,7 @@ export function TimelineTrackContent({
 
 // 常量定义 - 模块内部使用的固定值
         const dragData: DragData = JSON.parse(mediaItemData);
+        console.log('🎬 拖拽数据:', dragData);
 
         if (dragData.type === "text") {
           let targetTrackId = track.id;
@@ -1031,8 +1032,10 @@ export function TimelineTrackContent({
         } else {
           // Handle media items
           const mediaItem = mediaItems.find((item) => item.id === dragData.id);
+          console.log('🎬 找到的媒体项:', mediaItem);
 
           if (!mediaItem) {
+            console.error('❌ 媒体项未找到:', dragData.id);
             toast.error("Media item not found");
             return;
           }
@@ -1173,23 +1176,28 @@ export function TimelineTrackContent({
             return;
           }
 
-          addElementToTrack(targetTrackId, {
-            type: "media",
-            mediaId: mediaItem.id,
-            name: mediaItem.name,
-            duration: mediaItem.duration || 5,
+          // 优先使用拖拽数据中的信息，回退到媒体库中的信息
+          const elementData = {
+            type: "media" as const,
+            mediaId: dragData.id,
+            name: dragData.name || mediaItem.name,
+            duration: dragData.duration || mediaItem.duration || 5,
             startTime: mediaSnappedTime,
             trimStart: 0,
             trimEnd: 0,
             // 创建媒体文件副本，确保时间轴元素独立于媒体库
-            mediaFile: mediaItem.file,
-            mediaUrl: mediaItem.url,
-            thumbnailUrl: mediaItem.thumbnailUrl,
-            mediaType: mediaItem.type,
-            mediaWidth: mediaItem.width,
-            mediaHeight: mediaItem.height,
-            mediaFps: mediaItem.fps,
-          });
+            mediaFile: dragData.file || mediaItem.file,
+            mediaUrl: dragData.url || mediaItem.url,
+            thumbnailUrl: dragData.thumbnailUrl || mediaItem.thumbnailUrl,
+            mediaType: dragData.type || mediaItem.type,
+            mediaWidth: dragData.width || mediaItem.width,
+            mediaHeight: dragData.height || mediaItem.height,
+            mediaFps: dragData.fps || mediaItem.fps,
+            horizontalFlip: false,
+          };
+
+          console.log('🎬 创建时间轴元素:', elementData);
+          addElementToTrack(targetTrackId, elementData);
         }
       }
     } catch (error) {

@@ -21,7 +21,18 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
       // Google 用户头像服务
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
+      // 阿里云OSS视频服务
+      { protocol: "https", hostname: "video-base-imf.oss-ap-southeast-7.aliyuncs.com" },
     ],
+  },
+  // 代理配置解决CORS问题
+  async rewrites() {
+    return [
+      {
+        source: '/api/proxy/video/:path*',
+        destination: 'https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/:path*',
+      },
+    ];
   },
   // 静态文件配置
   async headers() {

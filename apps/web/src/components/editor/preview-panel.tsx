@@ -260,14 +260,14 @@ export function PreviewPanel() {
               // 优先使用时间轴元素中存储的媒体文件副本
               const elementMedia = element as MediaElement;
               
-              if (elementMedia.mediaFile) {
-                // 使用时间轴元素中的媒体文件副本，重新创建URL
-                const mediaUrl = elementMedia.mediaUrl || URL.createObjectURL(elementMedia.mediaFile);
+              if (elementMedia.mediaUrl) {
+                // 优先使用mediaUrl（支持远程URL和本地URL）
+                console.log(`🎬 预览面板使用mediaUrl: ${elementMedia.mediaUrl}`);
                 mediaItem = {
                   id: element.mediaId,
                   name: element.name,
                   type: elementMedia.mediaType || "video",
-                  url: mediaUrl,
+                  url: elementMedia.mediaUrl,
                   thumbnailUrl: elementMedia.thumbnailUrl,
                   width: elementMedia.mediaWidth,
                   height: elementMedia.mediaHeight,
@@ -275,9 +275,37 @@ export function PreviewPanel() {
                   duration: element.duration,
                   file: elementMedia.mediaFile
                 };
+              } else if (elementMedia.mediaFile && elementMedia.mediaFile.size > 0) {
+                // 使用真实的本地文件创建URL
+                try {
+                  const mediaUrl = URL.createObjectURL(elementMedia.mediaFile);
+                  console.log(`🎬 预览面板使用本地文件: ${elementMedia.mediaFile.name}, URL: ${mediaUrl}`);
+                  mediaItem = {
+                    id: element.mediaId,
+                    name: element.name,
+                    type: elementMedia.mediaType || "video",
+                    url: mediaUrl,
+                    thumbnailUrl: elementMedia.thumbnailUrl,
+                    width: elementMedia.mediaWidth,
+                    height: elementMedia.mediaHeight,
+                    fps: elementMedia.mediaFps,
+                    duration: element.duration,
+                    file: elementMedia.mediaFile
+                  };
+                } catch (error) {
+                  console.error(`❌ 创建本地文件URL失败:`, error);
+                  // 回退到从媒体库中查找
+                  mediaItem = mediaItems.find((item) => item.id === element.mediaId) || null;
+                }
               } else {
                 // 回退到从媒体库中查找
+                console.log(`🎬 预览面板回退到媒体库查找: ${element.mediaId}`);
                 mediaItem = mediaItems.find((item) => item.id === element.mediaId) || null;
+                if (mediaItem) {
+                  console.log(`🎬 从媒体库找到: ${mediaItem.name}, URL: ${mediaItem.url}`);
+                } else {
+                  console.warn(`❌ 媒体库中未找到: ${element.mediaId}`);
+                }
               }
             }
           }

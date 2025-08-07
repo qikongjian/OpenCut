@@ -22,6 +22,8 @@ import { AudioView } from "./views/audio";
 import { TransitionsView } from "./views/transitions";
 // 导入特效视图组件，显示蒙板和特效
 import { EffectsView } from "./views/effects";
+// 导入AI剪辑面板组件
+import { AIEditingPanel } from "../ai-editing-panel";
 
 // 媒体面板组件 - 编辑器左侧的媒体资源管理面板
 // 导出组件 - 可复用的 UI 组件
@@ -67,6 +69,8 @@ export function MediaPanel() {
         Adjustment view coming soon...
       </div>
     ),
+    // AI剪辑标签页 - AI智能剪辑功能
+    "ai-editing": <AIEditingPanel />,
   };
 
   return (

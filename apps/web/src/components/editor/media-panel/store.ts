@@ -18,6 +18,7 @@ import {
   SlidersHorizontalIcon,
   LucideIcon,
   TypeIcon,
+  Bot,
 } from "lucide-react";
 // 导入 Zustand 状态管理库
 import { create } from "zustand";
@@ -32,7 +33,8 @@ export type Tab =
   | "transitions"
   | "captions"
   | "filters"
-  | "adjustment";
+  | "adjustment"
+  | "ai-editing";
 
 // 导出常量对象 - 包含多个相关常量的对象
 export const tabs: { [key in Tab]: { icon: LucideIcon; label: string } } = {
@@ -71,6 +73,10 @@ export const tabs: { [key in Tab]: { icon: LucideIcon; label: string } } = {
   adjustment: {
     icon: SlidersHorizontalIcon,
     label: "Adjustment",
+  },
+  "ai-editing": {
+    icon: Bot,
+    label: "AI剪辑",
   },
 };
 

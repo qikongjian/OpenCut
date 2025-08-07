@@ -130,6 +130,91 @@ export interface TransitionElement extends BaseTimelineElement {
 // 时间线元素联合类型
 export type TimelineElement = MediaElement | TextElement | TransitionElement;
 
+// AI剪辑计划相关类型定义
+export interface AIClipPlan {
+  sequence_clip_id: string;
+  source_clip_id: string;
+  video_url: string;
+  corresponding_script_scene_id: string;
+  clip_type: "video_and_audio" | "video" | "audio";
+  sequence_start_timecode: string;
+  source_in_timecode: string;
+  source_out_timecode: string;
+  clip_duration_in_sequence: string;
+  transition_from_previous: {
+    transition_type: string;
+    transition_duration_ms: number;
+    audio_sync_offset_ms: number;
+    reason_for_transition: string;
+  };
+  clip_placement_reasons: {
+    core_intent_and_audience_effect: string;
+    emotion_priority: string;
+    story_priority: string;
+    rhythm_priority: string;
+    eyeline_priority: string;
+    space_priority: string;
+    lens_language_application: string;
+  };
+  continuity_correction_suggestion: {
+    error_exists: boolean;
+    error_type?: string;
+    occurrence_location?: string;
+    error_description?: string;
+    is_intentional_artistic_choice?: boolean;
+    artistic_purpose_explanation?: string;
+    correction_suggestions?: string[];
+    reason_for_correction?: string;
+  };
+  sound_design_suggestions: Array<{
+    sound_type: string;
+    description: string;
+    timing_in_clip: string;
+    intensity_suggestion: string;
+  }>;
+  visual_enhancement_suggestions: Array<{
+    enhancement_type: string;
+    description: string;
+    reason: string;
+  }>;
+}
+
+export interface AIEditingPlan {
+  version_name: string;
+  version_summary: string;
+  timeline_clips: AIClipPlan[];
+}
+
+export interface AIEditingData {
+  project_id: string;
+  script_content: string;
+  director_intent: string;
+  success: boolean;
+  editing_plan: {
+    material_classification_results: {
+      discarded_footage_list: Array<{
+        clip_id: string;
+        video_url: string;
+        reason: string;
+      }>;
+      alternative_footage_list: Array<{
+        clip_id: string;
+        video_url: string;
+        shortcoming: string;
+        potential_use_cases: string;
+      }>;
+    };
+    editing_sequence_plans: AIEditingPlan[];
+    production_suggestions: Array<{
+      suggestion_type: string;
+      description: string;
+      reason: string;
+      estimated_duration: string;
+      suggested_content_elements: string;
+    }>;
+  };
+}
+
 // 创建类型（不包含id，用于添加到轨道）
 export type CreateMediaElement = Omit<MediaElement, "id">;
 // 类型定义 - 创建类型别名或联合类型
@@ -163,6 +248,14 @@ export interface MediaItemDragData {
   id: string; // 媒体项ID
   type: MediaType; // 媒体类型
   name: string; // 媒体名称
+  duration?: number; // 媒体时长
+  width?: number; // 媒体宽度
+  height?: number; // 媒体高度
+  fps?: number; // 帧率
+  url?: string; // 媒体URL
+  file?: File; // 媒体文件
+  thumbnailUrl?: string; // 缩略图URL
+  size?: number; // 文件大小
 }
 
 // 接口定义 - 定义对象的结构和属性类型

@@ -432,7 +432,12 @@ export function MediaView() {
                               duration: item.duration,
                               width: item.width,
                               height: item.height,
-                              fps: item.fps
+                              fps: item.fps,
+                              // 添加完整的媒体信息
+                              url: item.url,
+                              file: item.file,
+                              thumbnailUrl: item.thumbnailUrl,
+                              size: item.size
                             }}
                             onAddToTimeline={(currentTime) => {
                               const { addMediaAtTime } = useTimelineStore.getState();

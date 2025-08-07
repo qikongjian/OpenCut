@@ -9,7 +9,7 @@
 "use client";
 
 // 导入 React 核心库
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 // 导入本地模块
 import { Button } from "../../ui/button";
 // 导入模块
@@ -24,6 +24,7 @@ import {
   Type,
   Copy,
   RefreshCw,
+  Bot,
 } from "lucide-react";
 // 导入项目模块
 import { useMediaStore } from "@/stores/media-store";
@@ -65,6 +66,156 @@ import {
   ContextMenuTrigger,
 } from "../../ui/context-menu";
 import { TransitionElementComponent } from "./transition-element";
+
+// 视频缩略图平铺组件
+const VideoThumbnailTiles = ({ videoUrl, tileWidth, tileHeight }: {
+  videoUrl: string;
+  tileWidth: number;
+  tileHeight: number;
+}) => {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    console.log(`🎬 VideoThumbnailTiles 开始处理:`, { videoUrl, tileWidth, tileHeight });
+
+    if (!videoUrl) {
+      console.warn('❌ videoUrl为空');
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video) {
+      console.warn('❌ video元素不存在');
+      return;
+    }
+
+    const generateThumbnail = () => {
+      console.log('🎨 开始生成缩略图...');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        console.warn('❌ 无法创建canvas上下文');
+        return;
+      }
+
+      canvas.width = tileWidth;
+      canvas.height = tileHeight;
+
+      console.log(`📐 Canvas尺寸: ${canvas.width}x${canvas.height}`);
+      console.log(`📺 Video尺寸: ${video.videoWidth}x${video.videoHeight}`);
+      console.log(`⏰ Video当前时间: ${video.currentTime}`);
+
+      // 绘制视频帧
+      try {
+        ctx.drawImage(video, 0, 0, tileWidth, tileHeight);
+      } catch (error) {
+        console.error('❌ Canvas drawImage失败 (可能是CORS问题):', error);
+        // 回退：直接使用视频URL
+        setThumbnailUrl(videoUrl);
+        return;
+      }
+
+      // 转换为blob URL
+      try {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            setThumbnailUrl(url);
+            console.log(`✅ 生成视频缩略图成功:`, url);
+          } else {
+            console.error('❌ 无法生成blob');
+            // 回退：直接使用视频URL
+            setThumbnailUrl(videoUrl);
+          }
+        }, 'image/jpeg', 0.7);
+      } catch (error) {
+        console.error('❌ Canvas toBlob失败 (可能是CORS问题):', error);
+        // 回退：直接使用视频URL
+        setThumbnailUrl(videoUrl);
+      }
+    };
+
+    const handleLoadedData = () => {
+      console.log('📺 视频数据加载完成');
+      video.currentTime = 0.1; // 跳到0.1秒
+    };
+
+    const handleSeeked = () => {
+      console.log('⏰ 视频跳转完成，当前时间:', video.currentTime);
+      generateThumbnail();
+    };
+
+    const handleError = (e: any) => {
+      console.error(`❌ 视频加载失败:`, videoUrl, e);
+    };
+
+    const handleLoadStart = () => {
+      console.log('🔄 开始加载视频:', videoUrl);
+    };
+
+    const handleCanPlay = () => {
+      console.log('▶️ 视频可以播放');
+    };
+
+    video.addEventListener('loadstart', handleLoadStart);
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('seeked', handleSeeked);
+    video.addEventListener('error', handleError);
+
+    video.src = videoUrl;
+    video.load();
+
+    return () => {
+      video.removeEventListener('loadstart', handleLoadStart);
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('seeked', handleSeeked);
+      video.removeEventListener('error', handleError);
+      if (thumbnailUrl) {
+        URL.revokeObjectURL(thumbnailUrl);
+      }
+    };
+  }, [videoUrl, tileWidth, tileHeight]);
+
+  return (
+    <>
+      {/* 隐藏的视频元素用于生成缩略图 */}
+      <video
+        ref={videoRef}
+        style={{ display: 'none' }}
+        muted
+        playsInline
+        preload="metadata"
+      />
+
+      {/* 缩略图背景 */}
+      {thumbnailUrl ? (
+        <div
+          className="absolute top-3 bottom-3 left-0 right-0"
+          style={{
+            backgroundImage: `url(${thumbnailUrl})`,
+            backgroundRepeat: "repeat-x",
+            backgroundSize: `${tileWidth}px ${tileHeight}px`,
+            backgroundPosition: "left center",
+            pointerEvents: "none",
+          }}
+          aria-label="Video thumbnail tiles"
+        />
+      ) : (
+        // 回退方案：显示视频文件名和类型图标
+        <div className="absolute top-3 bottom-3 left-0 right-0 flex items-center justify-center bg-gray-700/50">
+          <div className="text-xs text-white/70 text-center px-2">
+            <div className="mb-1">🎬</div>
+            <div className="truncate">{videoUrl.split('/').pop()?.split('.')[0] || 'Video'}</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
 
 // TimelineElement 函数
 // 导出组件 - 可复用的 UI 组件
@@ -300,28 +451,95 @@ export function TimelineElement({
     const VIDEO_TILE_PADDING = 16;
     const OVERLAY_SPACE_MULTIPLIER = 1.5;
 
-    if (mediaType === "video" && thumbnailUrl) {
+    if (mediaType === "video") {
       const trackHeight = getTrackHeight(track.type);
       const tileHeight = trackHeight - 8; // Match image padding
       const tileWidth = tileHeight * TILE_ASPECT_RATIO;
 
+      // 判断是否为远程URL（AI剪辑）
+      const isRemoteUrl = mediaUrl && (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://'));
+      // 判断是否为blob URL（本地文件）
+      const isBlobUrl = mediaUrl && mediaUrl.startsWith('blob:');
+
+      // 调试信息
+      console.log(`🎬 时间轴元素 ${element.name}:`, {
+        mediaType,
+        thumbnailUrl,
+        mediaUrl,
+        isRemoteUrl,
+        isBlobUrl,
+        tileWidth,
+        tileHeight,
+        elementMedia: {
+          mediaUrl: elementMedia.mediaUrl,
+          thumbnailUrl: elementMedia.thumbnailUrl,
+          mediaType: elementMedia.mediaType
+        },
+        mediaItem: mediaItem ? {
+          url: mediaItem.url,
+          thumbnailUrl: mediaItem.thumbnailUrl,
+          type: mediaItem.type
+        } : null
+      });
+
       return (
         <div className="w-full h-full flex items-center justify-center">
           <div className="bg-[#004D52] py-3 w-full h-full relative">
-            {/* Background with tiled thumbnails */}
-            <div
-              className="absolute top-3 bottom-3 left-0 right-0"
-              style={{
-                backgroundImage: thumbnailUrl
-                  ? `url(${thumbnailUrl})`
-                  : "none",
-                backgroundRepeat: "repeat-x",
-                backgroundSize: `${tileWidth}px ${tileHeight}px`,
-                backgroundPosition: "left center",
-                pointerEvents: "none",
-              }}
-              aria-label={`Tiled thumbnail of ${element.name}`}
-            />
+            {/* 根据不同情况选择显示策略 */}
+            {isRemoteUrl ? (
+              // 远程URL（AI剪辑）：直接显示视频元素
+              <div className="absolute top-3 bottom-3 left-0 right-0 overflow-hidden">
+                <video
+                  src={mediaUrl}
+                  className="w-full h-full object-cover opacity-60"
+                  muted
+                  playsInline
+                  preload="metadata"
+                  style={{
+                    filter: 'brightness(0.8)',
+                  }}
+                  onLoadedData={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    video.currentTime = 0.1;
+                    console.log('🎬 远程视频加载成功:', mediaUrl);
+                  }}
+                  onError={(e) => {
+                    console.error('❌ 远程视频加载失败:', mediaUrl);
+                  }}
+                />
+              </div>
+            ) : thumbnailUrl && (thumbnailUrl.startsWith('data:') || thumbnailUrl.startsWith('blob:')) ? (
+              // 本地文件且有有效缩略图：使用缩略图平铺
+              <div
+                className="absolute top-3 bottom-3 left-0 right-0"
+                style={{
+                  backgroundImage: `url(${thumbnailUrl})`,
+                  backgroundRepeat: "repeat-x",
+                  backgroundSize: `${tileWidth}px ${tileHeight}px`,
+                  backgroundPosition: "left center",
+                  pointerEvents: "none",
+                }}
+                aria-label="Video thumbnail tiles"
+              />
+            ) : (
+              // 本地文件但无有效缩略图：尝试生成缩略图或显示视频
+              isBlobUrl ? (
+                <VideoThumbnailTiles
+                  videoUrl={mediaUrl}
+                  tileWidth={tileWidth}
+                  tileHeight={tileHeight}
+                />
+              ) : (
+                // 回退方案：显示文件名
+                <div className="absolute top-3 bottom-3 left-0 right-0 flex items-center justify-center bg-gray-700/50">
+                  <div className="text-xs text-white/70 text-center px-2">
+                    <div className="mb-1">🎬</div>
+                    <div className="truncate">{element.name}</div>
+                  </div>
+                </div>
+              )
+            )}
+
             {/* Overlay with vertical borders */}
             <div
               className="absolute top-3 bottom-3 left-0 right-0 pointer-events-none"
@@ -336,6 +554,12 @@ export function TimelineElement({
                 backgroundPosition: "left center",
               }}
             />
+            {/* AI剪辑标识 */}
+            {(element.name.includes("AI剪辑") || element.name.includes("v1_clip")) && (
+              <div className="absolute top-1 left-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded z-10">
+                AI
+              </div>
+            )}
           </div>
         </div>
       );
@@ -356,10 +580,16 @@ export function TimelineElement({
       );
     }
 
+    // 检查是否为AI剪辑生成的元素
+    const isAIGenerated = element.name.includes("AI剪辑") || element.name.includes("v1_clip");
+
     return (
-      <span className="text-xs text-foreground/80 truncate">
-        {element.name}
-      </span>
+      <div className="flex items-center gap-1 text-xs text-foreground/80 truncate">
+        {isAIGenerated && (
+          <Bot className="w-3 h-3 text-green-500 flex-shrink-0" />
+        )}
+        <span className="truncate">{element.name}</span>
+      </div>
     );
   };
 
@@ -392,6 +622,10 @@ export function TimelineElement({
               track.type
             )} ${isSelected ? "border-b-[0.5px] border-t-[0.5px] border-foreground" : ""} ${
               isBeingDragged ? "z-50" : "z-10"
+            } ${
+              element.name.includes("AI剪辑") || element.name.includes("v1_clip")
+                ? "border-l-2 border-l-green-500"
+                : ""
             }`}
             onClick={(e) => onElementClick && onElementClick(e, element)}
             onMouseDown={handleElementMouseDown}

@@ -185,6 +185,14 @@ export function VideoPlayer({
 
     const handleError = () => {
       const error = video.error?.message || 'Video playback error';
+      console.error(`🚨 VideoPlayer错误:`, error);
+      console.error(`🚨 视频源URL:`, src);
+      console.error(`🚨 错误详情:`, {
+        code: video.error?.code,
+        message: video.error?.message,
+        networkState: video.networkState,
+        readyState: video.readyState
+      });
       onError?.(error);
     };
 
