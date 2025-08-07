@@ -91,11 +91,39 @@ export function EditorHeader() {
     setIsExporting(true);
     
     try {
+      // 分析时间线内容
+      const allElements = tracks.flatMap(track => track.elements);
+      const mediaElements = allElements.filter(el => el.type === "media");
+      const textElements = allElements.filter(el => el.type === "text");
+      const transitionElements = allElements.filter(el => el.type === "transition");
+
       console.log('Starting timeline export...', {
         totalDuration: getTotalDuration(),
         tracksCount: tracks.length,
-        elementsCount: tracks.reduce((sum, track) => sum + track.elements.length, 0)
+        totalElements: allElements.length,
+        mediaElements: mediaElements.length,
+        textElements: textElements.length,
+        transitionElements: transitionElements.length
       });
+
+      // 详细记录字幕和转场信息
+      if (textElements.length > 0) {
+        console.log('📝 Text elements found:', textElements.map(el => ({
+          id: el.id,
+          content: el.content,
+          startTime: el.startTime,
+          duration: el.duration
+        })));
+      }
+
+      if (transitionElements.length > 0) {
+        console.log('🎬 Transition elements found:', transitionElements.map(el => ({
+          id: el.id,
+          type: el.transitionType,
+          startTime: el.startTime,
+          duration: el.duration
+        })));
+      }
 
       // 实现真正的时间线导出
       // 收集时间线上的所有媒体元素并按照时间线顺序组合视频

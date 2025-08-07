@@ -32,6 +32,7 @@ let textData: TextElement = {
   y: 0,
   rotation: 0,
   opacity: 1,
+  horizontalFlip: false,
   duration: TIMELINE_CONSTANTS.DEFAULT_TEXT_DURATION,
   startTime: 0,
   trimStart: 0,

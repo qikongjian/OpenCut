@@ -17,6 +17,15 @@ export type TransitionType = "fade" | "slide" | "zoom" | "wipe" | "dissolve" | "
 // 转场方向定义
 export type TransitionDirection = "left" | "right" | "up" | "down" | "in" | "out";
 
+// 蒙板类型定义
+export type MaskType = "rectangle" | "circle" | "gradient" | "custom";
+
+// 蒙板形状定义
+export type MaskShape = "rectangle" | "circle" | "ellipse" | "polygon";
+
+// 蒙板混合模式定义
+export type MaskBlendMode = "normal" | "multiply" | "screen" | "overlay" | "soft-light" | "hard-light";
+
 // 基础时间线元素属性接口
 interface BaseTimelineElement {
   id: string; // 元素唯一标识符
@@ -40,6 +49,8 @@ export interface MediaElement extends BaseTimelineElement {
   mediaHeight?: number; // 媒体高度
   mediaFps?: number; // 视频帧率
   horizontalFlip: boolean; // 水平翻转
+  // 蒙板配置
+  masks?: MaskConfig[]; // 应用到此元素的蒙板列表
 }
 
 // 文本元素接口 - 包含嵌入的文本数据
@@ -59,6 +70,43 @@ export interface TextElement extends BaseTimelineElement {
   rotation: number; // 旋转角度（度）
   opacity: number; // 透明度（0-1）
   horizontalFlip: boolean; // 水平翻转
+  // 蒙板配置
+  masks?: MaskConfig[]; // 应用到此元素的蒙板列表
+}
+
+// 蒙板配置接口
+export interface MaskConfig {
+  id: string; // 蒙板唯一标识符
+  type: MaskType; // 蒙板类型
+  shape: MaskShape; // 蒙板形状
+  // 位置和尺寸
+  x: number; // X坐标 (相对于画布中心，-1到1)
+  y: number; // Y坐标 (相对于画布中心，-1到1)
+  width: number; // 宽度 (0-1，相对于画布宽度)
+  height: number; // 高度 (0-1，相对于画布高度)
+  // 变换属性
+  rotation: number; // 旋转角度 (度)
+  scaleX: number; // X轴缩放 (0-2)
+  scaleY: number; // Y轴缩放 (0-2)
+  // 蒙板效果
+  opacity: number; // 透明度 (0-1)
+  feather: number; // 羽化程度 (0-100像素)
+  invert: boolean; // 是否反转蒙板
+  blendMode: MaskBlendMode; // 混合模式
+  // 动画关键帧 (未来扩展)
+  keyframes?: MaskKeyframe[];
+}
+
+// 蒙板关键帧接口 (未来扩展)
+export interface MaskKeyframe {
+  time: number; // 时间点 (秒)
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  opacity: number;
+  feather: number;
 }
 
 // 转场元素接口 - 连接两个媒体元素

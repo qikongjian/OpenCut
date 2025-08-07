@@ -45,6 +45,8 @@ import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 import { toast } from "sonner";
 // 导入项目模块
 import { checkElementOverlaps, resolveElementOverlaps } from "@/lib/timeline";
+// 导入蒙板工具
+import { MaskConfig } from "@/types/timeline";
 
 // to 函数
 // Helper function to manage element naming with suffixes
@@ -271,6 +273,12 @@ interface TimelineStore {
   
   // 水平翻转功能
   flipSelectedElements: () => void;
+
+  // 蒙板管理功能
+  addMaskToElement: (trackId: string, elementId: string, maskConfig: MaskConfig) => void;
+  removeMaskFromElement: (trackId: string, elementId: string, maskId: string) => void;
+  updateElementMask: (trackId: string, elementId: string, maskId: string, updates: Partial<MaskConfig>) => void;
+  getMasksByElement: (trackId: string, elementId: string) => MaskConfig[];
 }
 
 // 导出常量对象 - 包含多个相关常量的对象
@@ -1956,6 +1964,87 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     isExporting: false,
     setExporting: (exporting: boolean) => {
       set({ isExporting: exporting });
+    },
+
+    // 蒙板管理方法
+    addMaskToElement: (trackId: string, elementId: string, maskConfig: MaskConfig) => {
+      get().pushHistory();
+
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId
+                    ? {
+                        ...element,
+                        masks: [...(element.masks || []), maskConfig],
+                      }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
+
+      toast.success("蒙板已添加");
+    },
+
+    removeMaskFromElement: (trackId: string, elementId: string, maskId: string) => {
+      get().pushHistory();
+
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId
+                    ? {
+                        ...element,
+                        masks: (element.masks || []).filter(mask => mask.id !== maskId),
+                      }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
+
+      toast.success("蒙板已删除");
+    },
+
+    updateElementMask: (trackId: string, elementId: string, maskId: string, updates: Partial<MaskConfig>) => {
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId
+                    ? {
+                        ...element,
+                        masks: (element.masks || []).map(mask =>
+                          mask.id === maskId
+                            ? { ...mask, ...updates }
+                            : mask
+                        ),
+                      }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
+    },
+
+    getMasksByElement: (trackId: string, elementId: string): MaskConfig[] => {
+      const track = get()._tracks.find(t => t.id === trackId);
+      if (!track) return [];
+
+      const element = track.elements.find(e => e.id === elementId);
+      return element?.masks || [];
     },
   };
 });

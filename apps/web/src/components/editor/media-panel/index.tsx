@@ -20,6 +20,8 @@ import { TextView } from "./views/text";
 import { AudioView } from "./views/audio";
 // 导入转场视图组件，显示转场效果
 import { TransitionsView } from "./views/transitions";
+// 导入特效视图组件，显示蒙板和特效
+import { EffectsView } from "./views/effects";
 
 // 媒体面板组件 - 编辑器左侧的媒体资源管理面板
 // 导出组件 - 可复用的 UI 组件
@@ -43,12 +45,8 @@ export function MediaPanel() {
         Stickers view coming soon...
       </div>
     ),
-    // 特效标签页 - 暂未实现
-    effects: (
-      <div className="p-4 text-muted-foreground">
-        Effects view coming soon...
-      </div>
-    ),
+    // 特效标签页 - 蒙板和特效管理
+    effects: <EffectsView />,
     // 转场标签页 - 显示转场效果
     transitions: <TransitionsView />,
     // 字幕标签页 - 暂未实现

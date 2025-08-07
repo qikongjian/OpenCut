@@ -1026,6 +1026,7 @@ export function TimelineTrackContent({
             y: 0,
             rotation: 0,
             opacity: 1,
+            horizontalFlip: false,
           });
         } else {
           // Handle media items

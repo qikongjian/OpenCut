@@ -48,6 +48,12 @@ import { FONT_CLASS_MAP } from "@/lib/font-config";
 import { BackgroundSettings } from "../background-settings";
 // 导入项目模块
 import { useProjectStore } from "@/stores/project-store";
+// 导入字幕拖拽组件
+import { SubtitleOverlay } from "./subtitle-overlay";
+// 导入蒙板覆盖层组件
+import { MaskOverlay } from "./mask-overlay";
+// 导入蒙板工具
+import { MaskRenderer } from "@/lib/mask-utils";
 
 // ActiveElement 接口定义
 interface ActiveElement {
@@ -60,7 +66,7 @@ interface ActiveElement {
 // 导出组件 - 可复用的 UI 组件
 export function PreviewPanel() {
 // 常量定义 - 模块内部使用的固定值
-  const { tracks, getTotalDuration } = useTimelineStore();
+  const { tracks, getTotalDuration, selectedElements } = useTimelineStore();
 // 常量定义 - 模块内部使用的固定值
   const { mediaItems } = useMediaStore();
 // 常量定义 - 模块内部使用的固定值
@@ -374,10 +380,28 @@ export function PreviewPanel() {
     return null;
   };
 
+  // 生成蒙板CSS样式
+  const generateMaskStyle = (element: TimelineElement) => {
+    const masks = element.masks || [];
+    if (masks.length === 0) return {};
+
+    // 只使用第一个蒙板（简化实现）
+    const mask = masks[0];
+    if (!mask) return {};
+
+    // 生成CSS clip-path属性
+    const clipPath = MaskRenderer.generateCSSMask(mask, previewDimensions.width, previewDimensions.height);
+
+    return {
+      clipPath: clipPath,
+      WebkitClipPath: clipPath,
+    };
+  };
+
   // Render an element
   const renderElement = (elementData: ActiveElement, index: number) => {
 // 常量定义 - 模块内部使用的固定值
-    const { element, mediaItem } = elementData;
+    const { element, mediaItem, track } = elementData;
 
     // 转场元素
     if (element.type === "transition") {
@@ -463,8 +487,30 @@ export function PreviewPanel() {
       }
     }
 
-    // Text elements
+    // Text elements - 🎬 字幕拖拽模式下隐藏原始渲染
     if (element.type === "text") {
+      // 检查是否有选中的字幕元素，如果有则隐藏原始渲染（由SubtitleOverlay接管）
+      const hasSelectedSubtitle = selectedElements.some(sel =>
+        sel.elementId === element.id && sel.trackId === track.id
+      );
+
+      if (hasSelectedSubtitle) {
+        // 返回透明占位符，保持布局但不显示内容
+        return (
+          <div
+            key={element.id}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${50 + (element.x / canvasSize.width) * 100}%`,
+              top: `${50 + (element.y / canvasSize.height) * 100}%`,
+              transform: `translate(-50%, -50%)`,
+              opacity: 0,
+              zIndex: 1,
+            }}
+          />
+        );
+      }
+
 // 常量定义 - 模块内部使用的固定值
       const fontClassName =
         FONT_CLASS_MAP[element.fontFamily as keyof typeof FONT_CLASS_MAP] || "";
@@ -472,6 +518,7 @@ export function PreviewPanel() {
 // 常量定义 - 模块内部使用的固定值
       const scaleRatio = previewDimensions.width / canvasSize.width;
 
+      const maskStyle = generateMaskStyle(element);
       return (
         <div
           key={element.id}
@@ -482,6 +529,7 @@ export function PreviewPanel() {
             transform: `translate(-50%, -50%) rotate(${element.rotation}deg) scale(${scaleRatio}) ${element.horizontalFlip ? 'scaleX(-1)' : ''}`,
             opacity: element.opacity,
             zIndex: 100 + index, // Text elements on top
+            ...maskStyle,
           }}
         >
           <div
@@ -526,12 +574,14 @@ export function PreviewPanel() {
 
       // Video elements
       if (mediaItem.type === "video") {
+        const maskStyle = generateMaskStyle(element);
         return (
           <div
             key={element.id}
             className="absolute inset-0 flex items-center justify-center"
             style={{
               transform: (element as any).horizontalFlip ? 'scaleX(-1)' : '',
+              ...maskStyle,
             }}
           >
             <VideoPlayer
@@ -548,12 +598,14 @@ export function PreviewPanel() {
 
       // Image elements
       if (mediaItem.type === "image") {
+        const maskStyle = generateMaskStyle(element);
         return (
           <div
             key={element.id}
             className="absolute inset-0 flex items-center justify-center"
             style={{
               transform: (element as any).horizontalFlip ? 'scaleX(-1)' : '',
+              ...maskStyle,
             }}
           >
             <img
@@ -632,9 +684,55 @@ export function PreviewPanel() {
                       No elements at current time
                     </div>
                   ) : (
-                    activeElements.map((elementData, index) =>
-                      renderElement(elementData, index)
-                    )
+                    <>
+                      {activeElements.map((elementData, index) =>
+                        renderElement(elementData, index)
+                      )}
+                      {/* 可交互的蒙板编辑覆盖层 - 只为选中的元素显示 */}
+                      {activeElements.map((elementData, index) => {
+                        const masks = elementData.element.masks || [];
+                        if (masks.length === 0) return null;
+
+                        // 检查元素是否被选中
+                        const isSelected = selectedElements.some(sel =>
+                          sel.elementId === elementData.element.id && sel.trackId === elementData.track.id
+                        );
+
+                        if (!isSelected) return null;
+
+                        return (
+                          <MaskOverlay
+                            key={`mask-editor-${elementData.element.id}`}
+                            masks={masks}
+                            canvasWidth={previewDimensions.width}
+                            canvasHeight={previewDimensions.height}
+                            editMode={true} // 启用编辑模式
+                            onMaskUpdate={(maskId, updates) => {
+                              // 更新蒙板属性
+                              const { updateElementMask } = useTimelineStore.getState();
+                              updateElementMask(elementData.track.id, elementData.element.id, maskId, updates);
+                            }}
+                            className="z-20"
+                          />
+                        );
+                      })}
+
+                      {/* 🎬 字幕拖拽编辑覆盖层 */}
+                      <SubtitleOverlay
+                        textElements={activeElements
+                          .filter(elementData => elementData.element.type === 'text')
+                          .map(elementData => ({
+                            element: elementData.element as any,
+                            trackId: elementData.track.id
+                          }))
+                        }
+                        canvasWidth={canvasSize.width}
+                        canvasHeight={canvasSize.height}
+                        previewDimensions={previewDimensions}
+                        selectedElements={selectedElements}
+                        editMode={true}
+                      />
+                    </>
                   )}
                   {activeProject?.backgroundType === "blur" &&
                     blurBackgroundElements.length === 0 &&
@@ -929,9 +1027,57 @@ function FullscreenPreview({
               No elements at current time
             </div>
           ) : (
-            activeElements.map((elementData, index) =>
-              renderElement(elementData, index)
-            )
+            <>
+              {activeElements.map((elementData, index) =>
+                renderElement(elementData, index)
+              )}
+              {/* 全屏模式的可交互蒙板编辑覆盖层 - 只为选中的元素显示 */}
+              {activeElements.map((elementData, index) => {
+                const masks = elementData.element.masks || [];
+                if (masks.length === 0) return null;
+
+                // 检查元素是否被选中
+                const isSelected = selectedElements.some(sel =>
+                  sel.elementId === elementData.element.id && sel.trackId === elementData.track.id
+                );
+
+                if (!isSelected) return null;
+
+                return (
+                  <MaskOverlay
+                    key={`mask-editor-fullscreen-${elementData.element.id}`}
+                    masks={masks}
+                    canvasWidth={window.innerWidth}
+                    canvasHeight={window.innerHeight - 160}
+                    editMode={true}
+                    onMaskUpdate={(maskId, updates) => {
+                      const { updateElementMask } = useTimelineStore.getState();
+                      updateElementMask(elementData.track.id, elementData.element.id, maskId, updates);
+                    }}
+                    className="z-20"
+                  />
+                );
+              })}
+
+              {/* 🎬 全屏模式字幕拖拽编辑覆盖层 */}
+              <SubtitleOverlay
+                textElements={activeElements
+                  .filter(elementData => elementData.element.type === 'text')
+                  .map(elementData => ({
+                    element: elementData.element as any,
+                    trackId: elementData.track.id
+                  }))
+                }
+                canvasWidth={canvasSize.width}
+                canvasHeight={canvasSize.height}
+                previewDimensions={{
+                  width: window.innerWidth,
+                  height: window.innerHeight - 160
+                }}
+                selectedElements={selectedElements}
+                editMode={true}
+              />
+            </>
           )}
           {activeProject?.backgroundType === "blur" &&
             blurBackgroundElements.length === 0 &&

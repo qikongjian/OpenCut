@@ -26,6 +26,8 @@ import { AudioProperties } from "./audio-properties";
 import { MediaProperties } from "./media-properties";
 // 导入本地模块
 import { TextProperties } from "./text-properties";
+// 导入蒙板属性组件
+import { MaskProperties } from "./mask-properties";
 // 导入模块
 import {
   Select,
@@ -102,8 +104,10 @@ export function PropertiesPanel() {
 
             if (element?.type === "text") {
               return (
-                <div key={elementId}>
+                <div key={elementId} className="space-y-6">
                   <TextProperties element={element} trackId={trackId} />
+                  {/* 蒙板属性 */}
+                  <MaskProperties element={element} trackId={trackId} />
                 </div>
               );
             }
@@ -114,12 +118,20 @@ export function PropertiesPanel() {
               );
 
               if (mediaItem?.type === "audio") {
-                return <AudioProperties element={element} />;
+                return (
+                  <div key={elementId} className="space-y-6">
+                    <AudioProperties element={element} />
+                    {/* 蒙板属性 */}
+                    <MaskProperties element={element} trackId={trackId} />
+                  </div>
+                );
               }
 
               return (
-                <div key={elementId}>
+                <div key={elementId} className="space-y-6">
                   <MediaProperties element={element} />
+                  {/* 蒙板属性 */}
+                  <MaskProperties element={element} trackId={trackId} />
                 </div>
               );
             }

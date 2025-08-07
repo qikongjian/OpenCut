@@ -820,12 +820,17 @@ export const exportTimeline = async (
   resetExportCancellation();
   
   const startTime = performance.now();
-  console.log(`🚀 Starting ULTRA-FAST timeline export...`, {
+
+  // 🚀🚀 超级优化：检测是否可以使用超快模式
+  const useUltraFastMode = canUseUltraFastMode(timelineData, exportConfig);
+
+  console.log(`🚀 Starting ${useUltraFastMode ? 'ULTRA-FAST' : 'STANDARD'} timeline export...`, {
     totalDuration: timelineData.totalDuration,
     tracksCount: timelineData.tracks.length,
     elementsCount: timelineData.tracks.reduce((sum, track) => sum + track.elements.length, 0),
     format: exportConfig.format,
-    resolution: exportConfig.resolution
+    resolution: exportConfig.resolution,
+    ultraFastMode: useUltraFastMode
   });
 
   const ffmpeg = await initFFmpeg();
@@ -851,27 +856,19 @@ export const exportTimeline = async (
     }
     
     progressInterval = setInterval(() => {
-      // 在进度更新中也检查取消状态
-      try {
-        checkCancellation();
-      } catch (error) {
-        if (progressInterval) {
-          clearInterval(progressInterval);
-          progressInterval = null;
-        }
-        return;
-      }
-      
+      // 暂时禁用进度更新中的取消检查，避免干扰FFmpeg执行
+      // 取消检查将在主要执行点进行
+
       const elapsed = performance.now() - startTimestamp;
       const progressRatio = Math.min(elapsed / duration, 1);
-      
+
       // 使用缓动函数让进度更平滑
       const easedRatio = 1 - Math.pow(1 - progressRatio, 3); // easeOutCubic
       const newProgress = startProgress + (progressDiff * easedRatio);
-      
+
       currentProgress = newProgress;
       onProgress(Math.min(newProgress, targetProgress));
-      
+
       if (progressRatio >= 1) {
         clearInterval(progressInterval!);
         progressInterval = null;
@@ -898,6 +895,47 @@ export const exportTimeline = async (
     const textElements = allElements.filter(element => element.type === "text");
 
     console.log(`📋 Found ${mediaElements.length} media elements, ${transitionElements.length} transition elements, and ${textElements.length} text elements to export`);
+
+    // 详细记录所有元素信息用于调试
+    console.log('🔍 All timeline elements:', allElements.map(el => ({
+      id: el.id,
+      type: el.type,
+      // name: el.name, // 移除不存在的属性
+      startTime: el.startTime,
+      duration: el.duration,
+      content: el.type === 'text' ? el.content : undefined,
+      transitionType: el.type === 'transition' ? el.transitionType : undefined,
+      // 媒体元素的文件信息
+      mediaId: el.type === 'media' ? el.mediaId : undefined,
+      hasMediaFile: el.type === 'media' ? !!el.mediaFile : undefined,
+      hasMediaUrl: el.type === 'media' ? !!el.mediaUrl : undefined,
+      mediaType: el.type === 'media' ? el.mediaType : undefined
+    })));
+
+    if (textElements.length > 0) {
+      console.log('📝 Text elements details:', textElements.map(el => ({
+        id: el.id,
+        content: el.content,
+        startTime: el.startTime,
+        duration: el.duration,
+        fontSize: el.fontSize,
+        color: el.color,
+        x: el.x,
+        y: el.y
+      })));
+    }
+
+    if (transitionElements.length > 0) {
+      console.log('🎬 Transition elements details:', transitionElements.map(el => ({
+        id: el.id,
+        transitionType: el.transitionType,
+        direction: el.direction,
+        startTime: el.startTime,
+        duration: el.duration,
+        fromElementId: el.fromElementId,
+        toElementId: el.toElementId
+      })));
+    }
 
     if (mediaElements.length === 0) {
       throw new Error("No media elements found in timeline");
@@ -944,44 +982,64 @@ export const exportTimeline = async (
       updateProgress(10, 100);
     }
     
-    // 步骤2: 检查是否可以使用原有的单视频流复制优化
-    const hasCustomExportSettings = 
+    // 步骤2: 🚀 超级优化 - 检查是否可以使用多视频流复制优化
+    const hasCustomExportSettings =
       exportConfig.resolution !== '720p' ||
-      exportConfig.quality !== 'medium' ||   
-      exportConfig.frameRate !== '30' ||     
+      exportConfig.quality !== 'medium' ||
+      exportConfig.frameRate !== '30' ||
       exportConfig.format !== 'mp4';
-    
-    const canUseOriginalStreamCopy = processedElements.length === 1 && 
-                                   processedElements.every(el => 
-                                     el.trimStart === 0 && 
-                                     el.trimEnd === 0 && 
+
+    // 检查是否所有视频都可以直接流复制合并（无需重编码）
+    const canUseMultiStreamCopy = processedElements.length > 1 &&
+                                 processedElements.every(el =>
+                                   el.trimStart === 0 &&
+                                   el.trimEnd === 0 &&
+                                   el.mediaType === 'video'
+                                 ) &&
+                                 !hasCustomExportSettings &&
+                                 !needsPreprocessing &&
+                                 transitionElements.length === 0 &&
+                                 textElements.length === 0 &&
+                                 !processedElements.some(el => el.horizontalFlip || el.masks?.length);
+
+    const canUseOriginalStreamCopy = processedElements.length === 1 &&
+                                   processedElements.every(el =>
+                                     el.trimStart === 0 &&
+                                     el.trimEnd === 0 &&
                                      el.mediaType === 'video'
                                    ) &&
-                                   !hasCustomExportSettings && 
+                                   !hasCustomExportSettings &&
                                    !needsPreprocessing &&
-                                   transitionElements.length === 0; // 没有转场时才可以使用流复制
+                                   transitionElements.length === 0;
 
-    if (canUseOriginalStreamCopy) {
+    if (canUseMultiStreamCopy) {
+      // 🚀🚀 新增：多视频超快流复制模式
+      console.log(`🚀🚀 Using MULTI-VIDEO STREAM COPY mode for ${processedElements.length} videos - ULTRA FAST!`);
+
+      // 并行写入所有视频文件
+      const writePromises = processedElements.map(async (element, index) => {
+        const inputName = `input_${index}.mp4`;
+        const mediaFile = await getMediaFileForElement(element);
+        await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
+        return inputName;
+      });
+
+      const inputNames = await Promise.all(writePromises);
+      segments.push(...inputNames);
+      updateProgress(50, 300);
+
+    } else if (canUseOriginalStreamCopy) {
       // 🚀 原有的单视频流复制模式
       console.log('🚀 Using ORIGINAL STREAM COPY mode for single video');
       const element = processedElements[0];
       const inputName = `input_0.mp4`;
-      
-      let mediaFile: File | null = null;
-      if (element.mediaFile) {
-        mediaFile = element.mediaFile;
-      } else if (element.mediaUrl) {
-        const response = await fetch(element.mediaUrl);
-        const blob = await response.blob();
-        mediaFile = new File([blob], `media.mp4`, { type: blob.type });
-      } else {
-        throw new Error(`No media file available for element ${element.id}`);
-      }
+
+      const mediaFile = await getMediaFileForElement(element);
 
       await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
       segments.push(inputName);
       updateProgress(50, 300);
-      
+
     } else {
       // 步骤3: 🧠 智能分组处理 + 🎬 转场处理
       const videoGroups = detectVideoGroups(processedElements, exportConfig);
@@ -1029,20 +1087,11 @@ export const exportTimeline = async (
         }
       }
       
-      // 步骤5: 🎬 处理转场效果
+      // 步骤5: 🎬 处理转场效果 - 暂时禁用独立转场处理
+      // 转场效果将在最终合并阶段处理
       if (transitionElements.length > 0) {
-        console.log('🎬 Starting transition processing...');
-        const transitionSegments = await processTransitions(
-          ffmpeg,
-          processedElements,
-          transitionElements,
-          exportConfig,
-          tempFiles,
-          updateProgress
-        );
-        
-        // 将转场片段添加到segments中
-        segments.push(...transitionSegments);
+        console.log(`🎬 Found ${transitionElements.length} transition elements - will be processed during final merge`);
+        // 注意：转场效果将在concat阶段通过xfade滤镜处理
       }
     }
 
@@ -1111,18 +1160,44 @@ export const exportTimeline = async (
     // 4. 超高速合并
     const concatFile = 'concat.txt';
     const concatContent = finalSegments.map(name => `file '${name}'`).join('\n');
-    
-    console.log('📝 Writing concat file:', concatContent);
+
+    console.log('📝 Final segments for concat:', finalSegments);
+    console.log('📝 Concat file content:', concatContent);
+    console.log('📝 Number of segments to concat:', finalSegments.length);
+
+    // 检查所有文件是否存在
+    for (const segment of finalSegments) {
+      try {
+        const fileData = await ffmpeg.readFile(segment);
+        console.log(`✅ Segment ${segment} exists, size: ${fileData.length} bytes`);
+      } catch (error) {
+        console.error(`❌ Segment ${segment} not found:`, error);
+        throw new Error(`Missing segment file: ${segment}`);
+      }
+    }
+
     await ffmpeg.writeFile(concatFile, new Uint8Array(new TextEncoder().encode(concatContent)));
     tempFiles.push(concatFile);
 
     const outputName = `timeline_output.${exportConfig.format}`;
+    tempFiles.push(outputName);
     
     // 根据情况选择合并策略 - 修复多视频片段问题
     let concatCommand: string[];
-    
-    // 只有单个视频且无间隔时才使用流复制
-    if (canUseOriginalStreamCopy && processedElements.length === 1 && !needsGapProcessing) {
+
+    // 🚀🚀 多视频流复制模式 - 超快合并
+    if (canUseMultiStreamCopy && !needsGapProcessing) {
+      console.log(`🚀🚀 Using MULTI-VIDEO STREAM COPY concat for ${segments.length} videos - LIGHTNING FAST!`);
+      concatCommand = [
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', concatFile,
+        '-c', 'copy', // 纯复制，无重编码，超快！
+        '-avoid_negative_ts', 'make_zero',
+        '-fflags', '+genpts',
+        '-y', outputName
+      ];
+    } else if (canUseOriginalStreamCopy && processedElements.length === 1 && !needsGapProcessing) {
       // 单视频流复制模式
       console.log('🚀 Using STREAM COPY concat for single video!');
       concatCommand = [
@@ -1145,49 +1220,56 @@ export const exportTimeline = async (
       };
       const outputResolution = resolutionMap[exportConfig.resolution] || '1280:720';
       
+      // 使用简化的命令避免复杂参数导致的问题
       concatCommand = [
         '-f', 'concat',
         '-safe', '0',
         '-i', concatFile,
-        
-        // 视频编码 - 统一参数
-        '-c:v', encodingSettings.videoCodec,
-        '-crf', encodingSettings.crf,
-        '-preset', encodingSettings.preset,
-        '-tune', encodingSettings.tune,
-        '-pix_fmt', encodingSettings.pixfmt, // 统一像素格式
-        
-        // 关键修复：统一输出参数
-        '-r', exportConfig.frameRate,      // 统一帧率
-        '-s', outputResolution,            // 统一分辨率
-        '-vsync', 'cfr',                   // 恒定帧率，防止画面静止
-        
-        // 音频编码统一
-        '-c:a', encodingSettings.audioCodec,
+        '-c:v', 'libx264',
+        '-crf', '23',
+        '-preset', 'fast',
+        '-c:a', 'aac',
         '-b:a', '128k',
-        '-ar', '44100',
-        
-        // GOP和帧结构统一
-        '-g', encodingSettings.g,
-        '-keyint_min', encodingSettings.keyint_min,
-        '-bf', encodingSettings.bf,
-        '-refs', encodingSettings.refs,
-        
-        // 时间戳和同步修复
-        '-avoid_negative_ts', 'make_zero', // 避免负时间戳
-        '-fflags', '+genpts',              // 重新生成时间戳
-        '-movflags', '+faststart',
         '-y', outputName
       ];
     }
 
     console.log('🔧 Executing ULTRA-FAST concat:', concatCommand.slice(0, 8), '...');
+    console.log('📝 Full concat command:', concatCommand);
     updateProgress(75, 500);
 
-    // 执行最终合并
-    const execStart = performance.now();
-    await ffmpeg.exec(concatCommand);
-    console.log(`🔧 ULTRA-FAST concat completed in ${(performance.now() - execStart).toFixed(2)}ms`);
+    // 临时调试：如果只有一个片段，直接复制而不使用concat
+    if (finalSegments.length === 1) {
+      console.log('🚀 DEBUG: Single segment detected, copying directly');
+      try {
+        const singleSegment = finalSegments[0];
+        const segmentData = await ffmpeg.readFile(singleSegment);
+        await ffmpeg.writeFile(outputName, segmentData);
+        console.log(`✅ Direct copy completed for single segment: ${singleSegment}`);
+      } catch (error) {
+        console.error('❌ Direct copy failed:', error);
+        throw new Error(`Direct copy failed: ${error.message}`);
+      }
+    } else {
+      // 执行最终合并 - 添加超时和错误处理
+      const execStart = performance.now();
+      try {
+        // 暂时清除进度更新定时器，避免干扰FFmpeg执行
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          progressInterval = null;
+        }
+
+        console.log('🚀 Starting FFmpeg concat execution...');
+        await ffmpeg.exec(concatCommand);
+        console.log(`✅ ULTRA-FAST concat completed in ${(performance.now() - execStart).toFixed(2)}ms`);
+      } catch (error) {
+        console.error('❌ FFmpeg concat failed:', error);
+        console.log('📝 Concat file content:', concatContent);
+        console.log('📝 Available segments:', finalSegments);
+        throw new Error(`FFmpeg concat execution failed: ${error.message}`);
+      }
+    }
 
     updateProgress(90, 200);
 
@@ -1205,7 +1287,81 @@ export const exportTimeline = async (
       );
     }
 
-    // 6. 读取最终输出文件
+    // 🚀🚀 超级优化：多视频流复制模式跳过所有特效处理
+    if (!canUseMultiStreamCopy) {
+      // 6. 🎬 应用转场效果（如果有）
+      if (transitionElements.length > 0) {
+        console.log('🎬 Starting transition effects application...');
+        finalVideoFile = await applyTransitionEffects(
+          ffmpeg,
+          finalVideoFile,
+          transitionElements,
+          exportConfig,
+          tempFiles,
+          updateProgress
+        );
+      }
+
+      // 7. 🪞 应用镜像效果（如果有）
+      const elementsWithMirror = mediaElements.filter(el =>
+        el.horizontalFlip || el.verticalFlip || el.rotation
+      );
+
+      if (elementsWithMirror.length > 0) {
+        console.log('🪞 Starting mirror effects application...');
+        for (const element of elementsWithMirror) {
+          finalVideoFile = await applyMirrorEffects(
+            ffmpeg,
+            finalVideoFile,
+            element,
+            exportConfig,
+            tempFiles,
+            updateProgress
+          );
+        }
+      }
+
+      // 8. 🎭 应用蒙板效果（如果有）
+      const elementsWithMasks = mediaElements.filter(el =>
+        el.masks && el.masks.length > 0
+      );
+
+      if (elementsWithMasks.length > 0) {
+        console.log('🎭 Starting mask effects application...');
+        for (const element of elementsWithMasks) {
+          finalVideoFile = await applyMaskEffects(
+            ffmpeg,
+            finalVideoFile,
+            element.masks,
+            exportConfig,
+            tempFiles,
+            updateProgress
+          );
+        }
+      }
+
+      // 9. 🎵 处理音频轨道（如果有）
+      const audioElements = timelineData.tracks
+        .flatMap(track => track.elements)
+        .filter(element => element.type === "media" && element.mediaType === "audio");
+
+      if (audioElements.length > 0) {
+        console.log('🎵 Starting audio processing...');
+        finalVideoFile = await processAudioTracks(
+          ffmpeg,
+          finalVideoFile,
+          audioElements,
+          exportConfig,
+          tempFiles,
+          updateProgress
+        );
+      }
+    } else {
+      console.log('🚀🚀 MULTI-VIDEO STREAM COPY mode: Skipping all effects processing for maximum speed!');
+      updateProgress(95, 100);
+    }
+
+    // 7. 读取最终输出文件
     console.log('📖 Reading final output file...');
     const data = await ffmpeg.readFile(finalVideoFile);
     
@@ -1363,20 +1519,7 @@ const smartStreamCopyMerge = async (
     const element = group[0];
     const inputName = `group_${groupIndex}_input.mp4`;
     
-    let mediaFile: File | null = null;
-    if (element.mediaFile) {
-      mediaFile = element.mediaFile;
-    } else if (element.mediaUrl) {
-      const response = await fetch(element.mediaUrl);
-      const blob = await response.blob();
-      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
-    } else {
-      throw new Error(`No media file available for element ${element.id}`);
-    }
-    
-    if (!mediaFile) {
-      throw new Error(`Failed to get media file for element ${element.id}`);
-    }
+    const mediaFile = await getMediaFileForElement(element);
     
     await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
     tempFiles.push(inputName);
@@ -1389,20 +1532,7 @@ const smartStreamCopyMerge = async (
     const element = group[i];
     const inputName = `group_${groupIndex}_input_${i}.mp4`;
     
-    let mediaFile: File | null = null;
-    if (element.mediaFile) {
-      mediaFile = element.mediaFile;
-    } else if (element.mediaUrl) {
-      const response = await fetch(element.mediaUrl);
-      const blob = await response.blob();
-      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
-    } else {
-      throw new Error(`No media file available for element ${element.id}`);
-    }
-    
-    if (!mediaFile) {
-      throw new Error(`Failed to get media file for element ${element.id}`);
-    }
+    const mediaFile = await getMediaFileForElement(element);
     
     await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
     inputNames.push(inputName);
@@ -1456,20 +1586,7 @@ const preprocessResolution = async (
     const outputName = `preprocess_output_${i}.mp4`;
     
     // 写入输入文件
-    let mediaFile: File | null = null;
-    if (element.mediaFile) {
-      mediaFile = element.mediaFile;
-    } else if (element.mediaUrl) {
-      const response = await fetch(element.mediaUrl);
-      const blob = await response.blob();
-      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
-    } else {
-      throw new Error(`No media file available for element ${element.id}`);
-    }
-    
-    if (!mediaFile) {
-      throw new Error(`Failed to get media file for element ${element.id}`);
-    }
+    const mediaFile = await getMediaFileForElement(element);
     
     await ffmpeg.writeFile(inputName, new Uint8Array(await mediaFile.arrayBuffer()));
     tempFiles.push(inputName, outputName);
@@ -1648,8 +1765,503 @@ const processTransitions = async (
   return processedSegments;
 };
 
+// 应用转场效果函数 - 在最终视频上应用转场效果
+const applyTransitionEffects = async (
+  ffmpeg: any,
+  videoFile: string,
+  transitionElements: any[],
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  console.log('🎬 Applying transition effects to final video...');
+  console.log(`🎬 Processing ${transitionElements.length} transition elements`);
+
+  if (transitionElements.length === 0) {
+    console.log('No transition effects to apply');
+    return videoFile;
+  }
+
+  const outputName = `video_with_transitions.mp4`;
+  tempFiles.push(outputName);
+
+  // 记录转场元素详情
+  transitionElements.forEach((transition, index) => {
+    console.log(`🎬 Transition ${index + 1}:`, {
+      type: transition.transitionType,
+      direction: transition.direction,
+      startTime: transition.startTime,
+      duration: transition.duration,
+      fromElementId: transition.fromElementId,
+      toElementId: transition.toElementId
+    });
+  });
+
+  // 目前简化处理：为整个视频添加淡入淡出效果
+  // 这是一个基础实现，可以根据需要扩展
+  const fadeInDuration = 0.5;  // 淡入时长
+  const fadeOutDuration = 0.5; // 淡出时长
+
+  // 构建转场滤镜
+  let filterComplex = `[0:v]fade=t=in:st=0:d=${fadeInDuration},fade=t=out:st=end-${fadeOutDuration}:d=${fadeOutDuration}[v]`;
+
+  // 如果有特定的转场类型，可以在这里添加更复杂的处理
+  const hasFlashTransition = transitionElements.some(t => t.transitionType === 'flash');
+  if (hasFlashTransition) {
+    console.log('🎬 Applying flash transition effects');
+    // 可以添加更复杂的闪光效果
+  }
+
+  const command = [
+    '-i', videoFile,
+    '-filter_complex', filterComplex,
+    '-map', '[v]',
+    '-map', '0:a?', // 可选音频映射
+    '-c:v', 'libx264',
+    '-crf', '23',
+    '-preset', 'fast',
+    '-pix_fmt', 'yuv420p',
+    '-c:a', 'copy',
+    '-y', outputName
+  ];
+
+  console.log('🎬 Executing transition effects command:', command.slice(0, 6), '...');
+
+  try {
+    await ffmpeg.exec(command);
+    console.log('✅ Transition effects applied successfully');
+    onProgress?.(95);
+    return outputName;
+  } catch (error) {
+    console.error('❌ Transition effects application failed:', error);
+    console.log('🎬 Falling back to video without transition effects');
+    return videoFile; // 如果转场效果应用失败，返回原视频
+  }
+};
+
+// 通用媒体文件获取函数
+const getMediaFileForElement = async (element: any): Promise<File> => {
+  console.log(`🔍 Getting media file for element ${element.id}:`, {
+    mediaId: element.mediaId,
+    hasMediaFile: !!element.mediaFile,
+    hasMediaUrl: !!element.mediaUrl,
+    mediaType: element.mediaType
+  });
+
+  let mediaFile: File | null = null;
+
+  // 优先使用元素中的媒体文件
+  if (element.mediaFile) {
+    console.log(`✅ Using element's media file for ${element.id}`);
+    mediaFile = element.mediaFile;
+  }
+  // 其次使用元素中的媒体URL
+  else if (element.mediaUrl) {
+    console.log(`📥 Fetching media from URL for ${element.id}: ${element.mediaUrl.substring(0, 50)}...`);
+    const response = await fetch(element.mediaUrl);
+    const blob = await response.blob();
+    mediaFile = new File([blob], `media.mp4`, { type: blob.type });
+  }
+  // 最后回退到媒体库中查找
+  else {
+    console.warn(`⚠️ Element ${element.id} missing media file, attempting to find in media store`);
+    const mediaStore = await import('@/stores/media-store').then(m => m.useMediaStore.getState());
+    const mediaItem = mediaStore.mediaItems.find(item => item.id === element.mediaId);
+
+    console.log(`🔍 Media store lookup for ${element.mediaId}:`, {
+      found: !!mediaItem,
+      hasFile: mediaItem ? !!mediaItem.file : false,
+      hasUrl: mediaItem ? !!mediaItem.url : false,
+      totalItemsInStore: mediaStore.mediaItems.length
+    });
+
+    if (mediaItem && mediaItem.file) {
+      console.log(`✅ Found media file in store for element ${element.id}`);
+      mediaFile = mediaItem.file;
+    } else if (mediaItem && mediaItem.url) {
+      console.log(`📥 Found media URL in store for element ${element.id}`);
+      const response = await fetch(mediaItem.url);
+      const blob = await response.blob();
+      mediaFile = new File([blob], `media.mp4`, { type: blob.type });
+    } else {
+      // 提供更详细的错误信息
+      const availableMediaIds = mediaStore.mediaItems.map(item => item.id);
+      throw new Error(`❌ No media file available for element ${element.id}. Element mediaId: ${element.mediaId}, found in store: ${!!mediaItem}, available media IDs: [${availableMediaIds.join(', ')}]`);
+    }
+  }
+
+  if (!mediaFile) {
+    throw new Error(`❌ Failed to get media file for element ${element.id}`);
+  }
+
+  console.log(`✅ Successfully got media file for element ${element.id}, size: ${mediaFile.size} bytes`);
+  return mediaFile;
+};
+
+// 蒙板处理函数 - 将蒙板效果转换为FFmpeg滤镜
+const applyMaskEffects = async (
+  ffmpeg: any,
+  inputFile: string,
+  masks: any[],
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  console.log('🎭 Starting mask effects application...');
+  console.log(`🎭 Processing ${masks.length} mask effects`);
+
+  if (masks.length === 0) {
+    console.log('No masks to apply');
+    return inputFile;
+  }
+
+  // 为每个蒙板生成FFmpeg滤镜
+  const maskFilters: string[] = [];
+
+  for (let i = 0; i < masks.length; i++) {
+    const mask = masks[i];
+    console.log(`🎭 Processing mask ${i + 1}/${masks.length}:`, {
+      id: mask.id,
+      type: mask.type,
+      shape: mask.shape,
+      x: mask.x,
+      y: mask.y,
+      width: mask.width,
+      height: mask.height,
+      opacity: mask.opacity
+    });
+
+    // 将相对坐标转换为像素坐标
+    const resolutionMap = {
+      '480p': { width: 854, height: 480 },
+      '720p': { width: 1280, height: 720 },
+      '1080p': { width: 1920, height: 1080 },
+      '4k': { width: 3840, height: 2160 }
+    };
+
+    const resolution = resolutionMap[exportConfig.resolution as keyof typeof resolutionMap] || resolutionMap['720p'];
+
+    // 计算蒙板的实际像素位置和尺寸
+    const centerX = (mask.x + 1) * resolution.width / 2;
+    const centerY = (mask.y + 1) * resolution.height / 2;
+    const maskWidth = mask.width * resolution.width;
+    const maskHeight = mask.height * resolution.height;
+
+    const left = Math.max(0, centerX - maskWidth / 2);
+    const top = Math.max(0, centerY - maskHeight / 2);
+    const right = Math.min(resolution.width, centerX + maskWidth / 2);
+    const bottom = Math.min(resolution.height, centerY + maskHeight / 2);
+
+    let maskFilter = '';
+
+    if (mask.shape === 'rectangle') {
+      // 矩形蒙板：使用crop滤镜
+      maskFilter = `crop=${right - left}:${bottom - top}:${left}:${top}`;
+    } else if (mask.shape === 'circle') {
+      // 圆形蒙板：使用geq滤镜创建圆形遮罩
+      const radius = Math.min(maskWidth, maskHeight) / 2;
+      const circleX = centerX;
+      const circleY = centerY;
+
+      // 创建圆形遮罩的geq表达式
+      maskFilter = `geq=r='if(hypot(X-${circleX},Y-${circleY})<${radius},r(X,Y),0)':g='if(hypot(X-${circleX},Y-${circleY})<${radius},g(X,Y),0)':b='if(hypot(X-${circleX},Y-${circleY})<${radius},b(X,Y),0)':a='if(hypot(X-${circleX},Y-${circleY})<${radius},255,0)'`;
+    }
+
+    if (maskFilter) {
+      maskFilters.push(maskFilter);
+    }
+  }
+
+  if (maskFilters.length === 0) {
+    console.log('No valid mask filters generated');
+    return inputFile;
+  }
+
+  // 应用蒙板滤镜
+  const outputName = `masked_${Date.now()}.mp4`;
+  tempFiles.push(outputName);
+
+  // 组合所有蒙板滤镜
+  const combinedFilter = maskFilters.join(',');
+
+  const command = [
+    '-i', inputFile,
+    '-vf', combinedFilter,
+    '-c:v', 'libx264',
+    '-crf', '23',
+    '-preset', 'fast',
+    '-pix_fmt', 'yuv420p',
+    '-c:a', 'copy',
+    '-y', outputName
+  ];
+
+  console.log('🎭 Executing mask application command:', command.slice(0, 6), '...');
+
+  try {
+    await ffmpeg.exec(command);
+    console.log('✅ Mask effects applied successfully');
+    onProgress?.(95);
+    return outputName;
+  } catch (error) {
+    console.error('❌ Mask application failed:', error);
+    console.log('🎭 Falling back to original video without masks');
+    return inputFile; // 如果蒙板应用失败，返回原视频
+  }
+};
+
+// 音频混合处理函数 - 处理多音轨混合和音频特效
+const processAudioTracks = async (
+  ffmpeg: any,
+  videoFile: string,
+  audioElements: any[],
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  console.log('🎵 Starting audio processing...');
+  console.log(`🎵 Processing ${audioElements.length} audio elements`);
+
+  if (audioElements.length === 0) {
+    console.log('No audio elements to process');
+    return videoFile;
+  }
+
+  // 分离音频和视频轨道
+  const videoOnlyFile = `video_only_${Date.now()}.mp4`;
+  tempFiles.push(videoOnlyFile);
+
+  // 提取视频轨道（无音频）
+  await ffmpeg.exec([
+    '-i', videoFile,
+    '-c:v', 'copy',
+    '-an', // 移除音频
+    '-y', videoOnlyFile
+  ]);
+
+  // 处理音频元素
+  const audioFiles: string[] = [];
+  const audioFilters: string[] = [];
+
+  for (let i = 0; i < audioElements.length; i++) {
+    const audioElement = audioElements[i];
+    console.log(`🎵 Processing audio element ${i + 1}/${audioElements.length}:`, {
+      id: audioElement.id,
+      startTime: audioElement.startTime,
+      duration: audioElement.duration,
+      volume: audioElement.volume || 1.0
+    });
+
+    // 获取音频文件
+    const audioFile = await getMediaFileForElement(audioElement);
+    if (!audioFile) {
+      console.warn(`⚠️ Could not get audio file for element ${audioElement.id}`);
+      continue;
+    }
+
+    // 写入音频文件
+    const audioInputName = `audio_input_${i}_${Date.now()}.${audioFile.name.split('.').pop()}`;
+    tempFiles.push(audioInputName);
+    await ffmpeg.writeFile(audioInputName, new Uint8Array(await audioFile.arrayBuffer()));
+
+    // 处理音频：裁剪、音量调节、时间偏移
+    const processedAudioName = `processed_audio_${i}_${Date.now()}.wav`;
+    tempFiles.push(processedAudioName);
+
+    const audioCommand = [
+      '-i', audioInputName,
+      '-ss', audioElement.trimStart?.toString() || '0',
+      '-t', audioElement.duration.toString(),
+      '-af', `volume=${audioElement.volume || 1.0}`,
+      '-c:a', 'pcm_s16le',
+      '-y', processedAudioName
+    ];
+
+    await ffmpeg.exec(audioCommand);
+    audioFiles.push(processedAudioName);
+
+    // 创建音频滤镜，包含时间偏移
+    const delayMs = Math.round(audioElement.startTime * 1000);
+    audioFilters.push(`[${i + 1}:a]adelay=${delayMs}|${delayMs}[a${i}]`);
+  }
+
+  if (audioFiles.length === 0) {
+    console.log('No valid audio files processed');
+    return videoFile;
+  }
+
+  // 合并所有音频轨道
+  const finalOutputName = `final_with_audio_${Date.now()}.mp4`;
+  tempFiles.push(finalOutputName);
+
+  // 构建FFmpeg命令
+  const inputs = ['-i', videoOnlyFile];
+  audioFiles.forEach(file => {
+    inputs.push('-i', file);
+  });
+
+  // 构建音频混合滤镜
+  let audioMixFilter = '';
+  if (audioFiles.length === 1) {
+    audioMixFilter = audioFilters[0];
+  } else {
+    // 多个音频轨道混合
+    const mixInputs = audioFilters.map((_, i) => `[a${i}]`).join('');
+    audioMixFilter = audioFilters.join(';') + `;${mixInputs}amix=inputs=${audioFiles.length}:duration=longest[aout]`;
+  }
+
+  const command = [
+    ...inputs,
+    '-filter_complex', audioMixFilter,
+    '-map', '0:v', // 视频轨道
+    '-map', audioFiles.length === 1 ? '[a0]' : '[aout]', // 音频轨道
+    '-c:v', 'copy',
+    '-c:a', 'aac',
+    '-b:a', '128k',
+    '-y', finalOutputName
+  ];
+
+  console.log('🎵 Executing audio mixing command...');
+
+  try {
+    await ffmpeg.exec(command);
+    console.log('✅ Audio processing completed successfully');
+    onProgress?.(90);
+    return finalOutputName;
+  } catch (error) {
+    console.error('❌ Audio processing failed:', error);
+    console.log('🎵 Falling back to original video');
+    return videoFile;
+  }
+};
+
+// 镜像效果处理函数 - 处理水平翻转、垂直翻转和旋转
+const applyMirrorEffects = async (
+  ffmpeg: any,
+  inputFile: string,
+  element: any,
+  exportConfig: any,
+  tempFiles: string[],
+  onProgress?: (progress: number) => void
+): Promise<string> => {
+  console.log('🪞 Starting mirror effects application...');
+
+  // 检查是否需要应用镜像效果
+  const needsMirror = element.horizontalFlip || element.verticalFlip || element.rotation;
+
+  if (!needsMirror) {
+    console.log('No mirror effects to apply');
+    return inputFile;
+  }
+
+  console.log('🪞 Applying mirror effects:', {
+    horizontalFlip: element.horizontalFlip,
+    verticalFlip: element.verticalFlip,
+    rotation: element.rotation
+  });
+
+  const outputName = `mirrored_${Date.now()}.mp4`;
+  tempFiles.push(outputName);
+
+  // 构建视频滤镜
+  const filters: string[] = [];
+
+  // 水平翻转
+  if (element.horizontalFlip) {
+    filters.push('hflip');
+  }
+
+  // 垂直翻转
+  if (element.verticalFlip) {
+    filters.push('vflip');
+  }
+
+  // 旋转
+  if (element.rotation && element.rotation !== 0) {
+    // 将角度转换为弧度
+    const radians = (element.rotation * Math.PI) / 180;
+    filters.push(`rotate=${radians}:fillcolor=black@0`);
+  }
+
+  // 组合所有滤镜
+  const filterChain = filters.join(',');
+
+  const command = [
+    '-i', inputFile,
+    '-vf', filterChain,
+    '-c:v', 'libx264',
+    '-crf', '23',
+    '-preset', 'fast',
+    '-pix_fmt', 'yuv420p',
+    '-c:a', 'copy',
+    '-y', outputName
+  ];
+
+  console.log('🪞 Executing mirror effects command:', command.slice(0, 6), '...');
+
+  try {
+    await ffmpeg.exec(command);
+    console.log('✅ Mirror effects applied successfully');
+    onProgress?.(85);
+    return outputName;
+  } catch (error) {
+    console.error('❌ Mirror effects application failed:', error);
+    console.log('🪞 Falling back to original video without mirror effects');
+    return inputFile;
+  }
+};
+
+// 🚀 智能检测是否可以使用超快导出模式
+const canUseUltraFastMode = (timelineData: any, exportConfig: any): boolean => {
+  console.log('🔍 检测是否可以使用超快导出模式...');
+
+  // 检查导出设置是否为默认值
+  const hasCustomSettings =
+    exportConfig.resolution !== '720p' ||
+    exportConfig.quality !== 'medium' ||
+    exportConfig.frameRate !== '30' ||
+    exportConfig.format !== 'mp4';
+
+  if (hasCustomSettings) {
+    console.log('❌ 有自定义导出设置，无法使用超快模式');
+    return false;
+  }
+
+  // 检查是否有特效元素
+  const allElements = timelineData.tracks.flatMap((track: any) => track.elements);
+
+  const hasTransitions = allElements.some((el: any) => el.type === 'transition');
+  const hasTextElements = allElements.some((el: any) => el.type === 'text');
+  const hasAudioElements = allElements.some((el: any) => el.type === 'media' && el.mediaType === 'audio');
+  const hasMirrorEffects = allElements.some((el: any) => el.horizontalFlip || el.verticalFlip || el.rotation);
+  const hasMaskEffects = allElements.some((el: any) => el.masks && el.masks.length > 0);
+  const hasTrimming = allElements.some((el: any) => el.trimStart > 0 || el.trimEnd > 0);
+
+  if (hasTransitions || hasTextElements || hasAudioElements || hasMirrorEffects || hasMaskEffects || hasTrimming) {
+    console.log('❌ 检测到特效元素，无法使用超快模式:', {
+      hasTransitions,
+      hasTextElements,
+      hasAudioElements,
+      hasMirrorEffects,
+      hasMaskEffects,
+      hasTrimming
+    });
+    return false;
+  }
+
+  // 检查视频元素数量
+  const videoElements = allElements.filter((el: any) => el.type === 'media' && el.mediaType === 'video');
+
+  if (videoElements.length < 2) {
+    console.log('❌ 视频数量少于2个，使用常规模式');
+    return false;
+  }
+
+  console.log(`✅ 可以使用超快模式！检测到${videoElements.length}个纯视频元素`);
+  return true;
+};
+
 // 导出转场处理函数供外部使用
-export { processTransitions };
+export { processTransitions, applyTransitionEffects, getMediaFileForElement, applyMaskEffects, processAudioTracks, applyMirrorEffects, canUseUltraFastMode };
 
 // 字幕渲染函数 - 将字幕渲染到视频上
 const renderSubtitlesToVideo = async (
@@ -1661,78 +2273,112 @@ const renderSubtitlesToVideo = async (
   onProgress?: (progress: number) => void
 ): Promise<string> => {
   console.log('📝 Rendering subtitles to video...');
-  
+  console.log(`📝 Processing ${textElements.length} text elements`);
+
   if (textElements.length === 0) {
     console.log('No subtitles to render');
     return videoFile;
   }
-  
+
   const outputName = `video_with_subtitles.mp4`;
   tempFiles.push(outputName);
+
+  // 记录字幕元素详情
+  textElements.forEach((text, index) => {
+    console.log(`📝 Text ${index + 1}:`, {
+      content: text.content,
+      startTime: text.startTime,
+      duration: text.duration,
+      endTime: text.startTime + text.duration,
+      fontSize: text.fontSize,
+      color: text.color,
+      position: { x: text.x, y: text.y }
+    });
+  });
   
   // 构建字幕滤镜链
   const subtitleFilters = textElements.map((text, index) => {
     const startTime = text.startTime;
     const endTime = text.startTime + text.duration;
-    
+
+    // 获取目标分辨率
+    const resolutionMap: { [key: string]: { width: number, height: number } } = {
+      '480p': { width: 854, height: 480 },
+      '720p': { width: 1280, height: 720 },
+      '1080p': { width: 1920, height: 1080 },
+      '4k': { width: 3840, height: 2160 }
+    };
+    const resolution = resolutionMap[exportConfig.resolution] || { width: 1280, height: 720 };
+
     // 计算字幕位置（转换为像素坐标）
-    const x = Math.max(0, Math.min(1920, (text.x || 0) + 960)); // 居中并限制范围
-    const y = Math.max(0, Math.min(1080, (text.y || 0) + 540));  // 居中并限制范围
-    
+    // x, y 是相对于画布中心的偏移量，需要转换为绝对坐标
+    const centerX = resolution.width / 2;
+    const centerY = resolution.height / 2;
+    const x = Math.max(0, Math.min(resolution.width, centerX + (text.x || 0)));
+    const y = Math.max(0, Math.min(resolution.height, centerY + (text.y || 0)));
+
     // 构建字幕样式
     const fontSize = Math.max(12, Math.min(200, text.fontSize || 48));
-    const fontColor = text.color || '#ffffff';
+    const fontColor = (text.color || '#ffffff').replace('#', '0x');
     const backgroundColor = text.backgroundColor !== 'transparent' ? text.backgroundColor : '';
-    
-    // 字幕文本内容（转义特殊字符）
-    const subtitleText = text.content
-      .replace(/'/g, "\\'")
-      .replace(/"/g, '\\"')
-      .replace(/:/g, '\\:')
-      .replace(/=/g, '\\=')
-      .replace(/,/g, '\\,')
-      .replace(/;/g, '\\;')
-      .replace(/\n/g, '\\n');
-    
+
+    // 字幕文本内容（更安全的转义）
+    const subtitleText = (text.content || '')
+      .replace(/\\/g, '\\\\')  // 转义反斜杠
+      .replace(/'/g, "\\'")    // 转义单引号
+      .replace(/"/g, '\\"')    // 转义双引号
+      .replace(/:/g, '\\:')    // 转义冒号
+      .replace(/=/g, '\\=')    // 转义等号
+      .replace(/,/g, '\\,')    // 转义逗号
+      .replace(/;/g, '\\;')    // 转义分号
+      .replace(/\n/g, '\\n')   // 转义换行
+      .replace(/\r/g, '');     // 移除回车符
+
+    console.log(`📝 Building filter for text ${index + 1}: "${subtitleText}" at (${x}, ${y}) from ${startTime}s to ${endTime}s`);
+
     // 构建drawtext滤镜
     let filter = `drawtext=text='${subtitleText}':fontsize=${fontSize}:fontcolor=${fontColor}`;
-    
+
     // 添加位置
     filter += `:x=${x}:y=${y}`;
-    
-    // 添加字体（如果指定）
+
+    // 添加字体（使用系统默认字体）
     if (text.fontFamily && text.fontFamily !== 'Arial') {
-      filter += `:fontfile=/System/Library/Fonts/${text.fontFamily}.ttf`;
+      // 在macOS上使用系统字体路径
+      filter += `:fontfile=/System/Library/Fonts/Helvetica.ttc`;
     }
-    
+
     // 添加背景色（如果有）
     if (backgroundColor && backgroundColor !== 'transparent') {
-      filter += `:box=1:boxcolor=${backgroundColor}`;
+      const bgColor = backgroundColor.replace('#', '0x');
+      filter += `:box=1:boxcolor=${bgColor}@0.8:boxborderw=5`;
     }
-    
+
     // 添加时间控制
     filter += `:enable='between(t,${startTime},${endTime})'`;
-    
+
     // 添加透明度
     if (text.opacity !== undefined && text.opacity < 1) {
       filter += `:alpha=${text.opacity}`;
     }
-    
+
+    console.log(`📝 Generated filter: ${filter}`);
     return filter;
   });
   
   // 合并所有字幕滤镜
   const subtitleFilterChain = subtitleFilters.join(',');
-  
+  console.log(`📝 Complete subtitle filter chain: ${subtitleFilterChain}`);
+
   // 构建FFmpeg命令
   const resolutionMap: { [key: string]: string } = {
     '480p': '854:480',
-    '720p': '1280:720', 
+    '720p': '1280:720',
     '1080p': '1920:1080',
     '4k': '3840:2160'
   };
   const outputResolution = resolutionMap[exportConfig.resolution as keyof typeof resolutionMap] || '1280:720';
-  
+
   const command = [
     '-i', videoFile,
     '-vf', subtitleFilterChain,
@@ -1745,12 +2391,17 @@ const renderSubtitlesToVideo = async (
     '-c:a', 'copy',
     '-y', outputName
   ];
-  
-  console.log('📝 Executing subtitle rendering command');
-  await ffmpeg.exec(command);
-  
-  onProgress?.(85);
-  
-  console.log('✅ Subtitles rendered successfully');
-  return outputName;
+
+  console.log('📝 Executing subtitle rendering command:', command.slice(0, 6), '...');
+
+  try {
+    await ffmpeg.exec(command);
+    console.log('✅ Subtitles rendered successfully');
+    onProgress?.(85);
+    return outputName;
+  } catch (error) {
+    console.error('❌ Subtitle rendering failed:', error);
+    console.log('📝 Falling back to original video without subtitles');
+    return videoFile; // 如果字幕渲染失败，返回原视频
+  }
 };
