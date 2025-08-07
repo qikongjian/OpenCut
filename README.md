@@ -1,38 +1,85 @@
-<table width="100%">
-  <tr>
-    <td align="left" width="120">
-      <img src="apps/web/public/logo.png" alt="OpenCut Logo" width="100" />
-    </td>
-    <td align="right">
-      <h1>OpenCut <span style="font-size: 0.7em; font-weight: normal;">(prev AppCut)</span></h1>
-      <h3 style="margin-top: -10px;">A free, open-source video editor for web, desktop, and mobile</h3>
-    </td>
-  </tr>
-</table>
+<div align="center">
+  <img src="apps/web/public/logo.png" alt="OpenCut Logo" width="120" />
 
-## Why?
+  # OpenCut
 
-- **Privacy**: Your videos stay on your device
-- **Free features**: Every basic feature of CapCut is paywalled now
-- **Simple**: People want editors that are easy to use - CapCut proved that
+  ### 🎬 A free, open-source video editor for web, desktop, and mobile
 
-## Features
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  [![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+  [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 
-- Timeline-based editing
-- Multi-track support
-- Real-time preview
-- No watermarks or subscriptions
-- Analytics provided by [Databuddy](https://www.databuddy.cc?utm_source=opencut), 100% Anonymized & Non-invasive.
-- Blog powered by [Marble](https://marblecms.com?utm_source=opencut), Headless CMS.
+  [🚀 Live Demo](https://opencut.app) • [📖 Documentation](./docs) • [🐛 Report Bug](https://github.com/OpenCut-app/OpenCut/issues) • [💡 Request Feature](https://github.com/OpenCut-app/OpenCut/issues)
+</div>
 
-## Project Structure
+---
 
-- `apps/web/` – Main Next.js web application
-- `src/components/` – UI and editor components
-- `src/hooks/` – Custom React hooks
-- `src/lib/` – Utility and API logic
-- `src/stores/` – State management (Zustand, etc.)
-- `src/types/` – TypeScript types
+## 📖 Documentation
+
+- [📚 Complete Documentation](./docs) - All project documentation
+- [🚀 Quick Start Guide](./docs/development/setup.md) - Get started in minutes
+- [🎬 Feature Overview](./docs/features/overview.md) - All available features
+- [🏗️ Technical Architecture](./docs/technical/architecture.md) - System design
+- [📋 Development Planning](./docs/planning/roadmap.md) - Project roadmap
+
+## ✨ Why OpenCut?
+
+- **🔒 Privacy First**: Your videos never leave your device - 100% client-side processing
+- **💰 Completely Free**: No subscriptions, watermarks, or feature paywalls
+- **🎯 User-Friendly**: Intuitive interface inspired by popular editors like CapCut
+- **🌐 Cross-Platform**: Works seamlessly on web, desktop, and mobile devices
+- **⚡ High Performance**: Built with modern web technologies for smooth editing experience
+
+## 🎥 Key Features
+
+### Core Editing
+- 🎞️ **Timeline-based editing** with multi-track support
+- ⚡ **Real-time preview** with smooth playback
+- ✂️ **Precision cutting** and trimming tools
+- 🔄 **Drag & drop** interface for easy editing
+
+### Media Support
+- 📹 **Multiple formats**: MP4, AVI, MOV, WebM, and more
+- 🎵 **Audio editing**: Background music, sound effects, voiceovers
+- 🖼️ **Image support**: JPG, PNG, GIF integration
+- 📱 **Mobile optimized** for touch devices
+
+### Advanced Features
+- 🎨 **Visual effects** and transitions
+- 📝 **Text overlays** and subtitles
+- 🎭 **Filters** and color correction
+- 📊 **Export options** in various resolutions
+
+### Privacy & Performance
+- 🔐 **No data collection** - everything stays local
+- 🚫 **No watermarks** or subscription requirements
+- 📈 **Analytics** by [Databuddy](https://www.databuddy.cc?utm_source=opencut) (100% anonymized)
+- 📰 **Blog** powered by [Marble CMS](https://marblecms.com?utm_source=opencut)
+
+## 📁 Project Structure
+
+```
+OpenCut/
+├── apps/
+│   └── web/                 # Main Next.js application
+│       ├── src/
+│       │   ├── components/  # React components
+│       │   ├── hooks/       # Custom hooks
+│       │   ├── lib/         # Utilities & APIs
+│       │   ├── stores/      # State management
+│       │   └── types/       # TypeScript types
+│       └── public/          # Static assets
+├── packages/
+│   ├── auth/               # Authentication package
+│   └── db/                 # Database package
+├── docs/                   # 📚 Documentation
+│   ├── development/        # Development guides
+│   ├── features/          # Feature documentation
+│   ├── technical/         # Technical specs
+│   └── planning/          # Project planning
+└── scripts/               # Build & utility scripts
+```
 
 ## Getting Started
 
