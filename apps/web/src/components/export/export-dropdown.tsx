@@ -72,17 +72,17 @@ export function ExportDropdown({
     const generateTimelineCover = async () => {
       try {
         console.log("开始生成时间线封面...");
-        
+
         // 获取时间线状态
         const timelineStore = useTimelineStore.getState();
         const { tracks, getTotalDuration } = timelineStore;
-        
-        console.log("时间线状态:", { 
-          tracksCount: tracks.length, 
+
+        console.log("时间线状态:", {
+          tracksCount: tracks.length,
           totalDuration: getTotalDuration(),
-          mediaItemsCount: mediaItems.length 
+          mediaItemsCount: mediaItems.length
         });
-        
+
         // 检查是否有时间线内容
         if (tracks.length === 0 || getTotalDuration() === 0) {
           console.log("没有时间线内容，设置封面为null");
@@ -106,38 +106,118 @@ export function ExportDropdown({
 
         // 优先使用时间轴元素中存储的媒体文件副本
         const elementMedia = firstMediaElement as any; // MediaElement
-        
+
         let mediaItem = null;
         let mediaFile = null;
+        let mediaUrl = null;
         let thumbnailUrl = null;
-        
+
         if (elementMedia.mediaFile) {
           // 使用时间轴元素中的媒体文件副本
           mediaFile = elementMedia.mediaFile;
+          mediaUrl = elementMedia.mediaUrl;
           thumbnailUrl = elementMedia.thumbnailUrl;
         } else {
           // 回退到从媒体库中查找
           mediaItem = mediaItems.find(item => item.id === firstMediaElement.mediaId);
-          
+
           if (!mediaItem) {
             setVideoCover(null);
             return;
           }
-          
+
           mediaFile = mediaItem.file;
+          mediaUrl = mediaItem.url;
           thumbnailUrl = mediaItem.thumbnailUrl;
         }
 
         // 优先使用已有的缩略图
-        if (thumbnailUrl) {
+        if (thumbnailUrl && (thumbnailUrl.startsWith('data:') || thumbnailUrl.startsWith('blob:'))) {
+          console.log("使用已有缩略图:", thumbnailUrl.substring(0, 50) + "...");
           setVideoCover(thumbnailUrl);
           return;
         }
 
-        // 如果没有缩略图，但有文件，则生成新的缩略图
-        if (mediaFile) {
+        // 检查是否为远程URL（AI剪辑视频）
+        const isRemoteUrl = mediaUrl && (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://'));
 
-          // 生成封面（使用时间线中的时间点）
+        if (isRemoteUrl) {
+          console.log("检测到远程URL，尝试直接使用视频帧作为封面");
+          // 对于远程URL，尝试生成封面但不依赖File对象
+          const video = document.createElement("video");
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          if (!ctx) {
+            console.error("无法获取canvas上下文");
+            setVideoCover(null);
+            return;
+          }
+
+          let timeoutId: NodeJS.Timeout;
+
+          const cleanup = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            video.remove();
+            canvas.remove();
+          };
+
+          video.addEventListener("loadedmetadata", () => {
+            console.log("远程视频元数据加载完成:", {
+              width: video.videoWidth,
+              height: video.videoHeight,
+              duration: video.duration
+            });
+
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+              console.warn("视频尺寸为0，无法生成封面");
+              cleanup();
+              setVideoCover(null);
+              return;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            // 使用时间线中的时间点，如果超出视频长度则使用10%位置
+            const targetTime = Math.min(firstMediaElement.startTime + firstMediaElement.trimStart, video.duration * 0.1);
+            console.log("设置远程视频时间点:", targetTime);
+            video.currentTime = targetTime;
+          });
+
+          video.addEventListener("seeked", () => {
+            console.log("远程视频seek完成，开始绘制封面");
+            try {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
+              console.log("远程视频封面生成成功:", coverUrl.substring(0, 50) + "...");
+              setVideoCover(coverUrl);
+            } catch (error) {
+              console.error("绘制远程视频封面失败:", error);
+              setVideoCover(null);
+            }
+            cleanup();
+          });
+
+          video.addEventListener("error", (e) => {
+            console.error("远程视频加载错误:", e);
+            cleanup();
+            setVideoCover(null);
+          });
+
+          // 设置超时，避免无限等待
+          timeoutId = setTimeout(() => {
+            console.warn("远程视频加载超时");
+            cleanup();
+            setVideoCover(null);
+          }, 10000); // 10秒超时
+
+          video.crossOrigin = "anonymous"; // 尝试解决CORS问题
+          video.src = mediaUrl;
+          video.load();
+
+        } else if (mediaFile) {
+          // 本地文件，使用原有逻辑
+          console.log("处理本地文件，生成封面");
           const video = document.createElement("video");
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
@@ -147,62 +227,94 @@ export function ExportDropdown({
             return;
           }
 
+          let timeoutId: NodeJS.Timeout;
+
+          const cleanup = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            video.remove();
+            canvas.remove();
+          };
+
           video.addEventListener("loadedmetadata", () => {
-            console.log("视频元数据加载完成:", {
+            console.log("本地视频元数据加载完成:", {
               width: video.videoWidth,
               height: video.videoHeight,
               duration: video.duration
             });
-            
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             // 使用时间线中的时间点，如果超出视频长度则使用10%位置
-            const targetTime = Math.min(firstMediaElement.startTime, video.duration * 0.1);
-            console.log("设置视频时间点:", targetTime);
+            const targetTime = Math.min(firstMediaElement.startTime + firstMediaElement.trimStart, video.duration * 0.1);
+            console.log("设置本地视频时间点:", targetTime);
             video.currentTime = targetTime;
           });
 
           video.addEventListener("seeked", () => {
-            console.log("视频seek完成，开始绘制封面");
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
-            console.log("封面生成成功:", coverUrl.substring(0, 50) + "...");
-            setVideoCover(coverUrl);
-            video.remove();
-            canvas.remove();
+            console.log("本地视频seek完成，开始绘制封面");
+            try {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
+              console.log("本地视频封面生成成功:", coverUrl.substring(0, 50) + "...");
+              setVideoCover(coverUrl);
+            } catch (error) {
+              console.error("绘制本地视频封面失败:", error);
+              setVideoCover(null);
+            }
+            cleanup();
           });
 
           video.addEventListener("error", (e) => {
-            console.error("视频加载错误:", e);
-            video.remove();
-            canvas.remove();
+            console.error("本地视频加载错误:", e);
+            cleanup();
+            setVideoCover(null);
           });
+
+          // 设置超时，避免无限等待
+          timeoutId = setTimeout(() => {
+            console.warn("本地视频加载超时");
+            cleanup();
+            setVideoCover(null);
+          }, 5000); // 5秒超时
 
           video.src = URL.createObjectURL(mediaFile);
           video.load();
         } else {
-          console.log("媒体项没有文件");
+          console.log("没有可用的媒体文件或URL");
           setVideoCover(null);
         }
-              } catch (error) {
-          console.error("生成时间线封面时出错:", error);
-          
-          // 备用方案：尝试使用第一个媒体项的缩略图
-          if (mediaItems.length > 0) {
-            const firstMediaItem = mediaItems[0];
-            if (firstMediaItem.thumbnailUrl) {
-              console.log("使用备用缩略图:", firstMediaItem.thumbnailUrl);
-              setVideoCover(firstMediaItem.thumbnailUrl);
-            }
+      } catch (error) {
+        console.error("生成时间线封面时出错:", error);
+
+        // 备用方案：尝试使用第一个媒体项的缩略图
+        if (mediaItems.length > 0) {
+          const firstMediaItem = mediaItems[0];
+          if (firstMediaItem.thumbnailUrl) {
+            console.log("使用备用缩略图:", firstMediaItem.thumbnailUrl);
+            setVideoCover(firstMediaItem.thumbnailUrl);
           }
         }
-      };
+      }
+    };
 
-      // 只有当导出菜单打开时才生成封面
+    // 只有当导出菜单打开时才生成封面
+    if (open) {
+      generateTimelineCover();
+    }
+
+    // 监听手动刷新事件
+    const handleRefresh = () => {
       if (open) {
         generateTimelineCover();
       }
-    }, [mediaItems, open]);
+    };
+
+    window.addEventListener('refresh-video-cover', handleRefresh);
+
+    return () => {
+      window.removeEventListener('refresh-video-cover', handleRefresh);
+    };
+  }, [mediaItems, open]);
 
   const handleShareForReview = () => {
     console.log("Share for Review")
@@ -359,20 +471,11 @@ export function ExportDropdown({
                   onClick={() => {
                     console.log("手动刷新缩略图");
                     setVideoCover(null);
+                    // 触发重新生成封面
                     setTimeout(() => {
-                      const timelineStore = useTimelineStore.getState();
-                      const { tracks } = timelineStore;
-                      if (tracks.length > 0) {
-                        const firstMediaElement = tracks
-                          .flatMap(track => track.elements)
-                          .filter(element => element.type === "media")[0];
-                        if (firstMediaElement) {
-                          const mediaItem = mediaItems.find(item => item.id === firstMediaElement.mediaId);
-                          if (mediaItem?.thumbnailUrl) {
-                            setVideoCover(mediaItem.thumbnailUrl);
-                          }
-                        }
-                      }
+                      // 重新触发useEffect中的封面生成逻辑
+                      const event = new CustomEvent('refresh-video-cover');
+                      window.dispatchEvent(event);
                     }, 100);
                   }}
                   className="absolute top-2 right-2 p-1 bg-black/50 rounded text-white text-xs hover:bg-black/70"

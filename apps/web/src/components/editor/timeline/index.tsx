@@ -30,6 +30,8 @@ import {
   Link, // 链接图标 - 链接功能
   ZoomIn, // 放大图标 - 缩放功能
   ZoomOut, // 缩小图标 - 缩放功能
+  Maximize2, // 最大化图标 - 适应时间线功能
+  Zap, // 闪电图标 - 自动缩放功能
 } from "lucide-react";
 // 导入工具提示组件，用于显示操作提示
 import {
@@ -102,6 +104,7 @@ export function Timeline() {
     getTotalDuration, // 获取总时长
     clearSelectedElements, // 清除选中元素
     snappingEnabled, // 吸附功能是否启用
+    autoScaleEnabled, // 自动缩放功能是否启用
     setSelectedElements, // 设置选中元素
     toggleTrackMute, // 切换轨道静音
     dragState, // 拖拽状态
@@ -145,6 +148,30 @@ export function Timeline() {
     containerRef: timelineRef,
     isInTimeline,
   });
+
+  // handleFitToTimeline 函数 - 定义在使用之前
+  const handleFitToTimeline = () => {
+    const totalDuration = getTotalDuration();
+    if (totalDuration <= 0) {
+      toast.error("No content in timeline to fit");
+      return;
+    }
+
+    // 获取时间线容器的宽度
+    const timelineContainer = timelineRef.current;
+    if (!timelineContainer) return;
+
+    const containerWidth = timelineContainer.clientWidth;
+    // 减去一些边距，确保内容完全可见
+    const availableWidth = containerWidth - 100; // 100px 边距
+
+    // 计算需要的缩放级别
+    const requiredWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND;
+    const optimalZoom = Math.max(0.25, Math.min(4, availableWidth / requiredWidth));
+
+    setZoomLevel(optimalZoom);
+    toast.success(`Timeline fitted to ${Math.round(optimalZoom * 100)}% zoom`);
+  };
 
   // Old marquee selection removed - using new SelectionBox component instead
 
@@ -372,6 +399,66 @@ export function Timeline() {
     setDuration(Math.max(totalDuration, 10)); // Minimum 10 seconds for empty timeline
   }, [tracks, setDuration, getTotalDuration]);
 
+  // Auto-scale timeline when media is added
+  useEffect(() => {
+    const handleMediaAdded = () => {
+      // 只有在启用自动缩放时才执行
+      if (!autoScaleEnabled) return;
+
+      // 延迟执行，确保DOM已更新
+      setTimeout(() => {
+        const totalDuration = getTotalDuration();
+        if (totalDuration > 0) {
+          const timelineContainer = timelineRef.current;
+          if (!timelineContainer) return;
+
+          const containerWidth = timelineContainer.clientWidth;
+          const availableWidth = containerWidth - 100; // 100px 边距
+          const requiredWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND;
+
+          // 只有当内容超出当前视图时才自动缩放
+          const currentWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel;
+          if (currentWidth > availableWidth) {
+            const optimalZoom = Math.max(0.25, Math.min(4, availableWidth / requiredWidth));
+            setZoomLevel(optimalZoom);
+            toast.success(`Timeline auto-scaled to ${Math.round(optimalZoom * 100)}% zoom`);
+          }
+        }
+      }, 100);
+    };
+
+    window.addEventListener('media-added-to-timeline', handleMediaAdded);
+
+    return () => {
+      window.removeEventListener('media-added-to-timeline', handleMediaAdded);
+    };
+  }, [getTotalDuration, zoomLevel, setZoomLevel, autoScaleEnabled]);
+
+  // Keyboard shortcuts for timeline
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when timeline is focused or no input is focused
+      const activeElement = document.activeElement as HTMLElement;
+      const isInputFocused = activeElement?.tagName === 'INPUT' ||
+                            activeElement?.tagName === 'TEXTAREA' ||
+                            activeElement?.contentEditable === 'true';
+
+      if (isInputFocused) return;
+
+      // Fit to Timeline: Ctrl/Cmd + 0
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault();
+        handleFitToTimeline();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleFitToTimeline]);
+
   // Old marquee system removed - using new SelectionBox component instead
 
 // handleDragEnter 函数
@@ -592,7 +679,11 @@ export function Timeline() {
       onMouseEnter={() => setIsInTimeline(true)}
       onMouseLeave={() => setIsInTimeline(false)}
     >
-      <TimelineToolbar zoomLevel={zoomLevel} setZoomLevel={setZoomLevel} />
+      <TimelineToolbar
+        zoomLevel={zoomLevel}
+        setZoomLevel={setZoomLevel}
+        onFitToTimeline={handleFitToTimeline}
+      />
 
       {/* Timeline Container */}
       <div
@@ -878,9 +969,11 @@ function TrackIcon({ track }: { track: TimelineTrack }) {
 function TimelineToolbar({
   zoomLevel,
   setZoomLevel,
+  onFitToTimeline,
 }: {
   zoomLevel: number;
   setZoomLevel: (zoom: number) => void;
+  onFitToTimeline: () => void;
 }) {
 // 常量定义 - 模块内部使用的固定值
   const {
@@ -897,6 +990,8 @@ function TimelineToolbar({
     separateAudio,
     snappingEnabled,
     toggleSnapping,
+    autoScaleEnabled,
+    toggleAutoScale,
     rippleEditingEnabled,
     toggleRippleEditing,
     flipSelectedElements,
@@ -1062,6 +1157,9 @@ function TimelineToolbar({
   const handleZoomSliderChange = (values: number[]) => {
     setZoomLevel(values[0]);
   };
+
+
+
   return (
     <div className="border-b flex items-center justify-between px-2 py-1">
       <div className="flex items-center gap-1 w-full">
@@ -1238,8 +1336,32 @@ function TimelineToolbar({
                 : "Enable Ripple Editing"}
             </TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="text" size="icon" onClick={toggleAutoScale}>
+                {autoScaleEnabled ? (
+                  <Zap className="h-4 w-4 text-primary" />
+                ) : (
+                  <Zap className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {autoScaleEnabled
+                ? "Disable Auto-Scale"
+                : "Enable Auto-Scale"}
+            </TooltipContent>
+          </Tooltip>
         </TooltipProvider>
         <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="text" size="icon" onClick={onFitToTimeline}>
+                <Maximize2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Fit to Timeline (Ctrl+0)</TooltipContent>
+          </Tooltip>
           <Button variant="text" size="icon" onClick={handleZoomOut}>
             <ZoomOut className="h-4 w-4" />
           </Button>

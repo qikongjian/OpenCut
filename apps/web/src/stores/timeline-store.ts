@@ -80,8 +80,14 @@ interface TimelineStore {
   // Snapping settings
   snappingEnabled: boolean;
 
+  // Auto-scaling settings
+  autoScaleEnabled: boolean;
+
   // Snapping actions
   toggleSnapping: () => void;
+
+  // Auto-scaling actions
+  toggleAutoScale: () => void;
 
   // Ripple editing mode
   rippleEditingEnabled: boolean;
@@ -332,6 +338,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 
     // Snapping settings defaults
     snappingEnabled: true,
+
+  // Auto-scaling settings
+  autoScaleEnabled: true,
     
     // 新增已添加媒体跟踪
     addedMediaItems: new Set<string>(),
@@ -1621,6 +1630,12 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
     toggleSnapping: () => {
       // 设置状态 - 更新状态值
       set((state) => ({ snappingEnabled: !state.snappingEnabled }));
+    },
+
+    // Auto-scaling actions
+    toggleAutoScale: () => {
+      // 设置状态 - 更新状态值
+      set((state) => ({ autoScaleEnabled: !state.autoScaleEnabled }));
     },
 
     // Ripple editing functions
