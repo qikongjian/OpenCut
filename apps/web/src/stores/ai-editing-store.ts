@@ -409,7 +409,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       if (remoteUrls > 0) {
         toast.success(`AI剪辑完成! ${localFiles}个视频已下载，${remoteUrls}个使用远程URL（CORS限制），总时长${currentTimelinePosition.toFixed(1)}秒。`);
       } else {
-        toast.success(`AI剪辑完成! 已下载${totalClips}个视频到本地并连续排列，总时长${currentTimelinePosition.toFixed(1)}秒。彻底解决导出黑屏问题!`);
+        toast.success(`AI剪辑完成! 已下载${totalClips}个视频到本地并连续排列，总时长${currentTimelinePosition.toFixed(1)}秒。`);
       }
       
     } catch (error) {
