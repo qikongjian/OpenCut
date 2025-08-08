@@ -460,27 +460,7 @@ export function TimelineElement({
       const isRemoteUrl = mediaUrl && (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://'));
       // 判断是否为blob URL（本地文件）
       const isBlobUrl = mediaUrl && mediaUrl.startsWith('blob:');
-
-      // 调试信息
-      console.log(`🎬 时间轴元素 ${element.name}:`, {
-        mediaType,
-        thumbnailUrl,
-        mediaUrl,
-        isRemoteUrl,
-        isBlobUrl,
-        tileWidth,
-        tileHeight,
-        elementMedia: {
-          mediaUrl: elementMedia.mediaUrl,
-          thumbnailUrl: elementMedia.thumbnailUrl,
-          mediaType: elementMedia.mediaType
-        },
-        mediaItem: mediaItem ? {
-          url: mediaItem.url,
-          thumbnailUrl: mediaItem.thumbnailUrl,
-          type: mediaItem.type
-        } : null
-      });
+   
 
       return (
         <div className="w-full h-full flex items-center justify-center">

@@ -113,7 +113,7 @@ function DraggableSubtitle({
         top: `${top}%`,
         transform: `translate(-50%, -50%) rotate(${element.rotation}deg) scale(${scaleRatio}) ${element.horizontalFlip ? 'scaleX(-1)' : ''}`,
         opacity: element.opacity,
-        zIndex: isSelected ? 200 : 100,
+        zIndex: isSelected ? 50 : 40,
       }}
       onMouseDown={handleMouseDown}
     >

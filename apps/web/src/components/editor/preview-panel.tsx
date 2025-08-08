@@ -262,7 +262,7 @@ export function PreviewPanel() {
               
               if (elementMedia.mediaUrl) {
                 // 优先使用mediaUrl（支持远程URL和本地URL）
-                console.log(`🎬 预览面板使用mediaUrl: ${elementMedia.mediaUrl}`);
+                // console.log(`🎬 预览面板使用mediaUrl: ${elementMedia.mediaUrl}`);
                 mediaItem = {
                   id: element.mediaId,
                   name: element.name,
@@ -452,7 +452,7 @@ export function PreviewPanel() {
               key={element.id}
               className="absolute inset-0 flex items-center justify-center"
               style={{
-                zIndex: 200 + index, // 转场元素在最顶层
+                zIndex: 30 + index, // 转场元素在最顶层
               }}
             >
               {transitionElement.direction === "in" ? (
@@ -483,7 +483,7 @@ export function PreviewPanel() {
               key={element.id}
               className="absolute inset-0"
               style={{
-                zIndex: 200 + index,
+                zIndex: 30 + index,
               }}
             >
               {/* 叠化效果 - 使用CSS混合模式 */}
@@ -503,7 +503,7 @@ export function PreviewPanel() {
               key={element.id}
               className="absolute inset-0 flex items-center justify-center bg-purple-500/20"
               style={{
-                zIndex: 200 + index,
+                zIndex: 30 + index,
               }}
             >
               <div className="text-center text-white">
@@ -556,7 +556,7 @@ export function PreviewPanel() {
             top: `${50 + (element.y / canvasSize.height) * 100}%`,
             transform: `translate(-50%, -50%) rotate(${element.rotation}deg) scale(${scaleRatio}) ${element.horizontalFlip ? 'scaleX(-1)' : ''}`,
             opacity: element.opacity,
-            zIndex: 100 + index, // Text elements on top
+            zIndex: 20 + index, // Text elements on top
             ...maskStyle,
           }}
         >

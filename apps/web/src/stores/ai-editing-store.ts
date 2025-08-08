@@ -174,7 +174,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       // 第一阶段：下载所有视频到本地（彻底解决远程URL问题）
       set({ executionProgress: 5, currentProcessingClip: "下载视频到本地..." });
 
-      console.log(`🎬 开始下载AI剪辑视频，彻底解决导出黑屏问题`);
+
 
       const downloadedVideos: Array<{
         clip: any;
@@ -184,7 +184,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       }> = [];
 
       // 并行下载所有视频（大幅提升速度）
-      console.log(`🚀 开始并行下载 ${totalClips} 个视频...`);
 
       const downloadPromises = currentEditingPlan.timeline_clips.map(async (clip, index) => {
         const fileName = `AI剪辑_${clip.sequence_clip_id}_${Date.now()}_${index}.mp4`;

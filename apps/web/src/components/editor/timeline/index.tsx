@@ -225,7 +225,6 @@ export function Timeline() {
     containerRef: tracksContainerRef,
     playheadRef,
     onSelectionComplete: (elements) => {
-      console.log(JSON.stringify({ onSelectionComplete: elements.length }));
       setSelectedElements(elements);
     },
   });
@@ -279,12 +278,6 @@ export function Timeline() {
 
       // Only process as click if we tracked a mouse down on timeline background
       if (!isMouseDown) {
-        console.log(
-          JSON.stringify({
-            ignoredClickWithoutMouseDown: true,
-            timeStamp: e.timeStamp,
-          })
-        );
         return;
       }
 
@@ -296,15 +289,6 @@ export function Timeline() {
       const deltaTime = e.timeStamp - downTime;
 
       if (deltaX > 5 || deltaY > 5 || deltaTime > 500) {
-        console.log(
-          JSON.stringify({
-            ignoredDragNotClick: true,
-            deltaX,
-            deltaY,
-            deltaTime,
-            timeStamp: e.timeStamp,
-          })
-        );
         return;
       }
 
@@ -330,7 +314,6 @@ export function Timeline() {
       }
 
       // Clear selected elements when clicking empty timeline area
-      console.log(JSON.stringify({ clearingSelectedElements: true }));
       clearSelectedElements();
 
       // Determine if we're clicking in ruler or tracks area

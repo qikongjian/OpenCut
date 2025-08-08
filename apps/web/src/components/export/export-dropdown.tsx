@@ -71,21 +71,12 @@ export function ExportDropdown({
   React.useEffect(() => {
     const generateTimelineCover = async () => {
       try {
-        console.log("开始生成时间线封面...");
-
         // 获取时间线状态
         const timelineStore = useTimelineStore.getState();
         const { tracks, getTotalDuration } = timelineStore;
 
-        console.log("时间线状态:", {
-          tracksCount: tracks.length,
-          totalDuration: getTotalDuration(),
-          mediaItemsCount: mediaItems.length
-        });
-
         // 检查是否有时间线内容
         if (tracks.length === 0 || getTotalDuration() === 0) {
-          console.log("没有时间线内容，设置封面为null");
           setVideoCover(null);
           return;
         }
@@ -96,10 +87,7 @@ export function ExportDropdown({
           .filter(element => element.type === "media")
           .sort((a, b) => a.startTime - b.startTime)[0];
 
-        console.log("第一个媒体元素:", firstMediaElement);
-
         if (!firstMediaElement) {
-          console.log("没有找到媒体元素");
           setVideoCover(null);
           return;
         }
@@ -133,7 +121,6 @@ export function ExportDropdown({
 
         // 优先使用已有的缩略图
         if (thumbnailUrl && (thumbnailUrl.startsWith('data:') || thumbnailUrl.startsWith('blob:'))) {
-          console.log("使用已有缩略图:", thumbnailUrl.substring(0, 50) + "...");
           setVideoCover(thumbnailUrl);
           return;
         }
@@ -142,7 +129,6 @@ export function ExportDropdown({
         const isRemoteUrl = mediaUrl && (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://'));
 
         if (isRemoteUrl) {
-          console.log("检测到远程URL，尝试直接使用视频帧作为封面");
           // 对于远程URL，尝试生成封面但不依赖File对象
           const video = document.createElement("video");
           const canvas = document.createElement("canvas");
@@ -163,14 +149,7 @@ export function ExportDropdown({
           };
 
           video.addEventListener("loadedmetadata", () => {
-            console.log("远程视频元数据加载完成:", {
-              width: video.videoWidth,
-              height: video.videoHeight,
-              duration: video.duration
-            });
-
             if (video.videoWidth === 0 || video.videoHeight === 0) {
-              console.warn("视频尺寸为0，无法生成封面");
               cleanup();
               setVideoCover(null);
               return;
@@ -180,16 +159,13 @@ export function ExportDropdown({
             canvas.height = video.videoHeight;
             // 使用时间线中的时间点，如果超出视频长度则使用10%位置
             const targetTime = Math.min(firstMediaElement.startTime + firstMediaElement.trimStart, video.duration * 0.1);
-            console.log("设置远程视频时间点:", targetTime);
             video.currentTime = targetTime;
           });
 
           video.addEventListener("seeked", () => {
-            console.log("远程视频seek完成，开始绘制封面");
             try {
               ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
               const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
-              console.log("远程视频封面生成成功:", coverUrl.substring(0, 50) + "...");
               setVideoCover(coverUrl);
             } catch (error) {
               console.error("绘制远程视频封面失败:", error);
@@ -206,7 +182,6 @@ export function ExportDropdown({
 
           // 设置超时，避免无限等待
           timeoutId = setTimeout(() => {
-            console.warn("远程视频加载超时");
             cleanup();
             setVideoCover(null);
           }, 10000); // 10秒超时
@@ -217,7 +192,6 @@ export function ExportDropdown({
 
         } else if (mediaFile) {
           // 本地文件，使用原有逻辑
-          console.log("处理本地文件，生成封面");
           const video = document.createElement("video");
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
@@ -236,26 +210,17 @@ export function ExportDropdown({
           };
 
           video.addEventListener("loadedmetadata", () => {
-            console.log("本地视频元数据加载完成:", {
-              width: video.videoWidth,
-              height: video.videoHeight,
-              duration: video.duration
-            });
-
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             // 使用时间线中的时间点，如果超出视频长度则使用10%位置
             const targetTime = Math.min(firstMediaElement.startTime + firstMediaElement.trimStart, video.duration * 0.1);
-            console.log("设置本地视频时间点:", targetTime);
             video.currentTime = targetTime;
           });
 
           video.addEventListener("seeked", () => {
-            console.log("本地视频seek完成，开始绘制封面");
             try {
               ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
               const coverUrl = canvas.toDataURL("image/jpeg", 0.8);
-              console.log("本地视频封面生成成功:", coverUrl.substring(0, 50) + "...");
               setVideoCover(coverUrl);
             } catch (error) {
               console.error("绘制本地视频封面失败:", error);
@@ -272,7 +237,6 @@ export function ExportDropdown({
 
           // 设置超时，避免无限等待
           timeoutId = setTimeout(() => {
-            console.warn("本地视频加载超时");
             cleanup();
             setVideoCover(null);
           }, 5000); // 5秒超时
@@ -280,7 +244,6 @@ export function ExportDropdown({
           video.src = URL.createObjectURL(mediaFile);
           video.load();
         } else {
-          console.log("没有可用的媒体文件或URL");
           setVideoCover(null);
         }
       } catch (error) {
@@ -290,7 +253,6 @@ export function ExportDropdown({
         if (mediaItems.length > 0) {
           const firstMediaItem = mediaItems[0];
           if (firstMediaItem.thumbnailUrl) {
-            console.log("使用备用缩略图:", firstMediaItem.thumbnailUrl);
             setVideoCover(firstMediaItem.thumbnailUrl);
           }
         }
@@ -317,26 +279,22 @@ export function ExportDropdown({
   }, [mediaItems, open]);
 
   const handleShareForReview = () => {
-    console.log("Share for Review")
     setOpen(false)
     // TODO: 实现分享以供审阅功能
   }
 
   const handleShareAsPresentation = () => {
-    console.log("Share as Presentation")
     setOpen(false)
     // TODO: 实现作为简报分享功能
   }
 
   const handleSocialPlatformClick = (platform: string) => {
-    console.log("选择社交平台:", platform)
     setOpen(false)
     // TODO: 实现社交平台分享功能
   }
 
   // 直接显示设置页面的处理函数
   const handleShowSettings = () => {
-    console.log("Show Settings Directly")
     
     // 检查是否有活动项目
     if (!activeProject) {
@@ -397,7 +355,7 @@ export function ExportDropdown({
       frameRate: exportConfig.frameRate
     };
 
-    console.log("📝 传递用户导出设置:", userExportSettings);
+
     
     // 触发统一的导出处理，传递用户设置
     onExportProgressOpen?.(userExportSettings)
@@ -452,7 +410,6 @@ export function ExportDropdown({
                   src={videoCover} 
                   alt="Video Cover" 
                   className="w-full h-full object-cover"
-                  onLoad={() => console.log("缩略图加载成功")}
                   onError={(e) => {
                     console.error("缩略图加载失败:", e);
                     setVideoCover(null);
@@ -469,7 +426,6 @@ export function ExportDropdown({
               {!videoCover && mediaItems.length > 0 && (
                 <button
                   onClick={() => {
-                    console.log("手动刷新缩略图");
                     setVideoCover(null);
                     // 触发重新生成封面
                     setTimeout(() => {
