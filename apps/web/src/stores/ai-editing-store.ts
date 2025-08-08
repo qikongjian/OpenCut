@@ -285,6 +285,8 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       // 第二阶段：生成视频缩略图并添加到媒体面板
       set({ executionProgress: 65, currentProcessingClip: "生成视频缩略图..." });
 
+      const addedMediaItems: any[] = []; // 记录成功添加的媒体项
+
       for (let i = 0; i < downloadedVideos.length; i++) {
         const { clip, file, url } = downloadedVideos[i];
         const isRemoteFallback = (file as any)._isRemoteUrlFallback;
@@ -295,11 +297,11 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         if (!isRemoteFallback && file.type.startsWith('video/')) {
           try {
             console.log(`🖼️ 生成缩略图: ${clip.sequence_clip_id}`);
-            thumbnailUrl = await generateVideoThumbnail(file, 1.0); // 1秒处截图
+            thumbnailUrl = await generateVideoThumbnail(file, 1.0);
             console.log(`✅ 缩略图生成成功: ${clip.sequence_clip_id}`);
           } catch (error) {
             console.warn(`⚠️ 缩略图生成失败，使用视频URL: ${clip.sequence_clip_id}`, error);
-            thumbnailUrl = url; // 回退到视频URL
+            thumbnailUrl = url;
           }
         }
 
@@ -315,13 +317,14 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           width: 1920,
           height: 1080,
           fps: 30,
-          thumbnailUrl: thumbnailUrl, // 使用生成的缩略图
+          thumbnailUrl: thumbnailUrl,
           createdAt: new Date(),
         };
 
         // 添加到媒体库
         try {
           await mediaStore.addMediaItem(projectStore.activeProject.id, mediaItem);
+          addedMediaItems.push(mediaItem); // 记录成功添加的媒体项
           console.log(`✅ 媒体项已添加: ${mediaItem.name}`);
         } catch (error) {
           console.error(`❌ 添加媒体项失败:`, error);
@@ -334,73 +337,64 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         });
       }
 
-      // 第三阶段：创建连续排列的时间轴元素
+      console.log(`✅ 所有媒体项添加完成，共 ${addedMediaItems.length} 个`);
+
+      // 第三阶段：创建时间轴元素（确保媒体项已存在）
       set({ executionProgress: 80, currentProcessingClip: "创建时间轴..." });
 
-      let currentTimelinePosition = 0; // 追踪当前时间轴位置，确保连续排列
+      let currentTimelinePosition = 0;
 
       for (let i = 0; i < downloadedVideos.length; i++) {
         const { clip, file, url } = downloadedVideos[i];
+        const correspondingMediaItem = addedMediaItems[i]; // 使用记录的媒体项
 
-        // 更新进度
-        set({
-          executionProgress: 80 + ((i + 1) / downloadedVideos.length) * 15,
-          currentProcessingClip: `创建时间轴元素 ${i + 1}/${downloadedVideos.length}`
-        });
+        if (!correspondingMediaItem) {
+          console.warn(`⚠️ 未找到对应的媒体项: ${clip.sequence_clip_id}`);
+          continue;
+        }
 
         // 创建媒体元素 - 使用连续时间轴位置和本地文件
-        const startTime = currentTimelinePosition; // 使用连续位置
+        const startTime = currentTimelinePosition;
         const duration = durationToSeconds(clip.clip_duration_in_sequence);
         const sourceIn = timecodeToSeconds(clip.source_in_timecode);
         const sourceOut = timecodeToSeconds(clip.source_out_timecode);
 
-        // 更新下一个片段的起始位置
         currentTimelinePosition += duration;
 
-        // 使用下载的文件创建媒体元素（处理远程URL回退情况）
-        const mediaId = `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`;
         const isRemoteFallback = (file as any)._isRemoteUrlFallback;
         const originalVideoUrl = (file as any)._originalVideoUrl;
-
-        // 查找对应的媒体项以获取缩略图
-        const correspondingMediaItem = mediaStore.mediaItems.find(item =>
-          item.name === `AI剪辑-${clip.sequence_clip_id}`
-        );
-        const thumbnailUrl = correspondingMediaItem?.thumbnailUrl || (isRemoteFallback ? originalVideoUrl : url);
 
         // 创建媒体元素
         const mediaElement: Omit<MediaElement, "id"> = {
           type: "media",
           name: `AI剪辑-${clip.sequence_clip_id} (${clip.source_clip_id})`,
-          mediaId: mediaId,
+          mediaId: correspondingMediaItem.id, // 使用已添加的媒体项ID
           duration: duration,
           startTime: startTime,
           trimStart: sourceIn,
           trimEnd: Math.max(0, sourceOut),
           horizontalFlip: false,
-          // 根据下载结果选择不同的URL策略
-          mediaFile: isRemoteFallback ? undefined : file,           // 远程回退时不设置文件
-          mediaUrl: isRemoteFallback ? originalVideoUrl : url,      // 远程回退时使用原始URL
-          thumbnailUrl: thumbnailUrl,                               // 使用生成的缩略图
+          mediaFile: isRemoteFallback ? undefined : file,
+          mediaUrl: isRemoteFallback ? originalVideoUrl : url,
+          thumbnailUrl: correspondingMediaItem.thumbnailUrl, // 使用媒体项的缩略图
           mediaType: "video",
           mediaWidth: 1920,
           mediaHeight: 1080,
           mediaFps: 30,
         };
 
-        // 添加到时间轴（使用本地文件数据）
+        // 添加到时间轴
         timelineStore.addElementToTrack(mainTrackId, mediaElement);
 
-        console.log(`✅ 成功添加AI剪辑片段:`);
+        console.log(`✅ 成功添加AI剪辑片段到时间轴:`);
         console.log(`   片段ID: ${clip.sequence_clip_id}`);
-        console.log(`   文件类型: ${isRemoteFallback ? '远程URL（CORS回退）' : '本地文件'}`);
-        console.log(`   文件名: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-        console.log(`   源时间段: ${clip.source_in_timecode} - ${clip.source_out_timecode}`);
-        console.log(`   时间轴位置: ${startTime}s - ${startTime + duration}s (时长: ${duration}s)`);
-        console.log(`   下一片段起始: ${currentTimelinePosition}s`);
-        console.log(`   媒体ID: ${mediaId}`);
-        console.log(`   MediaElement.mediaUrl: ${mediaElement.mediaUrl}`);
-        console.log(`   MediaElement.mediaType: ${mediaElement.mediaType}`);
+        console.log(`   媒体项ID: ${correspondingMediaItem.id}`);
+        console.log(`   缩略图: ${correspondingMediaItem.thumbnailUrl ? '已生成' : '未生成'}`);
+
+        set({
+          executionProgress: 80 + ((i + 1) / downloadedVideos.length) * 15,
+          currentProcessingClip: `时间轴 ${i + 1}/${downloadedVideos.length}`
+        });
       }
       
       set({ executionProgress: 100 });
