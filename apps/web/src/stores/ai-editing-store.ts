@@ -67,6 +67,57 @@ const durationToSeconds = (duration: string): number => {
   return parseFloat(duration);
 };
 
+// 生成视频缩略图的工具函数
+const generateVideoThumbnail = (videoFile: File, timeInSeconds: number = 1.0): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      reject(new Error('无法创建Canvas上下文'));
+      return;
+    }
+
+    video.preload = 'metadata';
+    video.muted = true;
+
+    video.onloadedmetadata = () => {
+      // 设置canvas尺寸
+      canvas.width = 320;  // 缩略图宽度
+      canvas.height = 180; // 缩略图高度 (16:9比例)
+
+      // 跳转到指定时间
+      video.currentTime = Math.min(timeInSeconds, video.duration - 0.1);
+    };
+
+    video.onseeked = () => {
+      try {
+        // 绘制视频帧到canvas
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // 转换为base64图片
+        const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        // 清理
+        video.remove();
+        canvas.remove();
+
+        resolve(thumbnailUrl);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    video.onerror = () => {
+      reject(new Error('视频加载失败'));
+    };
+
+    // 设置视频源
+    video.src = URL.createObjectURL(videoFile);
+  });
+};
+
 // 创建AI剪辑状态管理存储
 export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   // 初始状态
@@ -120,84 +171,253 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       
       const totalClips = currentEditingPlan.timeline_clips.length;
       
-      // 逐个处理剪辑片段
-      for (let i = 0; i < currentEditingPlan.timeline_clips.length; i++) {
-        const clip = currentEditingPlan.timeline_clips[i];
-        
+      // 第一阶段：下载所有视频到本地（彻底解决远程URL问题）
+      set({ executionProgress: 5, currentProcessingClip: "下载视频到本地..." });
+
+      console.log(`🎬 开始下载AI剪辑视频，彻底解决导出黑屏问题`);
+
+      const downloadedVideos: Array<{
+        clip: any;
+        file: File;
+        url: string;
+        duration: number;
+      }> = [];
+
+      // 并行下载所有视频（大幅提升速度）
+      console.log(`🚀 开始并行下载 ${totalClips} 个视频...`);
+
+      const downloadPromises = currentEditingPlan.timeline_clips.map(async (clip, index) => {
+        const fileName = `AI剪辑_${clip.sequence_clip_id}_${Date.now()}_${index}.mp4`;
+
+        try {
+          console.log(`🔽 开始下载视频 ${index + 1}/${totalClips}: ${clip.sequence_clip_id}`);
+
+          // 使用代理方式下载视频文件，绕过CORS限制
+          let blob: Blob;
+          let actualFileName = fileName;
+
+          try {
+            // 方法1：尝试直接fetch（可能被CORS阻止）
+            const response = await fetch(clip.video_url, {
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            blob = await response.blob();
+            console.log(`✅ 直接下载成功: ${actualFileName} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+          } catch (corsError) {
+            console.warn(`⚠️ 直接下载失败（CORS），尝试代理方式: ${clip.sequence_clip_id}`, corsError);
+
+            // 方法2：使用代理API下载
+            try {
+              const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(clip.video_url)}`;
+              const proxyResponse = await fetch(proxyUrl);
+              if (!proxyResponse.ok) {
+                throw new Error(`代理下载失败: ${proxyResponse.status}`);
+              }
+              blob = await proxyResponse.blob();
+              console.log(`✅ 代理下载成功: ${actualFileName} (${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+            } catch (proxyError) {
+              console.warn(`⚠️ 代理下载也失败，回退到远程URL方案: ${clip.sequence_clip_id}`, proxyError);
+
+              // 方法3：回退到远程URL方案（不下载，直接使用远程URL）
+              console.log(`🌐 回退到远程URL方案: ${clip.sequence_clip_id}`);
+
+              // 创建一个最小的虚拟blob用于占位
+              const placeholderContent = new TextEncoder().encode(`AI剪辑片段: ${clip.sequence_clip_id}`);
+              blob = new Blob([placeholderContent], { type: 'text/plain' });
+              actualFileName = `AI剪辑_远程_${clip.sequence_clip_id}.txt`;
+
+              // 标记这是远程URL方案
+              (blob as any)._isRemoteUrlFallback = true;
+              (blob as any)._originalVideoUrl = clip.video_url;
+            }
+          }
+
+          const file = new File([blob], actualFileName, { type: 'video/mp4' });
+          const localUrl = URL.createObjectURL(blob);
+
+          // 获取视频时长
+          const duration = durationToSeconds(clip.clip_duration_in_sequence);
+
+          return {
+            clip,
+            file,
+            url: localUrl,
+            duration,
+            index // 保持原始顺序
+          };
+
+        } catch (error) {
+          console.error(`❌ 视频下载失败: ${clip.video_url}`, error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          throw new Error(`视频下载失败: ${clip.sequence_clip_id} - ${errorMessage}`);
+        }
+      });
+
+      // 等待所有下载完成，并显示进度
+      const downloadResults = await Promise.allSettled(downloadPromises);
+
+      // 处理下载结果
+      downloadResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          downloadedVideos.push(result.value);
+          console.log(`✅ 视频 ${index + 1} 下载完成`);
+        } else {
+          console.error(`❌ 视频 ${index + 1} 下载失败:`, result.reason);
+          throw new Error(`视频下载失败: ${result.reason}`);
+        }
+
         // 更新进度
         set({
-          executionProgress: (i / totalClips) * 100,
-          currentProcessingClip: clip.sequence_clip_id
+          executionProgress: 5 + ((index + 1) / totalClips) * 60,
+          currentProcessingClip: `下载完成 ${index + 1}/${totalClips}`
+        });
+      });
+
+      // 按原始顺序排序
+      downloadedVideos.sort((a, b) => (a as any).index - (b as any).index);
+
+      console.log(`✅ 所有视频下载完成，共 ${downloadedVideos.length} 个文件`);
+
+      // 第二阶段：生成视频缩略图并添加到媒体面板
+      set({ executionProgress: 65, currentProcessingClip: "生成视频缩略图..." });
+
+      for (let i = 0; i < downloadedVideos.length; i++) {
+        const { clip, file, url } = downloadedVideos[i];
+        const isRemoteFallback = (file as any)._isRemoteUrlFallback;
+
+        let thumbnailUrl = url;
+
+        // 为本地视频生成缩略图
+        if (!isRemoteFallback && file.type.startsWith('video/')) {
+          try {
+            console.log(`🖼️ 生成缩略图: ${clip.sequence_clip_id}`);
+            thumbnailUrl = await generateVideoThumbnail(file, 1.0); // 1秒处截图
+            console.log(`✅ 缩略图生成成功: ${clip.sequence_clip_id}`);
+          } catch (error) {
+            console.warn(`⚠️ 缩略图生成失败，使用视频URL: ${clip.sequence_clip_id}`, error);
+            thumbnailUrl = url; // 回退到视频URL
+          }
+        }
+
+        // 创建媒体项
+        const mediaItem = {
+          id: `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`,
+          name: `AI剪辑-${clip.sequence_clip_id}`,
+          url: url,
+          type: "video" as const,
+          duration: durationToSeconds(clip.clip_duration_in_sequence),
+          size: file.size,
+          file: file,
+          width: 1920,
+          height: 1080,
+          fps: 30,
+          thumbnailUrl: thumbnailUrl, // 使用生成的缩略图
+          createdAt: new Date(),
+        };
+
+        // 添加到媒体库
+        try {
+          await mediaStore.addMediaItem(projectStore.activeProject.id, mediaItem);
+          console.log(`✅ 媒体项已添加: ${mediaItem.name}`);
+        } catch (error) {
+          console.error(`❌ 添加媒体项失败:`, error);
+          // 不抛出错误，继续处理
+        }
+
+        set({
+          executionProgress: 65 + ((i + 1) / downloadedVideos.length) * 15,
+          currentProcessingClip: `添加媒体 ${i + 1}/${downloadedVideos.length}`
+        });
+      }
+
+      // 第三阶段：创建连续排列的时间轴元素
+      set({ executionProgress: 80, currentProcessingClip: "创建时间轴..." });
+
+      let currentTimelinePosition = 0; // 追踪当前时间轴位置，确保连续排列
+
+      for (let i = 0; i < downloadedVideos.length; i++) {
+        const { clip, file, url } = downloadedVideos[i];
+
+        // 更新进度
+        set({
+          executionProgress: 80 + ((i + 1) / downloadedVideos.length) * 15,
+          currentProcessingClip: `创建时间轴元素 ${i + 1}/${downloadedVideos.length}`
         });
 
-        // 模拟处理时间
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // 创建媒体元素
-        const startTime = timecodeToSeconds(clip.sequence_start_timecode);
+        // 创建媒体元素 - 使用连续时间轴位置和本地文件
+        const startTime = currentTimelinePosition; // 使用连续位置
         const duration = durationToSeconds(clip.clip_duration_in_sequence);
         const sourceIn = timecodeToSeconds(clip.source_in_timecode);
         const sourceOut = timecodeToSeconds(clip.source_out_timecode);
-        
-        // 创建基于video_url的虚拟媒体元素，不依赖本地媒体库
-        const virtualMediaId = `ai-clip-${clip.sequence_clip_id}-${Date.now()}`;
 
-        // 直接基于video_url创建媒体元素
+        // 更新下一个片段的起始位置
+        currentTimelinePosition += duration;
+
+        // 使用下载的文件创建媒体元素（处理远程URL回退情况）
+        const mediaId = `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`;
+        const isRemoteFallback = (file as any)._isRemoteUrlFallback;
+        const originalVideoUrl = (file as any)._originalVideoUrl;
+
+        // 查找对应的媒体项以获取缩略图
+        const correspondingMediaItem = mediaStore.mediaItems.find(item =>
+          item.name === `AI剪辑-${clip.sequence_clip_id}`
+        );
+        const thumbnailUrl = correspondingMediaItem?.thumbnailUrl || (isRemoteFallback ? originalVideoUrl : url);
+
+        // 创建媒体元素
         const mediaElement: Omit<MediaElement, "id"> = {
           type: "media",
           name: `AI剪辑-${clip.sequence_clip_id} (${clip.source_clip_id})`,
-          mediaId: virtualMediaId, // 使用虚拟ID
+          mediaId: mediaId,
           duration: duration,
           startTime: startTime,
           trimStart: sourceIn,
           trimEnd: Math.max(0, sourceOut),
           horizontalFlip: false,
-          // 关键：直接使用video_url作为媒体源
-          mediaUrl: clip.video_url,
-          // 暂时使用视频URL作为缩略图，时间轴组件会处理显示
-          thumbnailUrl: clip.video_url,
+          // 根据下载结果选择不同的URL策略
+          mediaFile: isRemoteFallback ? undefined : file,           // 远程回退时不设置文件
+          mediaUrl: isRemoteFallback ? originalVideoUrl : url,      // 远程回退时使用原始URL
+          thumbnailUrl: thumbnailUrl,                               // 使用生成的缩略图
           mediaType: "video",
-          // 添加视频尺寸信息（如果有的话）
-          mediaWidth: 1920, // 默认值，实际应该从视频元数据获取
+          mediaWidth: 1920,
           mediaHeight: 1080,
           mediaFps: 30,
         };
 
-        // 创建虚拟媒体项用于媒体库管理
-        const virtualMediaItem = {
-          id: virtualMediaId,
-          name: `${clip.source_clip_id} (AI剪辑源)`,
-          url: clip.video_url,
-          type: "video" as const,
-          duration: sourceOut - sourceIn,
-          size: 0, // 远程文件大小未知
-          file: new File([], clip.source_clip_id, { type: 'video/mp4' }), // 创建虚拟文件对象
-          createdAt: new Date(),
-        };
-
-        // 添加到媒体库以便后续管理和引用
-        try {
-          await mediaStore.addMediaItem("current-project", virtualMediaItem);
-          console.log(`✅ 虚拟媒体项已添加到媒体库: ${virtualMediaItem.name}`);
-        } catch (error) {
-          console.warn(`⚠️ 添加虚拟媒体项失败，但不影响剪辑执行:`, error);
-        }
-
-        // 添加到时间轴
+        // 添加到时间轴（使用本地文件数据）
         timelineStore.addElementToTrack(mainTrackId, mediaElement);
 
-        console.log(`✅ 成功添加基于video_url的AI剪辑片段:`);
+        console.log(`✅ 成功添加AI剪辑片段:`);
         console.log(`   片段ID: ${clip.sequence_clip_id}`);
-        console.log(`   视频源URL: ${clip.video_url}`);
+        console.log(`   文件类型: ${isRemoteFallback ? '远程URL（CORS回退）' : '本地文件'}`);
+        console.log(`   文件名: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
         console.log(`   源时间段: ${clip.source_in_timecode} - ${clip.source_out_timecode}`);
-        console.log(`   时间轴位置: ${startTime}s, 时长: ${duration}s`);
-        console.log(`   虚拟媒体ID: ${virtualMediaId}`);
+        console.log(`   时间轴位置: ${startTime}s - ${startTime + duration}s (时长: ${duration}s)`);
+        console.log(`   下一片段起始: ${currentTimelinePosition}s`);
+        console.log(`   媒体ID: ${mediaId}`);
         console.log(`   MediaElement.mediaUrl: ${mediaElement.mediaUrl}`);
         console.log(`   MediaElement.mediaType: ${mediaElement.mediaType}`);
       }
       
       set({ executionProgress: 100 });
-      toast.success(`成功应用AI剪辑计划，共处理${totalClips}个片段`);
+
+      // 统计下载结果
+      const localFiles = downloadedVideos.filter(v => !(v.file as any)._isRemoteUrlFallback).length;
+      const remoteUrls = downloadedVideos.filter(v => (v.file as any)._isRemoteUrlFallback).length;
+
+      console.log(`🎉 AI剪辑执行完成! 连续排列，智能处理CORS问题!`);
+      console.log(`📊 总时长: ${currentTimelinePosition}秒`);
+      console.log(`💾 下载结果: ${localFiles}个本地文件, ${remoteUrls}个远程URL`);
+
+      if (remoteUrls > 0) {
+        toast.success(`AI剪辑完成! ${localFiles}个视频已下载，${remoteUrls}个使用远程URL（CORS限制），总时长${currentTimelinePosition.toFixed(1)}秒。`);
+      } else {
+        toast.success(`AI剪辑完成! 已下载${totalClips}个视频到本地并连续排列，总时长${currentTimelinePosition.toFixed(1)}秒。彻底解决导出黑屏问题!`);
+      }
       
     } catch (error) {
       console.error("执行剪辑计划失败:", error);

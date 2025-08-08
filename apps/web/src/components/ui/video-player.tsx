@@ -226,12 +226,25 @@ export function VideoPlayer({
       poster={poster}
       className={`max-w-full max-h-full object-contain ${className}`}
       playsInline
-      preload="auto"
+      preload="metadata" // 改为metadata，减少初始加载
       controls={false}
       disablePictureInPicture
       disableRemotePlayback
       style={{ pointerEvents: "none" }}
       onContextMenu={(e) => e.preventDefault()}
+      // 添加加载状态处理
+      onLoadStart={() => {
+        console.log(`🔄 开始加载视频: ${src}`);
+      }}
+      onCanPlay={() => {
+        console.log(`✅ 视频可播放: ${src}`);
+      }}
+      onWaiting={() => {
+        console.log(`⏳ 视频缓冲中: ${src}`);
+      }}
+      onError={(e) => {
+        console.error(`❌ 视频加载失败: ${src}`, e);
+      }}
     />
   );
 }
