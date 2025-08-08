@@ -279,8 +279,8 @@ export function AIEditingPanel() {
                           <VideoThumbnail
                             videoUrl={clip.video_url}
                             startTime={timecodeToSeconds(clip.source_in_timecode)}
-                            width={80}
-                            height={45}
+                            width={160}
+                            height={90}
                             onPreview={(url, time) => handleVideoPreview(url, time)}
                             className="flex-shrink-0"
                           />

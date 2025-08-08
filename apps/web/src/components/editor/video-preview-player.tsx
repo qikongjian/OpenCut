@@ -158,9 +158,13 @@ export function VideoPreviewPlayer() {
         <video
           ref={videoRef}
           src={currentVideoUrl}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover"
           preload="metadata"
           playsInline
+          style={{
+            objectFit: 'cover',
+            objectPosition: 'center'
+          }}
           onError={(e) => {
             console.error('视频预览播放器加载失败:', e);
             console.error('视频URL:', currentVideoUrl);

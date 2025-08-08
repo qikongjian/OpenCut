@@ -639,7 +639,7 @@ export function PreviewPanel() {
             <img
               src={mediaItem.url!}
               alt={mediaItem.name}
-              className="max-w-full max-h-full object-contain"
+              className="w-full h-full object-cover"
               draggable={false}
             />
           </div>
@@ -695,7 +695,7 @@ export function PreviewPanel() {
                     data-preview="true"
                     src={previewMedia.url!}
                     poster={previewMedia.thumbnailUrl}
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-cover"
                     playsInline
                     preload="auto"
                     controls={false}

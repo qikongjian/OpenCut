@@ -224,7 +224,7 @@ export function VideoPlayer({
       ref={videoRef}
       src={src}
       poster={poster}
-      className={`max-w-full max-h-full object-contain ${className}`}
+      className={`w-full h-full object-cover ${className}`}
       playsInline
       preload="metadata" // 改为metadata，减少初始加载
       controls={false}

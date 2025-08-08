@@ -147,10 +147,14 @@ export function VideoThumbnail({
     <div className={`relative group ${className}`}>
       {/* 视频显示区域 */}
       <div
-        className={`relative overflow-hidden rounded-md cursor-pointer transition-all duration-200 ${
+        className={`relative overflow-hidden rounded-md cursor-pointer transition-all duration-200 bg-black ${
           isHovered ? 'ring-2 ring-blue-500 scale-105' : ''
         }`}
-        style={{ width, height }}
+        style={{ 
+          width, 
+          height,
+          aspectRatio: '16/9' // 确保视频比例正确
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onClick={handlePreviewClick}
@@ -168,16 +172,21 @@ export function VideoThumbnail({
           </div>
         )}
 
-        {/* 直接显示视频 */}
+        {/* 直接显示视频 - 优化全屏显示 */}
         <video
           ref={videoRef}
           src={videoUrl}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
           preload="metadata"
           muted={isMuted}
           onLoadedData={handleVideoLoad}
           onError={handleVideoError}
-          style={{ display: hasError ? 'none' : 'block' }}
+          style={{ 
+            display: hasError ? 'none' : 'block',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            backgroundColor: '#000'
+          }}
           playsInline
           controls={false}
         />
@@ -190,7 +199,7 @@ export function VideoThumbnail({
             <div className="flex items-center gap-2">
               {/* 播放/暂停按钮 */}
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={togglePlayPause}
                 className="bg-white/90 hover:bg-white text-gray-800 rounded-full p-2"
@@ -204,7 +213,7 @@ export function VideoThumbnail({
 
               {/* 静音按钮 */}
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={toggleMute}
                 className="bg-white/90 hover:bg-white text-gray-800 rounded-full p-2"
@@ -219,19 +228,23 @@ export function VideoThumbnail({
           </div>
         )}
 
-        {/* 时间标签 */}
+        {/* 移除时间标签以获得更清洁的显示效果 */}
+        {/* 
         {!isLoading && !hasError && (
           <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 rounded">
             {Math.floor(startTime / 60)}:{(startTime % 60).toString().padStart(2, '0')}
           </div>
         )}
+        */}
 
-        {/* 视频类型标识 */}
+        {/* 移除视频类型标识框 - 这是导致头部出现框的原因 */}
+        {/* 
         {!isLoading && !hasError && (
           <div className="absolute top-1 left-1 bg-blue-600/80 text-white text-xs px-1 rounded">
             视频
           </div>
         )}
+        */}
       </div>
 
       {/* 预览提示 */}
