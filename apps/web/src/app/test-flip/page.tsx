@@ -9,6 +9,7 @@ export default function TestFlipPage() {
 
   const addTestText = () => {
     addTextToNewTrack({
+      id: `text-${Date.now()}`,
       type: "text",
       name: "Test Text",
       content: "Hello World",

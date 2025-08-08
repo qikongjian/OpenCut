@@ -29,7 +29,7 @@ import {
 import { useProjectStore } from "../../stores/project-store"
 import { useTimelineStore } from "../../stores/timeline-store"
 import { useMediaStore } from "../../stores/media-store"
-import { exportTimeline } from "../../lib/ffmpeg-utils"
+import { exportTimeline } from "../../lib/ffmpeg"
 import { toast } from "sonner"
 
 interface ExportSettingsProps {

@@ -252,7 +252,7 @@ export function AIEditingPanel() {
                         </CardTitle>
                         <div className="flex items-center gap-1">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -305,7 +305,7 @@ export function AIEditingPanel() {
                               <span className="font-medium">视频源</span>
                             </div>
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();

@@ -21,7 +21,7 @@ import {
   type MediaType,
 } from "@/stores/media-store";
 // 导入 FFmpeg 视频处理库
-import { generateThumbnail, getVideoInfo } from "./ffmpeg-utils";
+import { generateThumbnail, getVideoInfo } from "./ffmpeg";
 
 // 接口定义 - 定义对象的结构和属性类型
 export interface ProcessedMediaItem extends Omit<MediaItem, "id"> {}

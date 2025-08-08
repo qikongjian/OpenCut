@@ -153,106 +153,106 @@ export const generateAIEditingMockData = (projectId: string): AIEditingData => {
               ],
               visual_enhancement_suggestions: []
             },
-            {
-              sequence_clip_id: "v1_clip_004",
-              source_clip_id: "clip_20240521_001",
-              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ3-1-20250719070613.mp4",
-              corresponding_script_scene_id: "SCENE 1",
-              clip_type: "video_and_audio",
-              sequence_start_timecode: "00:00:18.800",
-              source_in_timecode: "00:00:00.100",
-              source_out_timecode: "00:00:08.000",
-              clip_duration_in_sequence: "7.9s",
-              transition_from_previous: {
-                transition_type: "cut",
-                transition_duration_ms: 0,
-                audio_sync_offset_ms: 0,
-                reason_for_transition: "从内心世界切回现实对话。硬切回来，展现李先生打破了她的沉思，将'诱惑'具象化。"
-              },
-              clip_placement_reasons: {
-                core_intent_and_audience_effect: "意图：展示'金色牢笼'的诱惑。钥匙作为核心象征物被正式提出。效果：观众理解了李先生的具体提议，悬念从'他想干什么'转变为'她会接受吗'。",
-                emotion_priority: "李先生自信、神秘的表演，与玉莲的忧郁形成鲜明对比。",
-                story_priority: "引入关键道具（钥匙），推动情节进入核心选择。",
-                rhythm_priority: "焦点从人脸转移到钥匙，再转回人脸，镜头内部的节奏变化引导了观众的注意力。",
-                eyeline_priority: "观众的视线跟随焦点，从李先生的脸，到钥匙，再回到他的脸，完全被他的表演所引导。",
-                space_priority: "保持空间连续性。",
-                lens_language_application: "特写镜头和焦点变化，极大地强调了'钥匙'这一道具的重要性。"
-              },
-              continuity_correction_suggestion: {
-                error_exists: false
-              },
-              sound_design_suggestions: [],
-              visual_enhancement_suggestions: []
-            },
-            {
-              sequence_clip_id: "v1_clip_005",
-              source_clip_id: "V_20240521_01_A001C001",
-              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ4-0-20250719070612.mp4",
-              corresponding_script_scene_id: "SCENE 1",
-              clip_type: "video_and_audio",
-              sequence_start_timecode: "00:00:26.700",
-              source_in_timecode: "00:00:00.500",
-              source_out_timecode: "00:00:07.100",
-              clip_duration_in_sequence: "6.6s",
-              transition_from_previous: {
-                transition_type: "cut",
-                transition_duration_ms: 0,
-                audio_sync_offset_ms: 0,
-                reason_for_transition: "动作衔接。从李先生展示钥匙，切到他放置钥匙的动作，保持叙事流畅。"
-              },
-              clip_placement_reasons: {
-                core_intent_and_audience_effect: "意图：展现玉莲的表面顺从和李先生的控制欲。他把钥匙放在壁炉上，而不是交到她手里，这是一个权力姿态。她的回答礼貌而疏远。效果：观众能读懂她台词下的潜台词，感受到两人之间暗流涌动的博弈。",
-                emotion_priority: "玉莲平静的表演下隐藏着巨大的内心张力。",
-                story_priority: "完成了'提议'这个动作，并展示了玉莲的初步反应。",
-                rhythm_priority: "焦点从前景的李先生转移到背景的玉莲，节奏平稳，但暗藏机锋。",
-                eyeline_priority: "观众视线随焦点转移，最后落在玉莲那张平静但意味深长的脸上。",
-                space_priority: "清晰地展示了钥匙被放置的位置，为后续场景埋下伏笔。",
-                lens_language_application: "焦点转移再次被用作叙事工具，将权力从施予者（李先生）转移到思考者（玉莲）身上。"
-              },
-              continuity_correction_suggestion: {
-                error_exists: false
-              },
-              sound_design_suggestions: [
-                {
-                  sound_type: "sfx",
-                  description: "清晰、有质感的黄铜钥匙放置在木头上的声音，强调这一动作的重要性。",
-                  timing_in_clip: "与画面动作同步",
-                  intensity_suggestion: "中等偏高"
-                }
-              ],
-              visual_enhancement_suggestions: []
-            },
-            {
-              sequence_clip_id: "v1_clip_006",
-              source_clip_id: "CLIP_20240521_MAN_WOMAN_CONFRONTATION_01",
-              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ5-1-20250719070634.mp4",
-              corresponding_script_scene_id: "SCENE 1",
-              clip_type: "video_and_audio",
-              sequence_start_timecode: "00:00:33.300",
-              source_in_timecode: "00:00:00.250",
-              source_out_timecode: "00:00:05.100",
-              clip_duration_in_sequence: "4.85s",
-              transition_from_previous: {
-                transition_type: "cut",
-                transition_duration_ms: 0,
-                audio_sync_offset_ms: 0,
-                reason_for_transition: "情感爆发点切入。在玉莲平静的回答后，立即切入李先生愤怒的爆发，形成强烈的节奏和情绪对比，制造戏剧冲突。"
-              },
-              clip_placement_reasons: {
-                core_intent_and_audience_effect: "意图：撕下温情的面具，暴露赤裸裸的占有欲。这是李先生真实意图的第一次完全暴露。效果：观众感受到强烈的压迫感和威胁，为玉莲的处境感到担忧，场景张力达到顶点。",
-                emotion_priority: "最大化李先生的愤怒（强度0.8）和玉莲的冷静之间的冲突。",
-                story_priority: "揭示李先生的核心价值观（占有），深化了'牢笼'的本质。",
-                rhythm_priority: "节奏加快，对话充满压迫感，这是场景的情感高潮。",
-                eyeline_priority: "强烈的对视在两人之间建立了直接的冲突线。",
-                space_priority: "过肩镜头让观众身临其境地感受到对峙的紧张。",
-                lens_language_application: "近景和过肩镜头的使用，是表现人物激烈冲突的经典手法。"
-              },
-              continuity_correction_suggestion: {
-                error_exists: false
-              },
-              sound_design_suggestions: [],
-              visual_enhancement_suggestions: []
-            },
+            // {
+            //   sequence_clip_id: "v1_clip_004",
+            //   source_clip_id: "clip_20240521_001",
+            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ3-1-20250719070613.mp4",
+            //   corresponding_script_scene_id: "SCENE 1",
+            //   clip_type: "video_and_audio",
+            //   sequence_start_timecode: "00:00:18.800",
+            //   source_in_timecode: "00:00:00.100",
+            //   source_out_timecode: "00:00:08.000",
+            //   clip_duration_in_sequence: "7.9s",
+            //   transition_from_previous: {
+            //     transition_type: "cut",
+            //     transition_duration_ms: 0,
+            //     audio_sync_offset_ms: 0,
+            //     reason_for_transition: "从内心世界切回现实对话。硬切回来，展现李先生打破了她的沉思，将'诱惑'具象化。"
+            //   },
+            //   clip_placement_reasons: {
+            //     core_intent_and_audience_effect: "意图：展示'金色牢笼'的诱惑。钥匙作为核心象征物被正式提出。效果：观众理解了李先生的具体提议，悬念从'他想干什么'转变为'她会接受吗'。",
+            //     emotion_priority: "李先生自信、神秘的表演，与玉莲的忧郁形成鲜明对比。",
+            //     story_priority: "引入关键道具（钥匙），推动情节进入核心选择。",
+            //     rhythm_priority: "焦点从人脸转移到钥匙，再转回人脸，镜头内部的节奏变化引导了观众的注意力。",
+            //     eyeline_priority: "观众的视线跟随焦点，从李先生的脸，到钥匙，再回到他的脸，完全被他的表演所引导。",
+            //     space_priority: "保持空间连续性。",
+            //     lens_language_application: "特写镜头和焦点变化，极大地强调了'钥匙'这一道具的重要性。"
+            //   },
+            //   continuity_correction_suggestion: {
+            //     error_exists: false
+            //   },
+            //   sound_design_suggestions: [],
+            //   visual_enhancement_suggestions: []
+            // },
+            // {
+            //   sequence_clip_id: "v1_clip_005",
+            //   source_clip_id: "V_20240521_01_A001C001",
+            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ4-0-20250719070612.mp4",
+            //   corresponding_script_scene_id: "SCENE 1",
+            //   clip_type: "video_and_audio",
+            //   sequence_start_timecode: "00:00:26.700",
+            //   source_in_timecode: "00:00:00.500",
+            //   source_out_timecode: "00:00:07.100",
+            //   clip_duration_in_sequence: "6.6s",
+            //   transition_from_previous: {
+            //     transition_type: "cut",
+            //     transition_duration_ms: 0,
+            //     audio_sync_offset_ms: 0,
+            //     reason_for_transition: "动作衔接。从李先生展示钥匙，切到他放置钥匙的动作，保持叙事流畅。"
+            //   },
+            //   clip_placement_reasons: {
+            //     core_intent_and_audience_effect: "意图：展现玉莲的表面顺从和李先生的控制欲。他把钥匙放在壁炉上，而不是交到她手里，这是一个权力姿态。她的回答礼貌而疏远。效果：观众能读懂她台词下的潜台词，感受到两人之间暗流涌动的博弈。",
+            //     emotion_priority: "玉莲平静的表演下隐藏着巨大的内心张力。",
+            //     story_priority: "完成了'提议'这个动作，并展示了玉莲的初步反应。",
+            //     rhythm_priority: "焦点从前景的李先生转移到背景的玉莲，节奏平稳，但暗藏机锋。",
+            //     eyeline_priority: "观众视线随焦点转移，最后落在玉莲那张平静但意味深长的脸上。",
+            //     space_priority: "清晰地展示了钥匙被放置的位置，为后续场景埋下伏笔。",
+            //     lens_language_application: "焦点转移再次被用作叙事工具，将权力从施予者（李先生）转移到思考者（玉莲）身上。"
+            //   },
+            //   continuity_correction_suggestion: {
+            //     error_exists: false
+            //   },
+            //   sound_design_suggestions: [
+            //     {
+            //       sound_type: "sfx",
+            //       description: "清晰、有质感的黄铜钥匙放置在木头上的声音，强调这一动作的重要性。",
+            //       timing_in_clip: "与画面动作同步",
+            //       intensity_suggestion: "中等偏高"
+            //     }
+            //   ],
+            //   visual_enhancement_suggestions: []
+            // },
+            // {
+            //   sequence_clip_id: "v1_clip_006",
+            //   source_clip_id: "CLIP_20240521_MAN_WOMAN_CONFRONTATION_01",
+            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ5-1-20250719070634.mp4",
+            //   corresponding_script_scene_id: "SCENE 1",
+            //   clip_type: "video_and_audio",
+            //   sequence_start_timecode: "00:00:33.300",
+            //   source_in_timecode: "00:00:00.250",
+            //   source_out_timecode: "00:00:05.100",
+            //   clip_duration_in_sequence: "4.85s",
+            //   transition_from_previous: {
+            //     transition_type: "cut",
+            //     transition_duration_ms: 0,
+            //     audio_sync_offset_ms: 0,
+            //     reason_for_transition: "情感爆发点切入。在玉莲平静的回答后，立即切入李先生愤怒的爆发，形成强烈的节奏和情绪对比，制造戏剧冲突。"
+            //   },
+            //   clip_placement_reasons: {
+            //     core_intent_and_audience_effect: "意图：撕下温情的面具，暴露赤裸裸的占有欲。这是李先生真实意图的第一次完全暴露。效果：观众感受到强烈的压迫感和威胁，为玉莲的处境感到担忧，场景张力达到顶点。",
+            //     emotion_priority: "最大化李先生的愤怒（强度0.8）和玉莲的冷静之间的冲突。",
+            //     story_priority: "揭示李先生的核心价值观（占有），深化了'牢笼'的本质。",
+            //     rhythm_priority: "节奏加快，对话充满压迫感，这是场景的情感高潮。",
+            //     eyeline_priority: "强烈的对视在两人之间建立了直接的冲突线。",
+            //     space_priority: "过肩镜头让观众身临其境地感受到对峙的紧张。",
+            //     lens_language_application: "近景和过肩镜头的使用，是表现人物激烈冲突的经典手法。"
+            //   },
+            //   continuity_correction_suggestion: {
+            //     error_exists: false
+            //   },
+            //   sound_design_suggestions: [],
+            //   visual_enhancement_suggestions: []
+            // },
             // {
             //   sequence_clip_id: "v1_clip_007",
             //   source_clip_id: "clip_001",

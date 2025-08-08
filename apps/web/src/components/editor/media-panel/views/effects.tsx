@@ -99,7 +99,7 @@ function AppliedMaskItem({ mask, elementId, trackId, onEdit, onRemove }: Applied
       {/* 操作按钮 */}
       <div className="flex items-center gap-1">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="h-6 w-6 p-0"
           onClick={handleToggleVisibility}
@@ -107,7 +107,7 @@ function AppliedMaskItem({ mask, elementId, trackId, onEdit, onRemove }: Applied
           {isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="h-6 w-6 p-0"
           onClick={onEdit}
@@ -115,7 +115,7 @@ function AppliedMaskItem({ mask, elementId, trackId, onEdit, onRemove }: Applied
           <RotateCcw className="w-3 h-3" />
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="h-6 w-6 p-0 text-destructive hover:text-destructive"
           onClick={onRemove}

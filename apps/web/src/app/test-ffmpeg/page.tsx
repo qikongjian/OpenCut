@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { initFFmpeg } from '@/lib/ffmpeg-utils';
+import { initFFmpeg } from '@/lib/ffmpeg';
 
 export default function TestFFmpegPage() {
   const [status, setStatus] = useState<string>('Ready to test');

@@ -1,0 +1,352 @@
+// effects/video-effects.ts - 视频特效处理模块
+
+import type { ExportConfig, ProgressCallback } from '../types/ffmpeg-types';
+
+/**
+ * 应用转场效果
+ */
+export const applyTransitionEffects = async (
+  ffmpeg: any,
+  videoFile: string,
+  transitionElements: any[],
+  exportConfig: ExportConfig,
+  tempFiles: string[],
+  onProgress?: ProgressCallback
+): Promise<string> => {
+  console.log(`🎬 Applying ${transitionElements.length} transition effects...`);
+  
+  if (transitionElements.length === 0) {
+    return videoFile;
+  }
+
+  const outputName = `transition_applied_${Date.now()}.${exportConfig.format}`;
+  tempFiles.push(outputName);
+
+  try {
+    // 构建转场滤镜
+    const filters: string[] = [];
+    
+    for (const transition of transitionElements) {
+      const { transitionType, startTime, duration, intensity = 0.5 } = transition;
+      
+      switch (transitionType) {
+        case 'fade':
+          filters.push(`fade=t=in:st=${startTime}:d=${duration}`);
+          filters.push(`fade=t=out:st=${startTime + duration - 0.5}:d=0.5`);
+          break;
+          
+        case 'slide':
+          const direction = transition.direction || 'left';
+          const slideFilter = direction === 'left' 
+            ? `slide=direction=left:duration=${duration}`
+            : `slide=direction=right:duration=${duration}`;
+          filters.push(slideFilter);
+          break;
+          
+        case 'zoom':
+          filters.push(`zoompan=z='if(lte(zoom,1.0),1.5,max(1.001,zoom-0.0015))':d=${Math.round(duration * 30)}`);
+          break;
+          
+        case 'flash':
+          filters.push(`fade=t=in:st=${startTime}:d=0.1:alpha=1,fade=t=out:st=${startTime + 0.1}:d=0.1:alpha=1`);
+          break;
+          
+        default:
+          console.warn(`Unknown transition type: ${transitionType}`);
+      }
+    }
+
+    if (filters.length === 0) {
+      return videoFile;
+    }
+
+    // 构建FFmpeg命令
+    const command = [
+      '-i', videoFile,
+      '-vf', filters.join(','),
+      '-c:a', 'copy',
+      '-y', outputName
+    ];
+
+    console.log('🎬 Executing transition command...');
+    await ffmpeg.exec(command);
+    
+    onProgress?.(60);
+    console.log('✅ Transition effects applied');
+    return outputName;
+
+  } catch (error) {
+    console.error('❌ Transition effects failed:', error);
+    throw new Error(`Transition effects failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * 应用镜像效果
+ */
+export const applyMirrorEffects = async (
+  ffmpeg: any,
+  inputFile: string,
+  element: any,
+  exportConfig: ExportConfig,
+  tempFiles: string[],
+  onProgress?: ProgressCallback
+): Promise<string> => {
+  console.log('🪞 Applying mirror effects...');
+
+  const outputName = `mirror_applied_${Date.now()}.${exportConfig.format}`;
+  tempFiles.push(outputName);
+
+  try {
+    const filters: string[] = [];
+
+    // 水平翻转
+    if (element.horizontalFlip) {
+      filters.push('hflip');
+    }
+
+    // 垂直翻转
+    if (element.verticalFlip) {
+      filters.push('vflip');
+    }
+
+    // 旋转
+    if (element.rotation) {
+      const radians = (element.rotation * Math.PI) / 180;
+      filters.push(`rotate=${radians}`);
+    }
+
+    if (filters.length === 0) {
+      return inputFile;
+    }
+
+    const command = [
+      '-i', inputFile,
+      '-vf', filters.join(','),
+      '-c:a', 'copy',
+      '-y', outputName
+    ];
+
+    console.log('🪞 Executing mirror command:', command);
+    await ffmpeg.exec(command);
+    
+    onProgress?.(70);
+    console.log('✅ Mirror effects applied');
+    return outputName;
+
+  } catch (error) {
+    console.error('❌ Mirror effects failed:', error);
+    throw new Error(`Mirror effects failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * 应用蒙板效果
+ */
+export const applyMaskEffects = async (
+  ffmpeg: any,
+  inputFile: string,
+  masks: any[],
+  exportConfig: ExportConfig,
+  tempFiles: string[],
+  onProgress?: ProgressCallback
+): Promise<string> => {
+  console.log(`🎭 Applying ${masks.length} mask effects...`);
+
+  if (!masks || masks.length === 0) {
+    return inputFile;
+  }
+
+  const outputName = `mask_applied_${Date.now()}.${exportConfig.format}`;
+  tempFiles.push(outputName);
+
+  try {
+    // 构建蒙板滤镜
+    const filters: string[] = [];
+    
+    for (const mask of masks) {
+      const { type, x, y, width, height, blur = 0 } = mask;
+      
+      if (type === 'rectangle') {
+        // 矩形蒙板
+        const cropFilter = `crop=${width}:${height}:${x}:${y}`;
+        filters.push(cropFilter);
+        
+        if (blur > 0) {
+          filters.push(`gblur=sigma=${blur}`);
+        }
+      } else if (type === 'circle') {
+        // 圆形蒙板 - 使用复杂的滤镜
+        const radius = Math.min(width, height) / 2;
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+        
+        const circleFilter = `geq=r='if(lt(sqrt((X-${centerX})^2+(Y-${centerY})^2),${radius}),r(X,Y),0)':g='if(lt(sqrt((X-${centerX})^2+(Y-${centerY})^2),${radius}),g(X,Y),0)':b='if(lt(sqrt((X-${centerX})^2+(Y-${centerY})^2),${radius}),b(X,Y),0)'`;
+        filters.push(circleFilter);
+        
+        if (blur > 0) {
+          filters.push(`gblur=sigma=${blur}`);
+        }
+      }
+    }
+
+    if (filters.length === 0) {
+      return inputFile;
+    }
+
+    const command = [
+      '-i', inputFile,
+      '-vf', filters.join(','),
+      '-c:a', 'copy',
+      '-y', outputName
+    ];
+
+    console.log('🎭 Executing mask command...');
+    await ffmpeg.exec(command);
+    
+    onProgress?.(75);
+    console.log('✅ Mask effects applied');
+    return outputName;
+
+  } catch (error) {
+    console.error('❌ Mask effects failed:', error);
+    throw new Error(`Mask effects failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * 渲染字幕到视频
+ */
+export const renderSubtitlesToVideo = async (
+  ffmpeg: any,
+  videoFile: string,
+  textElements: any[],
+  exportConfig: ExportConfig,
+  tempFiles: string[],
+  onProgress?: ProgressCallback
+): Promise<string> => {
+  console.log(`📝 Rendering ${textElements.length} subtitle elements...`);
+
+  if (textElements.length === 0) {
+    return videoFile;
+  }
+
+  const outputName = `subtitles_rendered_${Date.now()}.${exportConfig.format}`;
+  tempFiles.push(outputName);
+
+  try {
+    // 构建字幕滤镜
+    const drawTextFilters: string[] = [];
+
+    for (const textElement of textElements) {
+      const {
+        content = '',
+        fontSize = 24,
+        fontFamily = 'Arial',
+        color = 'white',
+        backgroundColor = 'black@0.5',
+        x = 50,
+        y = 50,
+        startTime = 0,
+        duration = 5,
+        opacity = 1
+      } = textElement;
+
+      // 转义文本内容中的特殊字符
+      const escapedText = content
+        .replace(/'/g, "\\'")
+        .replace(/:/g, "\\:")
+        .replace(/\[/g, "\\[")
+        .replace(/\]/g, "\\]")
+        .replace(/,/g, "\\,");
+
+      // 构建drawtext滤镜
+      const drawTextFilter = [
+        `drawtext=text='${escapedText}'`,
+        `fontfile=/System/Library/Fonts/Arial.ttf`, // 系统字体路径
+        `fontsize=${fontSize}`,
+        `fontcolor=${color}`,
+        `x=${x}`,
+        `y=${y}`,
+        `enable='between(t,${startTime},${startTime + duration})'`
+      ].join(':');
+
+      // 如果有背景色，添加box
+      if (backgroundColor && backgroundColor !== 'transparent') {
+        const boxFilter = drawTextFilter + `:box=1:boxcolor=${backgroundColor}:boxborderw=5`;
+        drawTextFilters.push(boxFilter);
+      } else {
+        drawTextFilters.push(drawTextFilter);
+      }
+    }
+
+    if (drawTextFilters.length === 0) {
+      return videoFile;
+    }
+
+    // 构建FFmpeg命令
+    const command = [
+      '-i', videoFile,
+      '-vf', drawTextFilters.join(','),
+      '-c:a', 'copy',
+      '-y', outputName
+    ];
+
+    console.log('📝 Executing subtitle rendering command...');
+    await ffmpeg.exec(command);
+    
+    onProgress?.(85);
+    console.log('✅ Subtitles rendered');
+    return outputName;
+
+  } catch (error) {
+    console.error('❌ Subtitle rendering failed:', error);
+    
+    // 如果字体文件问题，尝试使用内置字体
+    console.log('🔄 Retrying with built-in font...');
+    try {
+      const fallbackFilters = textElements.map(textElement => {
+        const {
+          content = '',
+          fontSize = 24,
+          color = 'white',
+          x = 50,
+          y = 50,
+          startTime = 0,
+          duration = 5
+        } = textElement;
+
+        const escapedText = content
+          .replace(/'/g, "\\'")
+          .replace(/:/g, "\\:")
+          .replace(/\[/g, "\\[")
+          .replace(/\]/g, "\\]")
+          .replace(/,/g, "\\,");
+
+        return [
+          `drawtext=text='${escapedText}'`,
+          `fontsize=${fontSize}`,
+          `fontcolor=${color}`,
+          `x=${x}`,
+          `y=${y}`,
+          `enable='between(t,${startTime},${startTime + duration})'`
+        ].join(':');
+      });
+
+      const fallbackCommand = [
+        '-i', videoFile,
+        '-vf', fallbackFilters.join(','),
+        '-c:a', 'copy',
+        '-y', outputName
+      ];
+
+      await ffmpeg.exec(fallbackCommand);
+      console.log('✅ Subtitles rendered with fallback font');
+      return outputName;
+      
+    } catch (fallbackError) {
+      console.error('❌ Fallback subtitle rendering also failed:', fallbackError);
+      throw new Error(`Subtitle rendering failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+}; 

@@ -174,7 +174,7 @@ export function VideoPreviewPlayer() {
         {/* 播放控制覆盖层 */}
         <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
           <Button
-            variant="ghost"
+            variant="outline"
             size="lg"
             onClick={togglePlayPause}
             className="bg-black/50 hover:bg-black/70 text-white rounded-full p-4"
@@ -194,7 +194,7 @@ export function VideoPreviewPlayer() {
 
         {/* 关闭按钮 */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={stopPreview}
           className="absolute top-4 right-4 bg-black/70 hover:bg-black/90 text-white"
@@ -226,7 +226,7 @@ export function VideoPreviewPlayer() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={togglePlayPause}
               className="text-white hover:bg-white/20"
@@ -235,7 +235,7 @@ export function VideoPreviewPlayer() {
             </Button>
             
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={resetToStart}
               className="text-white hover:bg-white/20"
@@ -248,7 +248,7 @@ export function VideoPreviewPlayer() {
           <div className="flex items-center gap-2">
             {/* 音量控制 */}
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={toggleMute}
               className="text-white hover:bg-white/20"
@@ -266,7 +266,7 @@ export function VideoPreviewPlayer() {
 
             {/* 全屏按钮 */}
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={toggleFullscreen}
               className="text-white hover:bg-white/20"

@@ -401,7 +401,7 @@ export function EnhancedMediaImport({
             <div className="flex items-center justify-between">
               <h4 className="font-medium">导入详情</h4>
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="sm" 
                 onClick={handleClearResults}
               >

@@ -1308,7 +1308,7 @@ function PreviewToolbar({
         {!previewMode && (
           <>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => skipBackward(5)}
               className="text-xs"
@@ -1317,7 +1317,7 @@ function PreviewToolbar({
               -5s
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => skipForward(5)}
               className="text-xs"
@@ -1326,7 +1326,7 @@ function PreviewToolbar({
               +5s
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={jumpToStart}
               className="text-xs"
@@ -1335,7 +1335,7 @@ function PreviewToolbar({
               开始
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={jumpToEnd}
               className="text-xs"

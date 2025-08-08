@@ -33,7 +33,7 @@ import { useMediaStore } from "@/stores/media-store";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入 FFmpeg 视频处理库
-import { convertToWebM, exportVideo, exportTimeline, cancelCurrentExport } from "@/lib/ffmpeg-utils";
+import { convertToWebM, exportVideo, exportTimeline, fastExportTimeline, cancelCurrentExport } from "@/lib/ffmpeg";
 // 导入导出系统组件
 import { ExportDropdown } from "./export/export-dropdown";
 import { ExportSettings, ExportProgress, ExportSuccess } from "./export/index";
@@ -144,12 +144,12 @@ export function EditorHeader() {
 
       console.log('🚀 Using export settings:', exportConfig);
 
-      // 使用新的 exportTimeline 函数，导出整个时间轴
-      const videoBlob = await exportTimeline(
+      // 使用新的 fastExportTimeline 函数，超快速导出整个时间轴
+      const videoBlob = await fastExportTimeline(
         timelineData,
         exportConfig,
         (progress) => {
-          console.log(`导出进度: ${progress.toFixed(1)}%`);
+          console.log(`⚡ 快速导出进度: ${progress.toFixed(1)}%`);
           setExportProgress(progress);
         }
       );
