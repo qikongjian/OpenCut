@@ -230,6 +230,17 @@ export function TransitionsView() {
   // 获取热门转场
   const popularTemplates = transitionTemplates.filter(t => t.isPopular);
 
+  // 🚀 辅助函数：检查两个元素之间是否已经存在转场
+  const hasExistingTransition = (fromElementId: string, toElementId: string) => {
+    return tracks.some(track => 
+      track.elements.some(element => 
+        element.type === "transition" &&
+        element.fromElementId === fromElementId &&
+        element.toElementId === toElementId
+      )
+    );
+  };
+
   // 智能检测可添加转场的位置
   const findTransitionOpportunities = () => {
     const opportunities: Array<{
@@ -242,15 +253,15 @@ export function TransitionsView() {
       type: 'selected' | 'playhead' | 'adjacent';
     }> = [];
 
-    // 1. 检查选中的元素
+    // 🚀 修复：只检查选中的元素，不检查相邻元素
     if (selectedElements.length >= 2) {
-    const selectedMediaElements = selectedElements
-      .map(sel => {
-        const track = tracks.find(t => t.id === sel.trackId);
-        const element = track?.elements.find(e => e.id === sel.elementId);
-        return { track, element, trackId: sel.trackId, elementId: sel.elementId };
-      })
-      .filter(item => item.element && item.element.type === "media");
+      const selectedMediaElements = selectedElements
+        .map(sel => {
+          const track = tracks.find(t => t.id === sel.trackId);
+          const element = track?.elements.find(e => e.id === sel.elementId);
+          return { track, element, trackId: sel.trackId, elementId: sel.elementId };
+        })
+        .filter(item => item.element && item.element.type === "media");
 
       if (selectedMediaElements.length >= 2) {
         // 按时间顺序排序元素
@@ -260,83 +271,24 @@ export function TransitionsView() {
           const from = selectedMediaElements[i];
           const to = selectedMediaElements[i + 1];
           
-          opportunities.push({
-            fromTrackId: from.trackId,
-            fromElementId: from.elementId,
-            toTrackId: to.trackId,
-            toElementId: to.elementId,
-            fromElement: from.element,
-            toElement: to.element,
-            type: 'selected'
-          });
+          // 🚀 修复：检查是否已经存在转场
+          if (!hasExistingTransition(from.elementId, to.elementId)) {
+            opportunities.push({
+              fromTrackId: from.trackId,
+              fromElementId: from.elementId,
+              toTrackId: to.trackId,
+              toElementId: to.elementId,
+              fromElement: from.element,
+              toElement: to.element,
+              type: 'selected'
+            });
+          }
         }
       }
     }
 
-    // 2. 检查播放头位置的相邻元素
-    tracks.forEach(track => {
-      if (track.type === "media") {
-        const elements = track.elements.filter(e => e.type === "media");
-        
-        // 按时间排序
-        elements.sort((a, b) => a.startTime - b.startTime);
-        
-        for (let i = 0; i < elements.length - 1; i++) {
-          const fromElement = elements[i];
-          const toElement = elements[i + 1];
-          
-          const fromEnd = fromElement.startTime + (fromElement.duration - fromElement.trimStart - fromElement.trimEnd);
-          const toStart = toElement.startTime;
-          
-          // 检查播放头是否在两个元素之间
-          if (playbackTime >= fromEnd - 0.5 && playbackTime <= toStart + 0.5) {
-            opportunities.push({
-              fromTrackId: track.id,
-              fromElementId: fromElement.id,
-              toTrackId: track.id,
-              toElementId: toElement.id,
-              fromElement,
-              toElement,
-              type: 'playhead'
-            });
-          }
-        }
-      }
-    });
-
-    // 3. 检查同一轨道上的相邻元素（未选中但相邻）
-    tracks.forEach(track => {
-      if (track.type === "media") {
-        const elements = track.elements.filter(e => e.type === "media");
-        elements.sort((a, b) => a.startTime - b.startTime);
-        
-        for (let i = 0; i < elements.length - 1; i++) {
-          const fromElement = elements[i];
-          const toElement = elements[i + 1];
-          
-                // 检查是否已经存在转场（现在转场在同一轨道上）
-      const hasTransition = tracks.some(track => 
-        track.elements.some(element => 
-          element.type === "transition" &&
-          element.fromElementId === fromElement.id &&
-          element.toElementId === toElement.id
-        )
-      );
-          
-          if (!hasTransition) {
-            opportunities.push({
-              fromTrackId: track.id,
-              fromElementId: fromElement.id,
-              toTrackId: track.id,
-              toElementId: toElement.id,
-              fromElement,
-              toElement,
-              type: 'adjacent'
-            });
-          }
-        }
-      }
-    });
+    // 🚀 移除：不再检查播放头位置和相邻元素的转场机会
+    // 只根据用户选中的元素来添加转场
 
     return opportunities;
   };
@@ -346,22 +298,51 @@ export function TransitionsView() {
     const opportunities = findTransitionOpportunities();
     
     if (opportunities.length === 0) {
-      toast.error("没有找到可添加转场的位置。请选择两个媒体元素或将播放头放在两个视频之间。");
+      toast.error("没有找到可添加转场的位置。请选择两个或更多媒体元素来添加转场。");
       return;
     }
 
-    // 优先使用选中的元素，然后是播放头位置，最后是相邻元素
-    const priorityOrder = ['selected', 'playhead', 'adjacent'];
-    const bestOpportunity = opportunities.sort((a, b) => 
-      priorityOrder.indexOf(a.type) - priorityOrder.indexOf(b.type)
-    )[0];
+    // 🚀 修复：只添加用户选中的转场
+    let successCount = 0;
+    opportunities.forEach(opportunity => {
+      const transitionId = addTransitionBetweenElements(
+        opportunity.fromTrackId,
+        opportunity.fromElementId,
+        opportunity.toTrackId,
+        opportunity.toElementId,
+        template.type,
+        {
+          direction: template.direction,
+          duration: template.duration,
+          easing: "ease-in-out",
+          intensity: 1.0,
+          blur: 0.0,
+        }
+      );
+      if (transitionId) successCount++;
+    });
+    
+    if (successCount > 0) {
+      if (successCount === 1) {
+        const opportunity = opportunities[0];
+        const fromName = opportunity.fromElement.name || '视频1';
+        const toName = opportunity.toElement.name || '视频2';
+        toast.success(`已添加 ${template.name} 转场 (${fromName} → ${toName})`);
+      } else {
+        toast.success(`已添加 ${successCount} 个 ${template.name} 转场`);
+      }
+    } else {
+      toast.error("添加转场失败");
+    }
+  };
 
-    // 添加转场
+  // 在指定位置添加转场
+  const addTransitionAtOpportunity = (opportunity: any, template: TransitionTemplate) => {
     const transitionId = addTransitionBetweenElements(
-      bestOpportunity.fromTrackId,
-      bestOpportunity.fromElementId,
-      bestOpportunity.toTrackId,
-      bestOpportunity.toElementId,
+      opportunity.fromTrackId,
+      opportunity.fromElementId,
+      opportunity.toTrackId,
+      opportunity.toElementId,
       template.type,
       {
         direction: template.direction,
@@ -373,9 +354,9 @@ export function TransitionsView() {
     );
 
     if (transitionId) {
-      const opportunityType = bestOpportunity.type === 'selected' ? '选中的元素' :
-                            bestOpportunity.type === 'playhead' ? '播放头位置' : '相邻元素';
-      toast.success(`已添加 ${template.name} 转场 (${opportunityType})`);
+      const fromName = opportunity.fromElement.name || '视频1';
+      const toName = opportunity.toElement.name || '视频2';
+      toast.success(`已添加 ${template.name} 转场 (${fromName} → ${toName})`);
     } else {
       toast.error("添加转场失败");
     }
@@ -404,13 +385,13 @@ export function TransitionsView() {
           {/* 转场状态提示 */}
           {!hasOpportunities && (
             <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-              💡 提示：选择两个媒体元素或将播放头放在两个视频之间来添加转场
+              💡 提示：选择两个或更多媒体元素来添加转场
             </div>
           )}
           
           {hasOpportunities && (
             <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-              ✅ 发现 {transitionOpportunities.length} 个可添加转场的位置
+              ✅ 发现 {transitionOpportunities.length} 个可添加转场的位置（基于选中的元素）
           </div>
           )}
         </div>

@@ -356,7 +356,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         const startTime = currentTimelinePosition;
         const sourceIn = timecodeToSeconds(clip.source_in_timecode);
         const sourceOut = timecodeToSeconds(clip.source_out_timecode);
-        
+
         // 🚀 修复：AI剪辑片段需要正确的时长计算
         // 方案：使用足够大的原始时长，正确设置trimStart和trimEnd
         const actualClipDuration = sourceOut - sourceIn; // 实际片段时长

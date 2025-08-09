@@ -1878,7 +1878,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         direction: transitionParams.direction,
         easing: transitionParams.easing,
         duration: transitionParams.duration,
-        startTime: fromElement.startTime + fromElement.duration - transitionParams.duration / 2,
+        // 🚀 修复：正确计算转场位置，放在两个视频片段之间
+        // 第一个视频的实际结束时间 - 转场时长的一半 = 转场开始时间
+        startTime: fromElement.startTime + (fromElement.duration - fromElement.trimStart - fromElement.trimEnd) - transitionParams.duration / 2,
         trimStart: 0,
         trimEnd: 0,
         fromElementId,
