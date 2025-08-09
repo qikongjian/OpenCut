@@ -456,21 +456,27 @@ export function PreviewPanel() {
               }}
             >
               {transitionElement.direction === "in" ? (
-                // 闪黑效果
+                // 闪黑转场：画面快速切至全黑并回到新画面的过渡效果
                 <div
                   className="absolute inset-0 bg-black"
                   style={{
-                    opacity: transitionProgress < 0.3 ? 1 - (transitionProgress / 0.3) : 0,
-                    transition: "opacity 0.1s ease-out",
+                    // 前半段：快速切到全黑，后半段：从黑色回到新画面
+                    opacity: transitionProgress < 0.5 
+                      ? transitionProgress * 2  // 0->1 快速变黑
+                      : 2 - (transitionProgress * 2), // 1->0 从黑色恢复
+                    transition: "none", // 移除过渡以获得更快的闪黑效果
                   }}
                 />
               ) : (
-                // 闪白效果
+                // 闪白转场：画面快速切至全白并回到新画面的过渡效果
                 <div
                   className="absolute inset-0 bg-white"
                   style={{
-                    opacity: transitionProgress > 0.7 ? (transitionProgress - 0.7) / 0.3 : 0,
-                    transition: "opacity 0.1s ease-out",
+                    // 前半段：快速切到全白，后半段：从白色回到新画面
+                    opacity: transitionProgress < 0.5 
+                      ? transitionProgress * 2  // 0->1 快速变白
+                      : 2 - (transitionProgress * 2), // 1->0 从白色恢复
+                    transition: "none", // 移除过渡以获得更快的闪白效果
                   }}
                 />
               )}
@@ -486,12 +492,20 @@ export function PreviewPanel() {
                 zIndex: 30 + index,
               }}
             >
-              {/* 叠化效果 - 使用CSS混合模式 */}
+              {/* 叠化转场：两个画面整体透明度平滑渐变的溶解效果 */}
               <div
-                className="absolute inset-0 bg-black/50"
+                className="absolute inset-0"
                 style={{
-                  opacity: Math.sin(transitionProgress * Math.PI),
-                  mixBlendMode: "multiply",
+                  // 使用渐变透明度实现平滑的叠化效果
+                  background: `linear-gradient(45deg, 
+                    rgba(0,0,0,${0.3 * (1 - transitionProgress)}) 0%, 
+                    rgba(255,255,255,${0.2 * transitionProgress}) 25%, 
+                    rgba(0,0,0,${0.1 * (1 - transitionProgress)}) 50%, 
+                    rgba(255,255,255,${0.3 * transitionProgress}) 75%, 
+                    rgba(0,0,0,${0.2 * (1 - transitionProgress)}) 100%
+                  )`,
+                  mixBlendMode: "overlay", // 使用叠加混合模式
+                  opacity: Math.sin(transitionProgress * Math.PI), // 平滑的透明度变化
                 }}
               />
             </div>

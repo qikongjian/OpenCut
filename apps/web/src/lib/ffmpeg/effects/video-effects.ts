@@ -26,8 +26,19 @@ export const applyTransitionEffects = async (
     // 构建转场滤镜
     const filters: string[] = [];
     
+    console.log('🔍 Transition elements details:', transitionElements.map(t => ({
+      id: t.id,
+      type: t.transitionType,
+      startTime: t.startTime,
+      duration: t.duration,
+      fromElementId: t.fromElementId,
+      toElementId: t.toElementId
+    })));
+    
     for (const transition of transitionElements) {
       const { transitionType, startTime, duration, intensity = 0.5 } = transition;
+      
+      console.log(`🎬 Processing transition: ${transitionType} at ${startTime}s for ${duration}s`);
       
       switch (transitionType) {
         case 'fade':
@@ -48,11 +59,31 @@ export const applyTransitionEffects = async (
           break;
           
         case 'flash':
-          filters.push(`fade=t=in:st=${startTime}:d=0.1:alpha=1,fade=t=out:st=${startTime + 0.1}:d=0.1:alpha=1`);
+          // 闪黑/闪白转场：画面快速切至全黑/白并回到新画面的过渡效果
+          const halfDuration = duration / 2;
+          if (transition.direction === 'in') {
+            // 闪黑转场
+            filters.push(`fade=t=out:st=${startTime}:d=${halfDuration}:color=black`);
+            filters.push(`fade=t=in:st=${startTime + halfDuration}:d=${halfDuration}:color=black`);
+          } else {
+            // 闪白转场
+            filters.push(`fade=t=out:st=${startTime}:d=${halfDuration}:color=white`);
+            filters.push(`fade=t=in:st=${startTime + halfDuration}:d=${halfDuration}:color=white`);
+          }
+          break;
+          
+        case 'dissolve':
+          // 叠化转场：两个画面整体透明度平滑渐变的溶解效果
+          // 使用更平滑的淡入淡出实现叠化效果
+          filters.push(`fade=t=in:st=${startTime}:d=${duration}:alpha=1`);
+          filters.push(`fade=t=out:st=${startTime}:d=${duration}:alpha=1`);
           break;
           
         default:
-          console.warn(`Unknown transition type: ${transitionType}`);
+          console.warn(`Unknown transition type: ${transitionType}, using fade as fallback`);
+          // 使用fade作为默认转场效果
+          filters.push(`fade=t=in:st=${startTime}:d=${duration}`);
+          filters.push(`fade=t=out:st=${startTime + duration - 0.5}:d=0.5`);
       }
     }
 
@@ -68,16 +99,30 @@ export const applyTransitionEffects = async (
       '-y', outputName
     ];
 
-    console.log('🎬 Executing transition command...');
+    console.log('🎬 Executing transition command:', command.join(' '));
     await ffmpeg.exec(command);
     
+    // 检查输出文件是否存在且有内容
+    try {
+      const outputData = await ffmpeg.readFile(outputName);
+      if (outputData.length === 0) {
+        console.warn('⚠️ Transition output file is empty, returning original file');
+        return videoFile;
+      }
+      console.log(`✅ Transition effects applied, output size: ${outputData.length} bytes`);
+    } catch (readError) {
+      console.warn('⚠️ Failed to read transition output, returning original file');
+      return videoFile;
+    }
+    
     onProgress?.(60);
-    console.log('✅ Transition effects applied');
     return outputName;
 
   } catch (error) {
     console.error('❌ Transition effects failed:', error);
-    throw new Error(`Transition effects failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.log('🔄 Returning original video file due to transition failure');
+    // 转场失败时返回原始文件，而不是抛出错误
+    return videoFile;
   }
 };
 
@@ -201,16 +246,30 @@ export const applyMaskEffects = async (
       '-y', outputName
     ];
 
-    console.log('🎭 Executing mask command...');
+    console.log('🎭 Executing mask command:', command.join(' '));
     await ffmpeg.exec(command);
     
+    // 检查输出文件是否存在且有内容
+    try {
+      const outputData = await ffmpeg.readFile(outputName);
+      if (outputData.length === 0) {
+        console.warn('⚠️ Mask output file is empty, returning original file');
+        return inputFile;
+      }
+      console.log(`✅ Mask effects applied, output size: ${outputData.length} bytes`);
+    } catch (readError) {
+      console.warn('⚠️ Failed to read mask output, returning original file');
+      return inputFile;
+    }
+    
     onProgress?.(75);
-    console.log('✅ Mask effects applied');
     return outputName;
 
   } catch (error) {
     console.error('❌ Mask effects failed:', error);
-    throw new Error(`Mask effects failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.log('🔄 Returning original video file due to mask failure');
+    // 蒙版失败时返回原始文件，而不是抛出错误
+    return inputFile;
   }
 };
 

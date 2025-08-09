@@ -100,6 +100,9 @@ export const TIMELINE_CONSTANTS = {
   TRACK_HEIGHT: 60, // Default fallback
   DEFAULT_TEXT_DURATION: 5,
   DEFAULT_IMAGE_DURATION: 5,
+  DEFAULT_TRANSITION_DURATION: 1.0, // 转场默认时长1秒
+  MIN_TRANSITION_DURATION: 0.1, // 转场最小时长0.1秒
+  MAX_TRANSITION_DURATION: 10.0, // 转场最大时长10秒
   ZOOM_LEVELS: [0.25, 0.5, 1, 1.5, 2, 3, 4],
 } as const;
 

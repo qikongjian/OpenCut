@@ -377,6 +377,7 @@ export function TimelineElement({
     if (element.type === "transition") {
       return <TransitionElementComponent
         element={element}
+        track={track}
         isSelected={isSelected}
         zoomLevel={zoomLevel}
         onMouseDown={onElementMouseDown}

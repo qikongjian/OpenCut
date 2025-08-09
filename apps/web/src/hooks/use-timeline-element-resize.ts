@@ -14,6 +14,8 @@ import { ResizeState, TimelineElement, TimelineTrack } from "@/types/timeline";
 import { useMediaStore } from "@/stores/media-store";
 // 导入项目模块
 import { useTimelineStore } from "@/stores/timeline-store";
+// 导入项目模块
+import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 
 // UseTimelineElementResizeProps 接口定义
 interface UseTimelineElementResizeProps {
@@ -107,6 +109,11 @@ export function useTimelineElementResize({
       return true;
     }
 
+    // Transition elements can always be extended (adjustable duration)
+    if (element.type === "transition") {
+      return true;
+    }
+
     // Media elements - check the media type
     if (element.type === "media") {
 // 常量定义 - 模块内部使用的固定值
@@ -134,6 +141,31 @@ export function useTimelineElementResize({
     const deltaX = e.clientX - resizing.startX;
     // Reasonable sensitivity for resize operations - similar to timeline scale
     const deltaTime = deltaX / (50 * zoomLevel);
+
+    // 转场元素的特殊处理
+    if (element.type === "transition") {
+      if (resizing.side === "left") {
+        // 左侧缩放：调整开始时间和时长
+        const newDuration = element.duration - deltaTime;
+        const minDuration = TIMELINE_CONSTANTS.MIN_TRANSITION_DURATION;
+        const maxDuration = TIMELINE_CONSTANTS.MAX_TRANSITION_DURATION;
+        
+        const clampedDuration = Math.max(minDuration, Math.min(maxDuration, newDuration));
+        const actualDelta = element.duration - clampedDuration;
+        
+        updateElementDuration(track.id, element.id, clampedDuration, false);
+        updateElementStartTime(track.id, element.id, element.startTime + actualDelta, false);
+      } else {
+        // 右侧缩放：只调整时长
+        const newDuration = element.duration + deltaTime;
+        const minDuration = TIMELINE_CONSTANTS.MIN_TRANSITION_DURATION;
+        const maxDuration = TIMELINE_CONSTANTS.MAX_TRANSITION_DURATION;
+        
+        const clampedDuration = Math.max(minDuration, Math.min(maxDuration, newDuration));
+        updateElementDuration(track.id, element.id, clampedDuration, false);
+      }
+      return;
+    }
 
     if (resizing.side === "left") {
       // Left resize - different behavior for media vs text/image elements

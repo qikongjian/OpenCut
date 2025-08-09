@@ -1702,16 +1702,18 @@ const processTransitions = async (
     switch (transition.transitionType) {
       case 'flash':
         if (transition.direction === 'in') {
-          // 闪黑效果
-          filterComplex = `[0:v]fade=t=out:st=${transition.duration - 0.1}:d=0.1:color=black[fadeout];[1:v]fade=t=in:st=0:d=0.1:color=black[fadein];[fadeout][fadein]xfade=transition=fade:duration=0.1:offset=${transition.duration - 0.1}[v]`;
+          // 闪黑转场：画面快速切至全黑并回到新画面的过渡效果
+          const halfDuration = transition.duration / 2;
+          filterComplex = `[0:v]fade=t=out:st=${halfDuration}:d=${halfDuration}:color=black[fadeout];[1:v]fade=t=in:st=0:d=${halfDuration}:color=black[fadein];[fadeout][fadein]xfade=transition=fade:duration=${halfDuration}:offset=${halfDuration}[v]`;
         } else {
-          // 闪白效果
-          filterComplex = `[0:v]fade=t=out:st=${transition.duration - 0.1}:d=0.1:color=white[fadeout];[1:v]fade=t=in:st=0:d=0.1:color=white[fadein];[fadeout][fadein]xfade=transition=fade:duration=0.1:offset=${transition.duration - 0.1}[v]`;
+          // 闪白转场：画面快速切至全白并回到新画面的过渡效果
+          const halfDuration = transition.duration / 2;
+          filterComplex = `[0:v]fade=t=out:st=${halfDuration}:d=${halfDuration}:color=white[fadeout];[1:v]fade=t=in:st=0:d=${halfDuration}:color=white[fadein];[fadeout][fadein]xfade=transition=fade:duration=${halfDuration}:offset=${halfDuration}[v]`;
         }
         break;
         
       case 'dissolve':
-        // 叠化效果
+        // 叠化转场：两个画面整体透明度平滑渐变的溶解效果
         filterComplex = `[0:v][1:v]xfade=transition=dissolve:duration=${transition.duration}:offset=${transition.duration}[v]`;
         break;
         

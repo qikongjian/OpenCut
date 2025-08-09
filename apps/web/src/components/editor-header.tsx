@@ -18,6 +18,8 @@ import { ChevronLeft, Download } from "lucide-react";
 import { useTimelineStore } from "@/stores/timeline-store";
 // 导入本地模块
 import { HeaderBase } from "./header-base";
+// 导入导出引擎  
+import { ultraFastExportTimeline } from "@/lib/ffmpeg/operations/ultra-fast-export";
 // 导入项目模块
 import { formatTimeCode } from "@/lib/time";
 // 导入项目模块
@@ -144,11 +146,11 @@ export function EditorHeader() {
 
       console.log('🚀 Using export settings:', exportConfig);
 
-      // 使用新的 fastExportTimeline 函数，超快速导出整个时间轴
+      // 暂时回到原始的 fastExportTimeline 函数，因为ultra-fast版本有逻辑问题
       const videoBlob = await fastExportTimeline(
         timelineData,
         exportConfig,
-        (progress) => {
+        (progress: number) => {
           console.log(`⚡ 快速导出进度: ${progress.toFixed(1)}%`);
           setExportProgress(progress);
         }

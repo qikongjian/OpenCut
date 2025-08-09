@@ -147,7 +147,8 @@ function generateDissolveTransition(
 ): string {
   const { duration, intensity = 1.0 } = params;
   
-  // 使用xfade滤镜实现叠化效果
+  // 叠化转场：两个画面整体透明度平滑渐变的溶解效果
+  // 使用xfade的dissolve模式实现平滑的透明度渐变
   return `[0:v][1:v]xfade=transition=dissolve:duration=${duration}:offset=${duration}[v]`;
 }
 
@@ -158,15 +159,16 @@ function generateFlashTransition(
   params: TransitionParams
 ): string {
   const { direction, duration } = params;
+  const halfDuration = duration / 2; // 将转场时间分为两半
   
   if (direction === "in") {
-    // 闪黑效果 - 快速闪黑然后切换
-    const flashDuration = Math.min(duration * 0.3, 0.2); // 闪黑时长不超过0.2秒
-    return `[0:v]fade=t=out:st=${duration - flashDuration}:d=${flashDuration}:color=black[fadeout];[1:v]fade=t=in:st=0:d=${flashDuration}:color=black[fadein];[fadeout][fadein]xfade=transition=fade:duration=${flashDuration}:offset=${duration - flashDuration}[v]`;
+    // 闪黑转场：画面快速切至全黑并回到新画面的过渡效果
+    // 前半段：画面淡出到黑色，后半段：从黑色淡入新画面
+    return `[0:v]fade=t=out:st=${halfDuration}:d=${halfDuration}:color=black[fadeout];[1:v]fade=t=in:st=0:d=${halfDuration}:color=black[fadein];[fadeout][fadein]xfade=transition=fade:duration=${halfDuration}:offset=${halfDuration}[v]`;
   } else {
-    // 闪白效果 - 快速闪白然后切换
-    const flashDuration = Math.min(duration * 0.3, 0.2); // 闪白时长不超过0.2秒
-    return `[0:v]fade=t=out:st=${duration - flashDuration}:d=${flashDuration}:color=white[fadeout];[1:v]fade=t=in:st=0:d=${flashDuration}:color=white[fadein];[fadeout][fadein]xfade=transition=fade:duration=${flashDuration}:offset=${duration - flashDuration}[v]`;
+    // 闪白转场：画面快速切至全白并回到新画面的过渡效果
+    // 前半段：画面淡出到白色，后半段：从白色淡入新画面
+    return `[0:v]fade=t=out:st=${halfDuration}:d=${halfDuration}:color=white[fadeout];[1:v]fade=t=in:st=0:d=${halfDuration}:color=white[fadein];[fadeout][fadein]xfade=transition=fade:duration=${halfDuration}:offset=${halfDuration}[v]`;
   }
 }
 
