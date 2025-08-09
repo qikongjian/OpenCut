@@ -476,17 +476,20 @@ async function trimSegmentOptimized(
 ): Promise<string> {
   const trimmedName = `trimmed_${index}_${Date.now()}.mp4`;
   
+  // 🚀 计算正确的裁剪时长：原始时长减去开头和结尾的裁剪
+  const actualDuration = element.duration - element.trimStart - element.trimEnd;
+  
   // 🚀 使用流复制进行快速裁剪
   const trimCommand = [
     '-i', inputName,
     '-ss', element.trimStart.toString(),
-    '-t', element.duration.toString(),
+    '-t', actualDuration.toString(), // 修复：使用实际时长而不是原始时长
     '-c', 'copy', // 关键：使用流复制，不重编码
     '-avoid_negative_ts', 'make_zero',
     '-y', trimmedName
   ];
   
-  console.log(`✂️ Fast trimming segment ${index + 1}...`);
+  console.log(`✂️ Fast trimming segment ${index + 1} (duration: ${actualDuration}s)...`);
   await ffmpeg.exec(trimCommand);
   tempFiles.push(trimmedName);
   

@@ -2067,10 +2067,13 @@ const processAudioTracks = async (
     const processedAudioName = `processed_audio_${i}_${Date.now()}.wav`;
     tempFiles.push(processedAudioName);
 
+    // 🚀 计算正确的音频时长：原始时长减去开头和结尾的裁剪
+    const actualAudioDuration = audioElement.duration - (audioElement.trimStart || 0) - (audioElement.trimEnd || 0);
+
     const audioCommand = [
       '-i', audioInputName,
       '-ss', audioElement.trimStart?.toString() || '0',
-      '-t', audioElement.duration.toString(),
+      '-t', actualAudioDuration.toString(), // 修复：使用实际时长而不是原始时长
       '-af', `volume=${audioElement.volume || 1.0}`,
       '-c:a', 'pcm_s16le',
       '-y', processedAudioName

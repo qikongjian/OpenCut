@@ -639,13 +639,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 // 常量定义 - 模块内部使用的固定值
       const isFirstElement = totalElementsInTimeline === 0;
 
-// 常量定义 - 模块内部使用的固定值
+      // 常量定义 - 模块内部使用的固定值
       const newElement: TimelineElement = {
         ...elementData,
         id: generateUUID(),
         startTime: elementData.startTime || 0,
-        trimStart: 0,
-        trimEnd: 0,
+        trimStart: elementData.trimStart || 0,  // 🚀 修复：保留元素的trimStart设置
+        trimEnd: elementData.trimEnd || 0,      // 🚀 修复：保留元素的trimEnd设置
       } as TimelineElement; // Type assertion since we trust the caller passes valid data
 
       // If this is the first element and it's a media element, automatically set the project canvas size

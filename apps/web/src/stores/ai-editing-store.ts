@@ -354,11 +354,22 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
         // 创建媒体元素 - 使用连续时间轴位置和本地文件
         const startTime = currentTimelinePosition;
-        const duration = durationToSeconds(clip.clip_duration_in_sequence);
         const sourceIn = timecodeToSeconds(clip.source_in_timecode);
         const sourceOut = timecodeToSeconds(clip.source_out_timecode);
+        
+        // 🚀 修复：AI剪辑片段需要正确的时长计算
+        // 方案：使用足够大的原始时长，正确设置trimStart和trimEnd
+        const actualClipDuration = sourceOut - sourceIn; // 实际片段时长
+        
+        // 为了确保FFmpeg裁剪正确工作，我们需要：
+        // 1. duration = 原始视频时长（设置为足够大的值）
+        // 2. trimStart = sourceIn（从哪里开始）
+        // 3. trimEnd = 原始视频时长 - sourceOut（从结尾裁剪多少）
+        const originalVideoDuration = Math.max(sourceOut + 10, 30); // 假设原始视频至少30秒或sourceOut+10秒
+        const duration = originalVideoDuration;
+        const trimEnd = originalVideoDuration - sourceOut;
 
-        currentTimelinePosition += duration;
+        currentTimelinePosition += actualClipDuration; // 时间轴位置按实际时长前进
 
         const isRemoteFallback = (file as any)._isRemoteUrlFallback;
         const originalVideoUrl = (file as any)._originalVideoUrl;
@@ -368,10 +379,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           type: "media",
           name: `AI剪辑-${clip.sequence_clip_id} (${clip.source_clip_id})`,
           mediaId: correspondingMediaItem.id, // 使用已添加的媒体项ID
-          duration: duration,
+          duration: duration, // 原始视频时长（用于FFmpeg裁剪）
           startTime: startTime,
-          trimStart: sourceIn,
-          trimEnd: Math.max(0, sourceOut),
+          trimStart: sourceIn, // 从源视频的开始裁剪位置
+          trimEnd: trimEnd, // 🚀 修复：正确计算结尾裁剪，确保实际时长 = sourceOut - sourceIn
           horizontalFlip: false,
           mediaFile: isRemoteFallback ? undefined : file,
           mediaUrl: isRemoteFallback ? originalVideoUrl : url,
@@ -381,6 +392,18 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           mediaHeight: 1080,
           mediaFps: 30,
         };
+
+        console.log(`📊 AI剪辑片段时长计算:`, {
+          clipId: clip.sequence_clip_id,
+          sourceIn: sourceIn,
+          sourceOut: sourceOut,
+          actualClipDuration: actualClipDuration,
+          originalVideoDuration: duration,
+          trimStart: sourceIn,
+          trimEnd: trimEnd,
+          timelineCalculatedDuration: duration - sourceIn - trimEnd,
+          expectedDuration: actualClipDuration
+        });
 
         // 添加到时间轴
         timelineStore.addElementToTrack(mainTrackId, mediaElement);

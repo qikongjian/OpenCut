@@ -290,16 +290,20 @@ async function processSegmentUltraFast(
   if (element.trimStart > 0 || element.trimEnd > 0) {
     console.log(`✂️ Trimming segment ${index + 1}...`);
     const trimmedName = `trimmed_${index}_${Date.now()}.mp4`;
+    
+    // 🚀 计算正确的裁剪时长：原始时长减去开头和结尾的裁剪
+    const actualDuration = element.duration - element.trimStart - element.trimEnd;
+    
     const trimCommand = [
       '-i', inputName,
       '-ss', element.trimStart.toString(),
-      '-t', element.duration.toString(),
+      '-t', actualDuration.toString(), // 修复：使用实际时长而不是原始时长
       '-c', 'copy', // 关键：流复制，不重编码
       '-avoid_negative_ts', 'make_zero',
       '-y', trimmedName
     ];
     
-    console.log(`✂️ Trim command:`, trimCommand);
+    console.log(`✂️ Trim command (duration: ${actualDuration}s):`, trimCommand);
     await ffmpeg.exec(trimCommand);
     tempFiles.push(trimmedName);
     console.log(`✅ Trim completed for segment ${index + 1}`);
