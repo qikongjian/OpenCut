@@ -123,6 +123,39 @@ function MaskVisualizer({
     });
   };
 
+  // 🔧 新增：处理滚轮缩放功能
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!editMode || !onUpdate) return;
+
+    // 只有在按住Ctrl/Cmd键时才进行缩放
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 计算缩放增量
+      const delta = e.deltaY > 0 ? -0.05 : 0.05; // 向下滚动缩小，向上滚动放大
+
+      // 计算新的尺寸
+      const newWidth = Math.max(0.01, Math.min(2, mask.width + delta));
+      const newHeight = Math.max(0.01, Math.min(2, mask.height + delta));
+
+      // 等比例缩放
+      const aspectRatio = mask.width / mask.height;
+      const finalWidth = newWidth;
+      const finalHeight = newWidth / aspectRatio;
+
+      // 应用尺寸限制
+      const clampedSize = MaskCoordinateUtils.clampRelativeSize(finalWidth, finalHeight);
+
+      onUpdate({
+        width: clampedSize.width,
+        height: clampedSize.height,
+      });
+
+      onSelect?.();
+    }
+  };
+
   // 处理拖拽和缩放
   useEffect(() => {
     if ((!isDragging && !isResizing) || !initialMask || !onUpdate) return;
@@ -266,6 +299,7 @@ function MaskVisualizer({
         )}
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
+        onWheel={handleWheel}
       />
       
       {/* 蒙板填充（半透明显示） */}
@@ -275,6 +309,7 @@ function MaskVisualizer({
           fill={isSelected ? "#3b82f6" : "#6b7280"}
           opacity={0.1}
           onMouseDown={handleMouseDown}
+          onWheel={handleWheel}
         />
       )}
       

@@ -57,6 +57,8 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { usePlaybackStore } from "@/stores/playback-store";
 // 导入项目模块
 import { cn } from "@/lib/utils";
+// 导入增强版滚动区域组件
+import { EnhancedScrollArea } from "@/components/ui/enhanced-scroll-area";
 
 
 // MediaView 函数
@@ -377,7 +379,14 @@ export function MediaView() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-2 pt-0 pb-2">
+        {/* 🎨 高级UI设计：增强版滚动区域 - 专为媒体面板优化 */}
+        <EnhancedScrollArea
+          className="flex-1 px-2 pt-0 pb-2"
+          variant="media-panel"
+          size="md"
+          type="hover"
+          hideDelay={1500}
+        >
           {isDragOver || filteredMediaItems.length === 0 ? (
             <MediaDragOverlay
               isVisible={true}
@@ -388,7 +397,7 @@ export function MediaView() {
             />
           ) : (
             <div
-              className="grid gap-1.5"
+              className="grid gap-1.5 pr-1"
               style={{
                 gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
               }}
@@ -484,7 +493,7 @@ export function MediaView() {
               ))}
             </div>
           )}
-        </div>
+        </EnhancedScrollArea>
       </div>
     </>
   );

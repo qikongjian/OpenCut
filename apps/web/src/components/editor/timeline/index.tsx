@@ -382,40 +382,61 @@ export function Timeline() {
     setDuration(Math.max(totalDuration, 10)); // Minimum 10 seconds for empty timeline
   }, [tracks, setDuration, getTotalDuration]);
 
-  // Auto-scale timeline when media is added
+  // 🚀 优化：智能自动缩放 - 监听时间轴内容变化
+  useEffect(() => {
+    if (!autoScaleEnabled) return;
+
+    const performAutoScale = () => {
+      const totalDuration = getTotalDuration();
+      const timelineContainer = timelineRef.current;
+
+      if (!timelineContainer || totalDuration <= 0) return;
+
+      const containerWidth = timelineContainer.clientWidth;
+      const availableWidth = containerWidth - 120; // 增加边距以确保完全可见
+      const requiredWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND;
+      const currentWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel;
+
+      // 🧠 智能缩放策略
+      let shouldScale = false;
+      let newZoom = zoomLevel;
+
+      // 情况1：内容超出视图，需要缩小
+      if (currentWidth > availableWidth) {
+        newZoom = Math.max(0.1, availableWidth / requiredWidth);
+        shouldScale = true;
+      }
+      // 情况2：内容太小，可以放大以更好利用空间
+      else if (currentWidth < availableWidth * 0.6 && totalDuration > 0) {
+        const maxZoom = Math.min(4, availableWidth * 0.9 / requiredWidth);
+        if (maxZoom > zoomLevel * 1.2) { // 只有在能显著改善时才放大
+          newZoom = maxZoom;
+          shouldScale = true;
+        }
+      }
+
+      if (shouldScale) {
+        setZoomLevel(newZoom);
+        console.log(`🎯 Auto-scaled to ${Math.round(newZoom * 100)}% zoom`);
+      }
+    };
+
+    // 延迟执行以确保DOM更新完成
+    const timeoutId = setTimeout(performAutoScale, 150);
+
+    return () => clearTimeout(timeoutId);
+  }, [tracks, getTotalDuration, autoScaleEnabled, timelineRef]); // 监听tracks变化而不是zoomLevel
+
+  // 监听媒体添加事件（保持向后兼容）
   useEffect(() => {
     const handleMediaAdded = () => {
-      // 只有在启用自动缩放时才执行
       if (!autoScaleEnabled) return;
-
-      // 延迟执行，确保DOM已更新
-      setTimeout(() => {
-        const totalDuration = getTotalDuration();
-        if (totalDuration > 0) {
-          const timelineContainer = timelineRef.current;
-          if (!timelineContainer) return;
-
-          const containerWidth = timelineContainer.clientWidth;
-          const availableWidth = containerWidth - 100; // 100px 边距
-          const requiredWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND;
-
-          // 只有当内容超出当前视图时才自动缩放
-          const currentWidth = totalDuration * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel;
-          if (currentWidth > availableWidth) {
-            const optimalZoom = Math.max(0.25, Math.min(4, availableWidth / requiredWidth));
-            setZoomLevel(optimalZoom);
-            toast.success(`Timeline auto-scaled to ${Math.round(optimalZoom * 100)}% zoom`);
-          }
-        }
-      }, 100);
+      // 触发重新计算（通过tracks依赖）
     };
 
     window.addEventListener('media-added-to-timeline', handleMediaAdded);
-
-    return () => {
-      window.removeEventListener('media-added-to-timeline', handleMediaAdded);
-    };
-  }, [getTotalDuration, zoomLevel, setZoomLevel, autoScaleEnabled]);
+    return () => window.removeEventListener('media-added-to-timeline', handleMediaAdded);
+  }, [autoScaleEnabled]);
 
   // Keyboard shortcuts for timeline
   useEffect(() => {

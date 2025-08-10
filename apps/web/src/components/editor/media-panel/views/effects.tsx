@@ -9,6 +9,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { EnhancedScrollArea } from "@/components/ui/enhanced-scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -215,7 +216,13 @@ export function EffectsView() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <EnhancedScrollArea
+        className="flex-1"
+        variant="media-panel"
+        size="sm"
+        type="hover"
+        hideDelay={1200}
+      >
         <div className="p-3 space-y-4">
           {/* 蒙板模板区域 */}
           <div>
@@ -279,7 +286,7 @@ export function EffectsView() {
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </EnhancedScrollArea>
     </div>
   );
 }

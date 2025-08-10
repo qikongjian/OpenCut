@@ -219,6 +219,31 @@ export function VideoPlayer({
     };
   }, [src, loop, onError, onBuffering]);
 
+  // 🚀 优化：确保页面刷新后视频能正确初始化
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // 确保视频在正确的时间点
+    const targetTime = trimStart + (currentTime - clipStartTime);
+    if (Math.abs(video.currentTime - targetTime) > 0.1) {
+      video.currentTime = Math.max(0, targetTime);
+    }
+
+    // 确保视频状态与播放状态同步
+    if (isPlaying && isInClipRange) {
+      if (video.paused) {
+        video.play().catch(() => {
+          console.log('Video play failed, likely due to autoplay policy');
+        });
+      }
+    } else {
+      if (!video.paused) {
+        video.pause();
+      }
+    }
+  }, [src]); // 当视频源变化时重新初始化
+
   return (
     <video
       ref={videoRef}

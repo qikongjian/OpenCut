@@ -2327,52 +2327,35 @@ const renderSubtitlesToVideo = async (
     const fontColor = (text.color || '#ffffff').replace('#', '0x');
     const backgroundColor = text.backgroundColor !== 'transparent' ? text.backgroundColor : '';
 
-    // 字幕文本内容（更安全的转义）
+    // 安全的文本转义 - 移除所有可能导致问题的字符
     const subtitleText = (text.content || '')
-      .replace(/\\/g, '\\\\')  // 转义反斜杠
-      .replace(/'/g, "\\'")    // 转义单引号
-      .replace(/"/g, '\\"')    // 转义双引号
-      .replace(/:/g, '\\:')    // 转义冒号
-      .replace(/=/g, '\\=')    // 转义等号
-      .replace(/,/g, '\\,')    // 转义逗号
-      .replace(/;/g, '\\;')    // 转义分号
-      .replace(/\n/g, '\\n')   // 转义换行
-      .replace(/\r/g, '');     // 移除回车符
+      .replace(/[\\:'"=,;]/g, '')  // 移除所有可能的问题字符
+      .replace(/[^\w\s\-.,!?]/g, '') // 只保留安全字符
+      .trim();
+
+    if (!subtitleText) {
+      console.log(`📝 Skipping empty text element ${index + 1}`);
+      return null;
+    }
 
     console.log(`📝 Building filter for text ${index + 1}: "${subtitleText}" at (${x}, ${y}) from ${startTime}s to ${endTime}s`);
 
-    // 构建drawtext滤镜
-    let filter = `drawtext=text='${subtitleText}':fontsize=${fontSize}:fontcolor=${fontColor}`;
-
-    // 添加位置
-    filter += `:x=${x}:y=${y}`;
-
-    // 添加字体（使用系统默认字体）
-    if (text.fontFamily && text.fontFamily !== 'Arial') {
-      // 在macOS上使用系统字体路径
-      filter += `:fontfile=/System/Library/Fonts/Helvetica.ttc`;
-    }
-
-    // 添加背景色（如果有）
-    if (backgroundColor && backgroundColor !== 'transparent') {
-      const bgColor = backgroundColor.replace('#', '0x');
-      filter += `:box=1:boxcolor=${bgColor}@0.8:boxborderw=5`;
-    }
-
-    // 添加时间控制
-    filter += `:enable='between(t,${startTime},${endTime})'`;
-
-    // 添加透明度
-    if (text.opacity !== undefined && text.opacity < 1) {
-      filter += `:alpha=${text.opacity}`;
-    }
+    // 构建简化的drawtext滤镜 - 不使用单引号和字体文件
+    const filter = `drawtext=text=${subtitleText}:fontsize=${fontSize}:fontcolor=${fontColor}:x=${x}:y=${y}:enable='between(t,${startTime},${endTime})'`;
 
     console.log(`📝 Generated filter: ${filter}`);
     return filter;
   });
-  
-  // 合并所有字幕滤镜
-  const subtitleFilterChain = subtitleFilters.join(',');
+
+  // 过滤掉null值并合并所有字幕滤镜
+  const validFilters = subtitleFilters.filter(filter => filter !== null);
+
+  if (validFilters.length === 0) {
+    console.log('📝 No valid subtitle filters, returning original video');
+    return videoFile;
+  }
+
+  const subtitleFilterChain = validFilters.join(',');
   console.log(`📝 Complete subtitle filter chain: ${subtitleFilterChain}`);
 
   // 构建FFmpeg命令

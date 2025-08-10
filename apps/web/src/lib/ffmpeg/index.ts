@@ -28,6 +28,7 @@ export {
 // 时间轴导出
 export { exportTimeline } from './operations/timeline-export';
 export { fastExportTimeline } from './operations/fast-export';
+export { ultraFastExportTimeline } from './operations/ultra-fast-export';
 
 // 特效处理
 export { 

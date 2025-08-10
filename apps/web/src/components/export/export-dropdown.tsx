@@ -28,7 +28,7 @@ import { useMediaStore } from "../../stores/media-store"
 import { useProjectStore } from "../../stores/project-store"
 import { toast } from "sonner"
 import { useTimelineStore } from "../../stores/timeline-store"
-import { exportTimeline } from "../../lib/ffmpeg"
+import { ultraFastExportTimeline } from "../../lib/ffmpeg"
 
 interface ExportDropdownProps {
   children: React.ReactNode

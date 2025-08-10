@@ -8,6 +8,7 @@
 
 // 导入 Zustand 状态管理库
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 // 导入项目模块
 import type { PlaybackState, PlaybackControls } from "@/types/playback";
 
@@ -77,22 +78,24 @@ const stopTimer = () => {
 };
 
 // 导出常量对象 - 包含多个相关常量的对象
-export const usePlaybackStore = create<PlaybackStore>((set, get) => ({
-  isPlaying: false,
-  currentTime: 0,
-  duration: 0,
-  volume: 1,
-  muted: false,
-  previousVolume: 1,
-  speed: 1.0,
-  // 新增预览模式状态
-  previewMode: false,
-  previewMedia: null,
-  // 新增播放控制增强状态
-  isLooping: false,
-  playbackQuality: 'auto' as const,
-  buffering: false,
-  error: null,
+export const usePlaybackStore = create<PlaybackStore>()(
+  persist(
+    (set, get) => ({
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      volume: 1,
+      muted: false,
+      previousVolume: 1,
+      speed: 1.0,
+      // 新增预览模式状态
+      previewMode: false,
+      previewMedia: null,
+      // 新增播放控制增强状态
+      isLooping: false,
+      playbackQuality: 'auto' as const,
+      buffering: false,
+      error: null,
 
   play: () => {
     // 设置状态 - 更新状态值
@@ -249,8 +252,38 @@ export const usePlaybackStore = create<PlaybackStore>((set, get) => ({
   jumpToEnd: () => {
     const { duration } = get();
     set({ currentTime: duration });
-    window.dispatchEvent(new CustomEvent('playback-seek', { 
-      detail: { time: duration } 
+    window.dispatchEvent(new CustomEvent('playback-seek', {
+      detail: { time: duration }
     }));
   },
-}));
+    }),
+    {
+      name: 'playback-store',
+      // 🚀 优化：只持久化必要的状态，避免播放状态在刷新后自动恢复
+      partialize: (state) => ({
+        volume: state.volume,
+        muted: state.muted,
+        previousVolume: state.previousVolume,
+        speed: state.speed,
+        isLooping: state.isLooping,
+        playbackQuality: state.playbackQuality,
+        // 不持久化播放状态，避免刷新后自动播放
+        // isPlaying: false,
+        // currentTime: 0,
+        // duration: 0,
+      }),
+      // 🚀 优化：页面加载后重置播放状态
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // 确保页面刷新后播放状态重置
+          state.isPlaying = false;
+          state.currentTime = 0;
+          state.previewMode = false;
+          state.previewMedia = null;
+          state.buffering = false;
+          state.error = null;
+        }
+      },
+    }
+  )
+);

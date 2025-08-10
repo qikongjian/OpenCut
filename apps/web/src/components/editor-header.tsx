@@ -18,8 +18,6 @@ import { ChevronLeft, Download } from "lucide-react";
 import { useTimelineStore } from "@/stores/timeline-store";
 // 导入本地模块
 import { HeaderBase } from "./header-base";
-// 导入导出引擎  
-import { ultraFastExportTimeline } from "@/lib/ffmpeg/operations/ultra-fast-export";
 // 导入项目模块
 import { formatTimeCode } from "@/lib/time";
 // 导入项目模块
@@ -35,7 +33,7 @@ import { useMediaStore } from "@/stores/media-store";
 // 导入 Sonner 通知组件
 import { toast } from "sonner";
 // 导入 FFmpeg 视频处理库
-import { convertToWebM, exportVideo, exportTimeline, fastExportTimeline, cancelCurrentExport } from "@/lib/ffmpeg";
+import { convertToWebM, exportVideo, exportTimeline, fastExportTimeline, cancelCurrentExport, ultraFastExportTimeline } from "@/lib/ffmpeg";
 // 导入导出系统组件
 import { ExportDropdown } from "./export/export-dropdown";
 import { ExportSettings, ExportProgress, ExportSuccess } from "./export/index";
@@ -146,12 +144,12 @@ export function EditorHeader() {
 
       console.log('🚀 Using export settings:', exportConfig);
 
-      // 暂时回到原始的 fastExportTimeline 函数，因为ultra-fast版本有逻辑问题
-      const videoBlob = await fastExportTimeline(
+      // 🎬 使用新的完整特效导出引擎 V2.0
+      const videoBlob = await ultraFastExportTimeline(
         timelineData,
         exportConfig,
         (progress: number) => {
-          console.log(`⚡ 快速导出进度: ${progress.toFixed(1)}%`);
+          console.log(`🎬 完整特效导出进度: ${progress.toFixed(1)}%`);
           setExportProgress(progress);
         }
       );
