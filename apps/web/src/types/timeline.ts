@@ -185,12 +185,29 @@ export interface AIEditingPlan {
   timeline_clips: AIClipPlan[];
 }
 
+// 字幕对话片段接口
+export interface DialogueSegment {
+  sequence_clip_id: string;
+  source_clip_id: string;
+  start_timecode: string;
+  end_timecode: string;
+  transcript: string;
+  speaker: string;
+}
+
+// 最终对话轨道接口
+export interface FinalizedDialogueTrack {
+  final_srt_content: string;
+  final_dialogue_segments: DialogueSegment[];
+}
+
 export interface AIEditingData {
   project_id: string;
   script_content: string;
   director_intent: string;
   success: boolean;
   editing_plan: {
+    finalized_dialogue_track?: FinalizedDialogueTrack;
     material_classification_results: {
       discarded_footage_list: Array<{
         clip_id: string;

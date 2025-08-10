@@ -24,6 +24,8 @@ import { TransitionsView } from "./views/transitions";
 import { EffectsView } from "./views/effects";
 // 导入AI剪辑面板组件
 import { AIEditingPanel } from "../ai-editing-panel";
+// 导入AI字幕面板组件
+import { AISubtitlePanel } from "../ai-subtitle-panel";
 
 // 媒体面板组件 - 编辑器左侧的媒体资源管理面板
 // 导出组件 - 可复用的 UI 组件
@@ -51,12 +53,8 @@ export function MediaPanel() {
     effects: <EffectsView />,
     // 转场标签页 - 显示转场效果
     transitions: <TransitionsView />,
-    // 字幕标签页 - 暂未实现
-    captions: (
-      <div className="p-4 text-muted-foreground">
-        Captions view coming soon...
-      </div>
-    ),
+    // 字幕标签页 - AI字幕集成功能
+    captions: <AISubtitlePanel />,
     // 滤镜标签页 - 暂未实现
     filters: (
       <div className="p-4 text-muted-foreground">

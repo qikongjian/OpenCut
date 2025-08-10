@@ -10,6 +10,11 @@ import { useTimelineStore } from "./timeline-store";
 import { useMediaStore } from "./media-store";
 import { useProjectStore } from "./project-store";
 import { generateAIEditingMockData } from "@/lib/ai-editing-mock-data";
+import {
+  extractSubtitleDataFromAIEditing,
+  createSubtitleTrackWithElements
+} from "@/lib/ai-subtitle-integration";
+import { parseDialogueTrackToTextElements } from "@/lib/subtitle-parser";
 
 
 
@@ -418,7 +423,48 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           currentProcessingClip: `时间轴 ${i + 1}/${downloadedVideos.length}`
         });
       }
-      
+
+      // 第四阶段：处理字幕数据
+      set({ executionProgress: 95, currentProcessingClip: "添加AI字幕..." });
+
+      const { aiEditingData } = get();
+      let subtitleCount = 0;
+
+      if (aiEditingData) {
+        try {
+          // 提取字幕数据
+          const subtitleData = extractSubtitleDataFromAIEditing(aiEditingData);
+
+          if (subtitleData) {
+            console.log('📝 发现AI字幕数据，开始处理...');
+
+            // 解析字幕数据为TextElement数组
+            const textElements = parseDialogueTrackToTextElements(subtitleData);
+
+            if (textElements.length > 0) {
+              console.log(`📝 生成了 ${textElements.length} 个字幕元素`);
+
+              // 创建字幕轨道并添加字幕
+              const subtitleTrackId = createSubtitleTrackWithElements(textElements, "AI字幕");
+
+              if (subtitleTrackId) {
+                subtitleCount = textElements.length;
+                console.log(`✅ 成功创建字幕轨道并添加 ${subtitleCount} 个字幕`);
+              } else {
+                console.warn('⚠️ 字幕轨道创建失败');
+              }
+            } else {
+              console.log('📝 没有生成字幕元素');
+            }
+          } else {
+            console.log('📝 AI剪辑数据中没有字幕数据');
+          }
+        } catch (error) {
+          console.error('❌ 处理AI字幕时发生错误:', error);
+          // 不抛出错误，字幕失败不应该影响整个剪辑流程
+        }
+      }
+
       set({ executionProgress: 100 });
 
       // 统计下载结果
@@ -428,11 +474,15 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       console.log(`🎉 AI剪辑执行完成! 连续排列，智能处理CORS问题!`);
       console.log(`📊 总时长: ${currentTimelinePosition}秒`);
       console.log(`💾 下载结果: ${localFiles}个本地文件, ${remoteUrls}个远程URL`);
+      console.log(`📝 字幕结果: ${subtitleCount}个字幕元素`);
+
+      // 更新成功消息，包含字幕信息
+      const subtitleMessage = subtitleCount > 0 ? `，${subtitleCount}个字幕` : '';
 
       if (remoteUrls > 0) {
-        toast.success(`AI剪辑完成! ${localFiles}个视频已下载，${remoteUrls}个使用远程URL（CORS限制），总时长${currentTimelinePosition.toFixed(1)}秒。`);
+        toast.success(`AI剪辑完成! ${localFiles}个视频已下载，${remoteUrls}个使用远程URL（CORS限制），总时长${currentTimelinePosition.toFixed(1)}秒${subtitleMessage}。`);
       } else {
-        toast.success(`AI剪辑完成! 已下载${totalClips}个视频到本地并连续排列，总时长${currentTimelinePosition.toFixed(1)}秒。`);
+        toast.success(`AI剪辑完成! 已下载${totalClips}个视频到本地并连续排列，总时长${currentTimelinePosition.toFixed(1)}秒${subtitleMessage}。`);
       }
       
     } catch (error) {

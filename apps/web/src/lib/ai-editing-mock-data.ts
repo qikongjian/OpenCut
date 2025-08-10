@@ -10,945 +10,375 @@ export const generateAIEditingMockData = (projectId: string): AIEditingData => {
   return {
     project_id: projectId,
     script_content: "",
-    director_intent: "请根据剧本内容和素材分析，制定专业的剪辑计划，注重故事节奏、情感表达和视觉效果的统一。",
+    director_intent: "",
     success: true,
     editing_plan: {
-      material_classification_results: {
-        discarded_footage_list: [
+      finalized_dialogue_track: {
+        final_srt_content: "1\n00:00:12,000 --> 00:00:15,000\nDelta squad, reinforce section gamma. Now. Move now.\n\n2\n00:00:15,200 --> 00:00:20,800\nThey said it was a fortress. Logic's final, perfect kingdom.\n\n3\n00:00:23,500 --> 00:00:25,800\nBut the universe doesn't follow logic.\n\n4\n00:00:27,958 --> 00:00:29,458\nIt just happens.\n\n5\n00:00:52,458 --> 00:00:55,158\nAll units, hold! Hold positions! Report damage!\n\n6\n00:01:12,258 --> 00:01:13,758\nNo. No, no, no...\n\n7\n00:01:16,258 --> 00:01:21,558\nAutomated repair impossible. Manual override required. Probability of catastrophic failure: 97.3%.\n\n8\n00:01:22,258 --> 00:01:25,258\nMy whole life... I trusted the numbers.\n\n9\n00:01:25,758 --> 00:01:27,558\nThe numbers said I was safe.\n\n10\n00:01:27,758 --> 00:01:29,758\nThe numbers said they were safe.\n\n11\n00:01:33,258 --> 00:01:35,758\nRecommended action: Abort.\n\n12\n00:01:48,558 --> 00:01:53,558\nThe numbers are a lie. There's only what you do. And what you don't.\n\n13\n00:02:09,090 --> 00:02:10,690\nPlease. Just this once.\n\n14\n00:02:15,690 --> 00:02:16,290\nFly!",
+        final_dialogue_segments: [
           {
-            clip_id: "alley_confrontation_rain_01",
-            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ9-0-20250719071033.mp4",
-            reason: "重大且无法修复的技术性连续性错误。素材中出现了一个短暂的'第二女人'伪影，这很可能是AI生成瑕疵，完全破坏了场景的沉浸感。"
+            sequence_clip_id: "v1_clip_002",
+            source_clip_id: "E01-S01-C03_to_C04",
+            start_timecode: "00:00:12.000",
+            end_timecode: "00:00:15.000",
+            transcript: "Delta squad, reinforce section gamma. Now. Move now.",
+            speaker: "Dr. Elara Vance [CH-001]"
           },
           {
-            clip_id: "CLK_20240521_0815_noir_alley",
-            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ14-1-20250719071259.mp4",
-            reason: "根本性的叙事不符。镜头展示了一场涉及'钞票'的交易和一个男人的最终离开，这与剧本中陈俊递出'折叠的纸条'并'消失在阴影中'的情节直接冲突。"
+            sequence_clip_id: "v1_clip_003",
+            source_clip_id: "[E01-S01-C05]",
+            start_timecode: "00:00:15.200",
+            end_timecode: "00:00:20.800",
+            transcript: "They said it was a fortress. Logic's final, perfect kingdom.",
+            speaker: "Dr. Elara Vance (旁白)"
+          },
+          {
+            sequence_clip_id: "v1_clip_004",
+            source_clip_id: "E01-S01-C06-C07",
+            start_timecode: "00:00:23.500",
+            end_timecode: "00:00:25.800",
+            transcript: "But the universe doesn't follow logic.",
+            speaker: "Dr. Elara Vance [画外音]"
+          },
+          {
+            sequence_clip_id: "v1_clip_004",
+            source_clip_id: "E01-S01-C06-C07",
+            start_timecode: "00:00:27.958",
+            end_timecode: "00:00:29.458",
+            transcript: "It just happens.",
+            speaker: "Dr. Elara Vance [画外音]"
+          },
+          {
+            sequence_clip_id: "v1_clip_008",
+            source_clip_id: "E01-S02-C06, E01-S02-C07",
+            start_timecode: "00:00:52.458",
+            end_timecode: "00:00:55.158",
+            transcript: "All units, hold! Hold positions! Report damage!",
+            speaker: "Dr. Elara Vance"
+          },
+          {
+            sequence_clip_id: "v1_clip_010",
+            source_clip_id: "E01-S03-C02_C03",
+            start_timecode: "00:01:12.258",
+            end_timecode: "00:01:13.758",
+            transcript: "No. No, no, no...",
+            speaker: "Dr. Elara Vance"
+          },
+          {
+            sequence_clip_id: "v1_clip_011",
+            source_clip_id: "E01-S03-C04, E01-S03-C05",
+            start_timecode: "00:01:16.258",
+            end_timecode: "00:01:21.558",
+            transcript: "Automated repair impossible. Manual override required. Probability of catastrophic failure: 97.3%.",
+            speaker: "画外音 (Computer Voice)"
+          },
+          {
+            sequence_clip_id: "v1_clip_012",
+            source_clip_id: "IMF_E01-S03-C06_C07",
+            start_timecode: "00:01:22.258",
+            end_timecode: "00:01:25.258",
+            transcript: "My whole life... I trusted the numbers.",
+            speaker: "Dr. Elara Vance [CH-001] (画外音)"
+          },
+          {
+            sequence_clip_id: "v1_clip_012",
+            source_clip_id: "IMF_E01-S03-C06_C07",
+            start_timecode: "00:01:25.758",
+            end_timecode: "00:01:27.558",
+            transcript: "The numbers said I was safe.",
+            speaker: "Dr. Elara Vance [CH-001] (画外音)"
+          },
+          {
+            sequence_clip_id: "v1_clip_012",
+            source_clip_id: "IMF_E01-S03-C06_C07",
+            start_timecode: "00:01:27.758",
+            end_timecode: "00:01:29.758",
+            transcript: "The numbers said they were safe.",
+            speaker: "Dr. Elara Vance [CH-001] (画外音)"
+          },
+          {
+            sequence_clip_id: "v1_clip_013",
+            source_clip_id: "E01-S03-C08",
+            start_timecode: "00:01:33.258",
+            end_timecode: "00:01:35.758",
+            transcript: "Recommended action: Abort.",
+            speaker: "电脑画外音"
+          },
+          {
+            sequence_clip_id: "v1_clip_015",
+            source_clip_id: "E01-S04-C02_C03",
+            start_timecode: "00:01:48.558",
+            end_timecode: "00:01:53.558",
+            transcript: "The numbers are a lie. There's only what you do. And what you don't.",
+            speaker: "Dr. Elara Vance [CH-001] (画外音)"
+          },
+          {
+            sequence_clip_id: "v1_clip_018",
+            source_clip_id: "E01-S04-C06_E01-S04-C07",
+            start_timecode: "00:02:09.090",
+            end_timecode: "00:02:10.690",
+            transcript: "Please. Just this once.",
+            speaker: "Dr. Elara Vance"
+          },
+          {
+            sequence_clip_id: "v1_clip_020",
+            source_clip_id: "E01-S04-C06_E01-S04-C07",
+            start_timecode: "00:02:15.690",
+            end_timecode: "00:02:16.290",
+            transcript: "Fly!",
+            speaker: "Dr. Elara Vance"
           }
-        ],
+        ]
+      },
+      material_classification_results: {
+        discarded_footage_list: [],
         alternative_footage_list: [
           {
-            clip_id: "vid_clip_001_east_asian_woman_key",
-            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ7-0-20250719070826.mp4",
-            shortcoming: "技术缺陷：素材完全缺失音频轨道。表演上，情绪为单一的'悲伤'，可能限制其在复杂情绪场景中的使用。",
-            potential_use_cases: "改造潜力巨大。其无声特性使其成为一个完美的'画布'，可用于承载画外音（V.O.）、关键音效（如剧本中的钟声）或情绪强烈的配乐。"
+            clip_id: "E01-S01-C02",
+            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ2_b60ace5b-43b4-49f0-8587-f928d6dbc88c-20250809072303.mp4",
+            shortcoming: "存在轻微但持续的AI生成瑕疵：主角工作服上的徽章文字存在不一致的乱码。",
+            potential_use_cases: "核心叙事素材，但在使用前需要通过数字修复（Digital Cleanup）技术擦除并替换错误的徽章文字，以保证影片的沉浸感和专业度。"
+          },
+          {
+            clip_id: "[E01-S01-C05]",
+            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ4_c6cfe18e-3af1-4251-ae2d-21e05f3b6b70-20250809072340.mp4",
+            shortcoming: "AI生成的机器人移动存在轻微的'滑动感'，物理真实性略有欠缺。",
+            potential_use_cases: "可作为风格化镜头使用。此瑕疵无需修复，可被解读为一种艺术选择，用以增强机器的'非人'特质和场景的冰冷工业感，服务于影片主题。"
+          },
+          {
+            clip_id: "E01-S02-C05",
+            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ9_8ad58220-17a0-4059-a5ab-8b30947bf8e0-20250809072414.mp4",
+            shortcoming: "存在潜在的AI生成瑕疵：碎片和尘埃的运动轨迹可能不完全符合物理规律；机器人倒地后的抽搐动作可能过于平滑，有引发'恐怖谷效应'的风险。",
+            potential_use_cases: "作为灾难高潮的核心镜头，叙事价值极高。在使用前，强烈建议通过VFX对碎片运动和机器人动画进行精修，以确保物理真实性和情感冲击力。"
+          },
+          {
+            clip_id: "E01-S03-C02_C03",
+            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ12_cde372c1-8b45-4360-b5e3-203de4213a99-20250809072204.mp4",
+            shortcoming: "存在中度恐怖谷效应风险（00:00:04.500后），面部微表情转换可能僵硬；AI生成的发丝在头部运动时可能存在物理不一致性。",
+            potential_use_cases: "作为场景的核心转折镜头，叙事价值极高。建议通过交叉剪辑（如切入显示器错误代码的特写）来规避最不自然的表演帧，或通过后期微调修复，以保留其前半段出色的紧张感营造。"
+          },
+          {
+            clip_id: "E01-S04-C09-C10",
+            video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ22_c52099c9-93a7-465c-8cff-f91c88ad7dfa-20250809072621.mp4",
+            shortcoming: "在最终的特写镜头中，AI生成的'深刻平静'表情存在潜在的恐怖谷效应风险，可能缺乏人类细微的表情变化而显得不自然。",
+            potential_use_cases: "影片的决定性高潮镜头。在使用前，建议通过精细的面部重塑或动态捕捉修正，由VFX艺术家对表情进行微调，以确保其情感表达的真实性和感染力。"
           }
         ]
       },
       editing_sequence_plans: [
         {
-          version_name: "主剪辑版 (Final Cut)",
-          version_summary: "本最终剪辑方案旨在构建一部遵循导演'新黑色电影'风格、并以'故事至上，情感为王'为核心信条的完整短片。整体节奏将遵循一条精心设计的情感曲线：始于三个场景的层层递进的压抑与心理博弈，通过不同质感的节奏展现三种'牢笼'的本质。",
+          version_name: "总剪辑师终剪版 (Supervising Editor's Cut)",
+          version_summary: "本最终剪辑方案旨在将所有孤立的素材片段编排成一个具有强大情感力量和清晰叙事弧光的完整序列。核心意图是精确描绘主角伊拉拉·万斯博士从一个冰冷的逻辑信奉者，在面临末日危机时，其信仰崩塌，最终通过一次非理性的、充满人性的信仰之跃，完成自我救赎的完整心路历程。剪辑节奏遵循'建立-崩溃-抉择-宣泄'的宏观结构：以宏大而压抑的工业景观开场，通过一次突发的灾难性事故将节奏推向紧张高潮，随即在死寂的控制室中将节奏降至冰点以展现内心的绝望，然后在缓慢、庄重的抉择中积蓄力量，最终通过一次黑屏的呼吸停顿，将所有情感能量在引擎点火的瞬间彻底释放，并以主角获得内心平静的特写收尾。",
           timeline_clips: [
             {
               sequence_clip_id: "v1_clip_001",
-              source_clip_id: "CLIP_001_RainyNight",
-              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ0-0-20250719070438.mp4",
-              corresponding_script_scene_id: "SCENE 1",
+              source_clip_id: "E01-S01-C01",
+              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ1_82256814-574d-4493-8f2c-a6826b486f22-20250809072229.mp4",
+              corresponding_script_scene_id: "E01-S01-C01",
               clip_type: "video_and_audio",
               sequence_start_timecode: "00:00:00.000",
               source_in_timecode: "00:00:00.000",
-              source_out_timecode: "00:00:03.400",
-              clip_duration_in_sequence: "3.4s",
+              source_out_timecode: "00:00:08.000",
+              clip_duration_in_sequence: "8.0s",
               transition_from_previous: {
                 transition_type: "fade_in",
-                transition_duration_ms: 1000,
-                audio_sync_offset_ms: 0,
-                reason_for_transition: "淡入开场，将观众平缓带入1936年上海的雨夜，建立忧郁、神秘的基调。"
+                transition_duration_ms: 1500,
+                audio_sync_offset_ms: -500,
+                reason_for_transition: "J-Cut。工业噪音先于画面进入，从听觉上建立压抑、冷酷的氛围，再通过视觉的宏大场面予以确认，最大化开场的沉浸感。"
               },
               clip_placement_reasons: {
-                core_intent_and_audience_effect: "意图：建立场景。通过玉莲在窗前的背影和雨声，迅速设定影片的黑色电影基调和主角的孤寂心境。效果：引发观众的好奇心，想知道她是谁，在等什么。",
-                emotion_priority: "奠定忧郁、沉思的情感基调（强度0.5）。",
-                story_priority: "引入主角玉莲和核心环境（雨夜公寓），为故事拉开序幕。",
-                rhythm_priority: "以一个静态长镜头开始，建立缓慢、压抑的'呼吸感'。",
-                eyeline_priority: "观众视线跟随玉莲望向窗外，共享她的视角和情绪。",
-                space_priority: "建立公寓内部空间的基本方位感。",
-                lens_language_application: "全景和近景的组合，框中框构图（窗户）暗示了玉莲被困的处境。"
+                core_intent_and_audience_effect: "意图：作为建立镜头（Establishing Shot），迅速定义世界的规模、基调和核心冲突。效果：让观众在影片开始的几秒钟内就感受到一种敬畏、压迫和孤立感，为主角的困境奠定情感基础。",
+                emotion_priority: "唤起观众的焦虑感和对人类在其中渺小地位的共情。",
+                story_priority: "清晰地传达了故事的核心背景：一项规模浩大、看似不可能的工程正在紧急进行。",
+                rhythm_priority: "建立一种沉重、稳定、近乎凝滞的初始节奏，为即将到来的紧张情节积蓄能量。",
+                eyeline_priority: "俯视角度将观众视线引向画面中央的火箭和机器人活动。",
+                space_priority: "完美地建立了场景的三维空间感，为后续镜头提供了空间参照系。",
+                lens_language_application: "极远景（Extreme Wide Shot）和固定机位，最大化地强调了环境的规模和主角的孤立。"
               },
               continuity_correction_suggestion: {
-                error_exists: false
+                error_exists: false,
+                error_type: "N/A",
+                occurrence_location: "N/A",
+                error_description: "N/A",
+                is_intentional_artistic_choice: false,
+                artistic_purpose_explanation: "N/A",
+                correction_suggestions: [],
+                reason_for_correction: "N/A"
               },
               sound_design_suggestions: [
                 {
                   sound_type: "ambient_sound",
-                  description: "持续的雨声，作为整个场景的情绪底色。",
-                  timing_in_clip: "全程",
-                  intensity_suggestion: "中等音量"
+                  description: "强化无数伺服电机持续的、低沉的嗡鸣声，混响要大，以突出空间的巨大空旷感。",
+                  timing_in_clip: "贯穿始终",
+                  intensity_suggestion: "中低音量，形成一种心理压迫的底噪。"
                 }
               ],
               visual_enhancement_suggestions: [
                 {
                   enhancement_type: "color_grading",
-                  description: "确立全片基准色调：高对比度，阴影部分偏冷（青/蓝色），高光部分保持中性或微暖。",
-                  reason: "统一视觉风格，强化新黑色电影美学。"
+                  description: "轻微增强画面中的蓝色和灰色，进一步降低饱和度，在暗部区域增加微弱的蓝色调，强化冷感和科技感。",
+                  reason: "为了极致化导演意图中的'冷酷、去饱和'的工业美学。"
                 }
               ]
             },
             {
               sequence_clip_id: "v1_clip_002",
-              source_clip_id: "clip_vid_001_rain_dialogue",
-              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ1-1-20250719070418.mp4",
-              corresponding_script_scene_id: "SCENE 1",
+              source_clip_id: "E01-S01-C03_to_C04",
+              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ3_380f39a9-0ff2-459f-95fb-548ae5661620-20250809072305.mp4",
+              corresponding_script_scene_id: "SC-001_Shot_1",
               clip_type: "video_and_audio",
-              sequence_start_timecode: "00:00:03.400",
+              sequence_start_timecode: "00:00:08.000",
               source_in_timecode: "00:00:00.000",
-              source_out_timecode: "00:00:07.800",
-              clip_duration_in_sequence: "7.8s",
+              source_out_timecode: "00:00:07.000",
+              clip_duration_in_sequence: "7.0s",
               transition_from_previous: {
                 transition_type: "cut",
                 transition_duration_ms: 0,
-                audio_sync_offset_ms: -300,
-                reason_for_transition: "J-Cut。在切到李先生画面前，提前0.3秒引入他点打火机的声音，打破宁静，暗示威胁的到来。硬切保持了场景的紧张感。"
+                audio_sync_offset_ms: 0,
+                reason_for_transition: "从宏大远景硬切至人物特写，将外部环境的压迫感瞬间内化为主角的个人压力，形成强烈的节奏变化。"
               },
               clip_placement_reasons: {
-                core_intent_and_audience_effect: "意图：引入对抗者。通过李先生的第一句台词和居高临下的构图，建立其掠夺者和控制者的形象。效果：观众立刻感受到权力关系的不对等和潜在的冲突。",
-                emotion_priority: "引入沉郁、世故的情绪，与玉莲的忧郁形成对比和张力。",
-                story_priority: "引入反派角色李先生，并通过他的台词揭示故事背景的'肮脏'。",
-                rhythm_priority: "延续缓慢节奏，但通过引入对话和人物互动，开始积蓄戏剧能量。",
-                eyeline_priority: "李先生的视线投向背景中的玉莲，建立二人间的视觉联系。",
-                space_priority: "通过浅景深和前后景关系，明确了李先生在空间和权力上的主导地位。",
-                lens_language_application: "前景人物清晰、背景人物模糊的中景镜头，是权力关系的经典视觉表达。"
+                core_intent_and_audience_effect: "意图：实现'信息-危机-人物'的快速叙事浓缩，将宏大背景与个人联系起来。效果：立刻感受到压倒性的紧迫感和对主角困境的代入感。",
+                emotion_priority: "通过特写镜头放大其紧绷的下颚、专注而焦虑的眼神，最大化传递其在巨大压力下保持权威的复杂情绪。",
+                story_priority: "高效地交代了核心冲突（结构警报）、主角身份（工程师）和她的行动。",
+                rhythm_priority: "镜头内部节奏从静态（平板）到动态（上摇），再到表演高潮（下令），形成一个'起-承-转'的微型叙事弧光。",
+                eyeline_priority: "摄像机的上摇运动完美引导了观众的视线，从客观的技术问题转移到主观的人物压力。",
+                space_priority: "在特写镜头中通过浅景深建立了空间感和主角的孤立感。",
+                lens_language_application: "从设备特写转为人物特写的镜头语言，是典型的从'事'到'人'的叙事聚焦手法。"
               },
               continuity_correction_suggestion: {
-                error_exists: false
+                error_exists: false,
+                error_type: "N/A",
+                occurrence_location: "N/A",
+                error_description: "N/A",
+                is_intentional_artistic_choice: false,
+                artistic_purpose_explanation: "N/A",
+                correction_suggestions: [],
+                reason_for_correction: "N/A"
+              },
+              sound_design_suggestions: [
+                {
+                  sound_type: "dialogue_enhancement",
+                  description: "对白施加轻微的数字通讯效果，以符合其通过通讯设备下令的情境。",
+                  timing_in_clip: "00:00:04.000 - 00:00:07.000",
+                  intensity_suggestion: "保持对白主体清晰。"
+                }
+              ],
+              visual_enhancement_suggestions: [
+                {
+                  enhancement_type: "color_grading",
+                  description: "提升平板电脑上红色警报的饱和度和亮度，使其成为画面中最刺眼的元素，象征迫在眉睫的危险。",
+                  reason: "利用色彩引导观众的注意力焦点和情绪。"
+                }
+              ]
+            },
+            {
+              sequence_clip_id: "v1_clip_003",
+              source_clip_id: "[E01-S01-C05]",
+              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ4_c6cfe18e-3af1-4251-ae2d-21e05f3b6b70-20250809072340.mp4",
+              corresponding_script_scene_id: "SC-001",
+              clip_type: "video_and_audio",
+              sequence_start_timecode: "00:00:15.000",
+              source_in_timecode: "00:00:00.000",
+              source_out_timecode: "00:00:08.000",
+              clip_duration_in_sequence: "8.0s",
+              transition_from_previous: {
+                transition_type: "cut",
+                transition_duration_ms: 0,
+                audio_sync_offset_ms: 0,
+                reason_for_transition: "作为对Elara命令的反应镜头，展示机器人大军的行动，并引入她的内心独白。"
+              },
+              clip_placement_reasons: {
+                core_intent_and_audience_effect: "意图：通过旁白和画面，引出主角的内心困境和故事的核心矛盾：逻辑与人性的对抗。效果：让观众在感受宏大工业奇观的同时，开始对这个'逻辑王国'进行深层思考。",
+                emotion_priority: "营造一种冰冷、压抑、缺乏生命力的情感基调，与旁白中隐含的人性反思形成对比。",
+                story_priority: "奠定核心冲突：一个看似完美的逻辑系统正被其创造者所质疑。",
+                rhythm_priority: "平稳的摄影机移动和舒缓的旁白语速，共同构建了一种沉思、庄严的节奏。",
+                eyeline_priority: "摄影机的平移运动自然地引导观众视线跟随机器人小队。",
+                space_priority: "清晰地建立了'巨型工厂'这一核心场景的三维空间感。",
+                lens_language_application: "仰视全景镜头赋予了机器人一种纪念碑式的压迫感。"
+              },
+              continuity_correction_suggestion: {
+                error_exists: true,
+                error_type: "AI生成瑕疵 (AI Generation Artifact)",
+                occurrence_location: "贯穿整个片段",
+                error_description: "机器人的移动存在轻微的非自然'滑动感'，步伐与位移不完全匹配。",
+                is_intentional_artistic_choice: true,
+                artistic_purpose_explanation: "此瑕疵被艺术化利用，它打破了完美CG的虚假感，反而增强了机器的'非人'特质和场景的冰冷工业感，符合影片整体氛围。因此，建议不进行修复。",
+                correction_suggestions: ["保留现状，将其视为风格化的一部分"],
+                reason_for_correction: "修复成本高，且可能失去现有的'粗糙'质感。保留瑕疵反而能服务于叙事，强化'逻辑王国'并非真正完美的潜台词。"
               },
               sound_design_suggestions: [],
               visual_enhancement_suggestions: []
             },
             {
-              sequence_clip_id: "v1_clip_003",
-              source_clip_id: "vid_clip_001_pachinko_style_rainy_window",
-              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ2-1-20250719070428.mp4",
-              corresponding_script_scene_id: "SCENE 1",
+              sequence_clip_id: "v1_clip_004",
+              source_clip_id: "E01-S01-C06-C07",
+              video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ5_d68f2200-c962-4ff9-8f0c-bdf501dcf8b6-20250809072200.mp4",
+              corresponding_script_scene_id: "E01-S01-C06",
               clip_type: "video_and_audio",
-              sequence_start_timecode: "00:00:11.200",
-              source_in_timecode: "00:00:00.500",
-              source_out_timecode: "00:00:08.100",
-              clip_duration_in_sequence: "7.6s",
+              sequence_start_timecode: "00:00:23.000",
+              source_in_timecode: "00:00:00.000",
+              source_out_timecode: "00:00:08.500",
+              clip_duration_in_sequence: "8.5s",
               transition_from_previous: {
                 transition_type: "cut",
                 transition_duration_ms: 0,
                 audio_sync_offset_ms: 0,
-                reason_for_transition: "切入玉莲的主观内心世界。从客观的权力展示切到主观的内心独白，形成强烈的叙事节奏变化。"
+                reason_for_transition: "从机器人视角切回主角，深化她的内心反思。"
               },
               clip_placement_reasons: {
-                core_intent_and_audience_effect: "意图：揭示玉莲的清醒认知。通过她的画外音，直接告诉观众她看穿了这些男人的本质。效果：让观众与主角建立更深的共情，理解她的静默并非顺从，而是审视。",
-                emotion_priority: "传达玉莲内心的悲伤、疏离和被压抑感。",
-                story_priority: "首次揭示核心主题：玉莲将男人视为'牢笼'的提供者。这是全剧的核心冲突。",
-                rhythm_priority: "插入一段内心独白，暂时中断外部对话，形成节奏上的'留白'，深化人物。",
-                eyeline_priority: "她空洞的眼神和窥视感的镜头，将观众的注意力完全引向她的内心世界。",
-                space_priority: "透过雨窗拍摄，创造了物理和情感上的双重距离感，强调她的孤立。",
-                lens_language_application: "极具风格化的'雨窗窥视'镜头，完美诠释了'被观察的物件'这一主题。"
+                core_intent_and_audience_effect: "意图：通过一个包含硬切的镜头，在视觉上强化角色内心'断裂'和'顿悟'的瞬间。效果：观众在被特写镜头震惊的同时，能从她的眼神中读出恐惧、疲惫和决心，并随着镜头的缓慢拉远，再次感受到这份决心背后的巨大孤独。",
+                emotion_priority: "这是情感的顶点。从'思考'到'感受'的转变。",
+                story_priority: "标志着主角放弃逻辑挣扎，接受现实并下定决心行动的关键节点。",
+                rhythm_priority: "节奏从硬切的'激变'转为慢速拉远的'缓释'。",
+                eyeline_priority: "特写强制将观众的视线锁定在主角的眼睛上。",
+                space_priority: "从极度压缩的心理空间（特写）向广阔的物理空间（拉远后的全景）过渡，用空间变化来叙事。",
+                lens_language_application: "从特写到慢速拉远的运镜，连接人物内心世界与外部环境，强化了'孤独的决心'这一核心主题。"
               },
               continuity_correction_suggestion: {
-                error_exists: false
+                error_exists: false,
+                error_type: "N/A",
+                occurrence_location: "N/A",
+                error_description: "N/A",
+                is_intentional_artistic_choice: false,
+                artistic_purpose_explanation: "N/A",
+                correction_suggestions: [],
+                reason_for_correction: "N/A"
               },
               sound_design_suggestions: [
                 {
-                  sound_type: "dialogue_enhancement",
-                  description: "为旁白增加轻微的混响，使其与现场对白区分开，更具内心独白感。",
-                  timing_in_clip: "全程",
-                  intensity_suggestion: "清晰但轻柔"
+                  sound_type: "sfx",
+                  description: "在内部硬切发生的瞬间，抽掉所有环境音，制造一瞬间的真空感，时长约0.2秒，以强化视觉冲击。",
+                  timing_in_clip: "在源素材00:00:03.458处",
+                  intensity_suggestion: "极短暂的静音。"
                 }
               ],
               visual_enhancement_suggestions: []
-            },
-            // {
-            //   sequence_clip_id: "v1_clip_004",
-            //   source_clip_id: "clip_20240521_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ3-1-20250719070613.mp4",
-            //   corresponding_script_scene_id: "SCENE 1",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:00:18.800",
-            //   source_in_timecode: "00:00:00.100",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "7.9s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "从内心世界切回现实对话。硬切回来，展现李先生打破了她的沉思，将'诱惑'具象化。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：展示'金色牢笼'的诱惑。钥匙作为核心象征物被正式提出。效果：观众理解了李先生的具体提议，悬念从'他想干什么'转变为'她会接受吗'。",
-            //     emotion_priority: "李先生自信、神秘的表演，与玉莲的忧郁形成鲜明对比。",
-            //     story_priority: "引入关键道具（钥匙），推动情节进入核心选择。",
-            //     rhythm_priority: "焦点从人脸转移到钥匙，再转回人脸，镜头内部的节奏变化引导了观众的注意力。",
-            //     eyeline_priority: "观众的视线跟随焦点，从李先生的脸，到钥匙，再回到他的脸，完全被他的表演所引导。",
-            //     space_priority: "保持空间连续性。",
-            //     lens_language_application: "特写镜头和焦点变化，极大地强调了'钥匙'这一道具的重要性。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_005",
-            //   source_clip_id: "V_20240521_01_A001C001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ4-0-20250719070612.mp4",
-            //   corresponding_script_scene_id: "SCENE 1",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:00:26.700",
-            //   source_in_timecode: "00:00:00.500",
-            //   source_out_timecode: "00:00:07.100",
-            //   clip_duration_in_sequence: "6.6s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "动作衔接。从李先生展示钥匙，切到他放置钥匙的动作，保持叙事流畅。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：展现玉莲的表面顺从和李先生的控制欲。他把钥匙放在壁炉上，而不是交到她手里，这是一个权力姿态。她的回答礼貌而疏远。效果：观众能读懂她台词下的潜台词，感受到两人之间暗流涌动的博弈。",
-            //     emotion_priority: "玉莲平静的表演下隐藏着巨大的内心张力。",
-            //     story_priority: "完成了'提议'这个动作，并展示了玉莲的初步反应。",
-            //     rhythm_priority: "焦点从前景的李先生转移到背景的玉莲，节奏平稳，但暗藏机锋。",
-            //     eyeline_priority: "观众视线随焦点转移，最后落在玉莲那张平静但意味深长的脸上。",
-            //     space_priority: "清晰地展示了钥匙被放置的位置，为后续场景埋下伏笔。",
-            //     lens_language_application: "焦点转移再次被用作叙事工具，将权力从施予者（李先生）转移到思考者（玉莲）身上。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "清晰、有质感的黄铜钥匙放置在木头上的声音，强调这一动作的重要性。",
-            //       timing_in_clip: "与画面动作同步",
-            //       intensity_suggestion: "中等偏高"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_006",
-            //   source_clip_id: "CLIP_20240521_MAN_WOMAN_CONFRONTATION_01",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ5-1-20250719070634.mp4",
-            //   corresponding_script_scene_id: "SCENE 1",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:00:33.300",
-            //   source_in_timecode: "00:00:00.250",
-            //   source_out_timecode: "00:00:05.100",
-            //   clip_duration_in_sequence: "4.85s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "情感爆发点切入。在玉莲平静的回答后，立即切入李先生愤怒的爆发，形成强烈的节奏和情绪对比，制造戏剧冲突。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：撕下温情的面具，暴露赤裸裸的占有欲。这是李先生真实意图的第一次完全暴露。效果：观众感受到强烈的压迫感和威胁，为玉莲的处境感到担忧，场景张力达到顶点。",
-            //     emotion_priority: "最大化李先生的愤怒（强度0.8）和玉莲的冷静之间的冲突。",
-            //     story_priority: "揭示李先生的核心价值观（占有），深化了'牢笼'的本质。",
-            //     rhythm_priority: "节奏加快，对话充满压迫感，这是场景的情感高潮。",
-            //     eyeline_priority: "强烈的对视在两人之间建立了直接的冲突线。",
-            //     space_priority: "过肩镜头让观众身临其境地感受到对峙的紧张。",
-            //     lens_language_application: "近景和过肩镜头的使用，是表现人物激烈冲突的经典手法。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_007",
-            //   source_clip_id: "clip_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ6-1-20250719070809.mp4",
-            //   corresponding_script_scene_id: "SCENE 1",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:00:38.150",
-            //   source_in_timecode: "00:00:02.000",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "6.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "从紧张的对峙切到他离开的背影，用空间距离的变化来缓和紧张气氛，进入场景尾声。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：留下最后的通牒。李先生以一个警告结束谈话，转身离开。效果：冲突暂时结束，但威胁依然存在，悬念被保留下来。",
-            //     emotion_priority: "从愤怒转为冷酷的警告，情绪由热变冷。",
-            //     story_priority: "李先生退场，将舞台留给玉莲和她的选择。",
-            //     rhythm_priority: "节奏放缓，为场景的收尾做准备。",
-            //     eyeline_priority: "他转身离去，打破了对视，冲突结束。",
-            //     space_priority: "门框构图和剪影效果，象征他即将离开这个空间，但其阴影依然笼罩。",
-            //     lens_language_application: "经典的黑色电影构图，用剪影来表现人物的神秘和危险性。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "在他说完话、门关上之后，加入一个清晰、回响的'门锁咔哒声'，作为场景的句点。",
-            //       timing_in_clip: "结尾处",
-            //       intensity_suggestion: "中等偏高"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_008",
-            //   source_clip_id: "vid_clip_001_east_asian_woman_key",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ7-0-20250719070826.mp4",
-            //   corresponding_script_scene_id: "SCENE 1",
-            //   clip_type: "video",
-            //   sequence_start_timecode: "00:00:44.150",
-            //   source_in_timecode: "00:00:00.000",
-            //   source_out_timecode: "00:00:06.500",
-            //   clip_duration_in_sequence: "6.5s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "在门声落下后切入。从李先生的离去，切到玉莲的特写，将焦点完全转回她的内心世界。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：将场景的情感重量完全落在玉莲和她所面临的选择上。效果：观众在沉默中感受她的挣扎和思考，焦点最终落在'钥匙'这个核心象征物上，为下一场景积蓄悬念。",
-            //     emotion_priority: "展现玉莲在独处时的真实情绪——悲伤、凝重，为她的角色弧光提供起点。",
-            //     story_priority: "强调核心道具（钥匙）的重要性，并以一个悬而未决的问题结束场景：她会怎么做？",
-            //     rhythm_priority: "节奏降至冰点，用一个纯视觉的、缓慢的镜头来提供情感释放和思考空间。",
-            //     eyeline_priority: "焦点转移引导观众视线，从她的悲伤，转移到她悲伤的根源——那把钥匙。",
-            //     space_priority: "保持空间连续性，钥匙的位置与v1_clip_005中一致。",
-            //     lens_language_application: "Rack Focus作为一种强大的视觉叙事工具，无声地讲述了'人物-困境'的核心关系。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: true,
-            //     error_type: "音频缺失",
-            //     occurrence_location: "整个 clip 'vid_clip_001_east_asian_woman_key'",
-            //     error_description: "该素材片段没有音轨。",
-            //     is_intentional_artistic_choice: false,
-            //     artistic_purpose_explanation: "",
-            //     correction_suggestions: [
-            //       "创造性地利用此缺陷。在此处叠加上剧本中提到的'老爷钟'的滴答声，并让其音量逐渐增强，以表现玉莲内心的煎熬和时间的压迫感，同时为第四场的关键音效设计埋下伏笔。"
-            //     ],
-            //     reason_for_correction: "无声会破坏影片的沉浸感。通过添加有叙事功能的音效，不仅弥补了技术缺陷，更升华了场景的艺术表达，遵循了'预判问题，创造性解决'的信条。"
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "加入清晰、有节奏、压迫感强的老爷钟滴答声（TICK-TOCK）。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "从微弱开始，随焦点转向钥匙而逐渐增强"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_009",
-            //   source_clip_id: "clip_hands_jazz_rain_01",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ11-1-20250719071051.mp4",
-            //   corresponding_script_scene_id: "SCENE 2",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:00:50.650",
-            //   source_in_timecode: "00:00:00.500",
-            //   source_out_timecode: "00:00:03.500",
-            //   clip_duration_in_sequence: "3.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: -800,
-            //     reason_for_transition: "J-Cut。陈俊的声音提前进入，将观众从第一场的沉静中猛地拽入第二场的急促对峙中，制造突兀和紧张感。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：建立陈俊的绝望和急切。效果：观众感受到突然的物理侵入，场景节奏骤然加快。",
-            //     emotion_priority: "手部特写传达了原始的、不加掩饰的绝望情绪。",
-            //     story_priority: "引入第二位男性角色和他的'革命之火'。",
-            //     rhythm_priority: "以一个强有力的快节奏冲击开启新场景。",
-            //     eyeline_priority: "N/A (手部镜头)",
-            //     space_priority: "创造一个幽闭、紧张的物理接触空间。",
-            //     lens_language_application: "特写镜头聚焦于物理动作，揭示了这段关系的本质：原始、充满激情。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "ambient_sound",
-            //       description: "保持雨声和远处的萨克斯风声，维持新黑色电影的氛围。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "中等"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_010",
-            //   source_clip_id: "V001_C001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ13-0-20250719071239.mp4",
-            //   corresponding_script_scene_id: "SCENE 2",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:00:53.650",
-            //   source_in_timecode: "00:00:00.000",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "8.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 500,
-            //     reason_for_transition: "L-Cut。玉莲冷静的台词延续到这个镜头上，展现了她在被动局面下的掌控力，随后切到核心动作：传递纸条。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：聚焦于冲突的核心物件（纸条）及其秘密性质。效果：观众成为秘密的共谋者，紧张感升级。",
-            //     emotion_priority: "传递纸条的动作充满了神秘和理想主义色彩。",
-            //     story_priority: "引入了三个'选择物件'中的第一个，推动情节发展。",
-            //     rhythm_priority: "短暂放缓节奏，聚焦于这一关键时刻。",
-            //     eyeline_priority: "人物视线引向他们的手，引导观众的注意力。",
-            //     space_priority: "维持小巷中私密、秘密的空间感。",
-            //     lens_language_application: "对物件（纸条）的特写赋予了其至关重要的地位。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [],
-            //   visual_enhancement_suggestions: [
-            //     {
-            //       enhancement_type: "color_grading",
-            //       description: "确保冷色调和霓虹灯反射与前一镜头一致，以实现完美的视觉连续性。",
-            //       reason: "统一场景的美学风格。"
-            //     }
-            //   ]
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_011",
-            //   source_clip_id: "clip_20240521_tea_house_scene_01",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ16-0-20250719071449.mp4",
-            //   corresponding_script_scene_id: "SCENE 3",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:01.650",
-            //   source_in_timecode: "00:00:00.000",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "8.0s",
-            //   transition_from_previous: {
-            //     transition_type: "dissolve",
-            //     transition_duration_ms: 1000,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "叠化。标记时间（从夜晚到白天）和地点/氛围的剧烈变化，从物理紧张过渡到心理紧张。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：建立新的威胁——王探长及其阴险的手段。效果：一种不安感油然而生。王探长的微笑与他话语的对比，制造出令人不安的矛盾感。",
-            //     emotion_priority: "利用素材报告中指出的'跨模态不一致'（微笑vs威胁性言辞）来营造潜在的紧张感。这是对素材的升华运用。",
-            //     story_priority: "引入第三个男人和他的'提议'，完成了'牢笼'的三位一体。",
-            //     rhythm_priority: "建立一个缓慢、从容但充满深意的节奏，为整个场景定下基调。",
-            //     eyeline_priority: "建立两人间的视线关系，为后续的正反打镜头做准备。",
-            //     space_priority: "将茶馆定义为一个进行致命博弈的棋盘。",
-            //     lens_language_application: "对称的全景镜头加强了正式对峙的感觉，几乎像一场决斗。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "ambient_sound",
-            //       description: "引入几乎完全的寂静，只被茶水蒸汽微弱的嘶嘶声打破，以加剧紧张感。",
-            //       timing_in_clip: "整个场景",
-            //       intensity_suggestion: "非常低，微妙"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_012",
-            //   source_clip_id: "vid_20231027_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ20-1-20250719071653.mp4",
-            //   corresponding_script_scene_id: "SCENE 3",
-            //   clip_type: "video",
-            //   sequence_start_timecode: "00:01:09.650",
-            //   source_in_timecode: "00:00:01.500",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "6.5s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "硬切以匹配对话的开始，保持对话的张力。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：展现王探长咄咄逼人的'说教'，将他的威胁以'提供选择'的形式包装起来。观众效果：感受到角色话语中的压迫感和伪善。",
-            //     emotion_priority: "演员前倾的姿态和严肃的表情，最大化了威胁的情感强度。",
-            //     story_priority: "直接抛出核心冲突：玉莲面临的'第三种选择'，推动情节进入关键点。",
-            //     rhythm_priority: "一段较长的独白镜头，让观众完全沉浸在王探长的语言陷阱中。",
-            //     eyeline_priority: "王探长直视玉莲，观众通过过肩镜头感受到这种逼视。",
-            //     space_priority: "延续了之前建立的过肩镜头空间关系。",
-            //     lens_language_application: "过肩镜头将观众置于玉莲的视角，直面王探长的压力。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: true,
-            //     error_type: "AI音频瑕疵/对白不可用；AI视觉伪影",
-            //     occurrence_location: "此片段内部",
-            //     error_description: "原始音频为无效的AI生成内容，无法使用。茶杯上方的蒸汽效果为静态，不自然。",
-            //     is_intentional_artistic_choice: false,
-            //     artistic_purpose_explanation: "",
-            //     correction_suggestions: [
-            //       "建议进行ADR（后期配音），录制台词：'A city of ghosts, Shanghai... I am offering you a third option. Survival.'",
-            //       "建议对茶杯上方的静态蒸汽进行数字修复，增加其动态感或直接擦除。"
-            //     ],
-            //     reason_for_correction: "修复核心叙事信息（对白）的传递，并消除分散注意力的视觉瑕疵。"
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "dialogue_enhancement",
-            //       description: "后期配音的对白需保持低沉、平稳但充满力量的语调，与演员表演匹配。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "清晰、主导"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: [
-            //     {
-            //       enhancement_type: "vfx",
-            //       description: "对茶杯上方的静态蒸汽进行动态化处理或擦除。",
-            //       reason: "提升画面的真实感和沉浸感。"
-            //     }
-            //   ]
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_013",
-            //   source_clip_id: "vid_20240523_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ19-1-20250719071712.mp4",
-            //   corresponding_script_scene_id: "SCENE 3",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:16.150",
-            //   source_in_timecode: "00:00:03.500",
-            //   source_out_timecode: "00:00:07.500",
-            //   clip_duration_in_sequence: "4.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "标准的对话正反打切镜，将焦点转移到玉莲的反应上。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：展现玉莲的'静观其变'和'以柔克刚'的策略，她的平静是她的铠甲。观众效果：在王探长的高压下，玉莲的冷静反应制造出一种反差，让观众对她的真实想法产生好奇。",
-            //     emotion_priority: "演员表演中'困惑'与'质询'的混合情绪，完美演绎了剧本中'我听不懂'的潜台词。",
-            //     story_priority: "展现了玉莲面对威胁时的应对方式，塑造其内敛而坚韧的人物性格。",
-            //     rhythm_priority: "在王探长的长篇大论后，用一个简短、平静的反应镜头来放缓节奏，制造停顿。",
-            //     eyeline_priority: "玉莲的视线与王探长的镜头形成匹配的对话关系。",
-            //     space_priority: "这是对王探长过肩镜头的反打镜头，维持了180度轴线内的空间连续性。",
-            //     lens_language_application: "近景镜头聚焦于玉莲的面部，让观众捕捉她微妙的表情变化。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_014",
-            //   source_clip_id: "vid_001_scene_04_take_02",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ21-1-20250719071923.mp4",
-            //   corresponding_script_scene_id: "SCENE 3",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:20.150",
-            //   source_in_timecode: "00:00:01.000",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "7.0s",
-            //   transition_from_previous: {
-            //     transition_type: "dissolve",
-            //     transition_duration_ms: 800,
-            //     audio_sync_offset_ms: -800,
-            //     reason_for_transition: "使用叠化从现实对话平滑过渡到玉莲的内心世界。J-Cut让她的V.O.提前进入，引导观众这是她的主观心理活动。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：揭示玉莲的潜台词，将王探长比作'蜘蛛'，暴露出她看穿了一切陷阱的本质。观众效果：获得上帝视角，理解到玉莲的顺从只是伪装，内心充满警惕和洞察，从而产生强烈的戏剧张力。",
-            //     emotion_priority: "画面中网格状的阴影（蜘蛛网的意象）和演员紧张的眼神，将V.O.中的比喻视觉化，创造出强烈的囚禁感和压抑感。",
-            //     story_priority: "深化主题——拒绝所有形式的'牢笼'。这是对故事核心的直接点题。",
-            //     rhythm_priority: "从现实对话的节奏跳出，进入一个主观、充满象征意义的'内心时空'。",
-            //     eyeline_priority: "她紧张的凝视，仿佛看穿了屏幕，与观众建立了直接的情感连接。",
-            //     space_priority: "这是一个非写实的空间，代表内心，因此打破了茶馆的物理空间连续性，是符合艺术意图的。",
-            //     lens_language_application: "特写镜头配合强烈的阴影效果，是导演新黑色电影风格的完美体现，具有极强的象征意义。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "dialogue_enhancement",
-            //       description: "V.O. 'And then there was the spider...' 的音质应处理得略带混响，以区别于现场对话，营造内心独白的空间感。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "清晰，但音量略低于现场对白"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: [
-            //     {
-            //       enhancement_type: "color_grading",
-            //       description: "可轻微增强阴影的对比度，让'蜘蛛网'的视觉效果更突出。",
-            //       reason: "强化镜头的象征意义和视觉冲击力。"
-            //     }
-            //   ]
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_015",
-            //   source_clip_id: "CLIP-20230915-001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ22-0-20250719071837.mp4",
-            //   corresponding_script_scene_id: "SCENE 3",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:27.150",
-            //   source_in_timecode: "00:00:00.200",
-            //   source_out_timecode: "00:00:06.200",
-            //   clip_duration_in_sequence: "6.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "从玉莲的内心世界硬切回王探长的动作，将观众拉回现实，强调威胁的即时性。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：以一个充满力量和威胁的动作（指卡、握拳）结束这场交锋，留下一个开放性的悬念。观众效果：感受到王探长最后的通牒，为玉莲的命运感到担忧。",
-            //     emotion_priority: "低沉的警告性对白，配合果断有力的手部动作，将威胁的情绪推到顶点。",
-            //     story_priority: "王探长留下了他的'钩子'（名片），完成了他的任务，场景的核心冲突结束。",
-            //     rhythm_priority: "作为场景的收尾，这个镜头简洁有力，像一个句号。",
-            //     eyeline_priority: "焦点集中在手和卡片上，这是当前场景最重要的信息载体。",
-            //     space_priority: "特写镜头，暂时脱离了完整的空间，但作为插入镜头是合理的。",
-            //     lens_language_application: "近景特写聚焦于关键动作，放大了其象征意义（控制与力量）。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_016",
-            //   source_clip_id: "CLIP_2024_0315_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ24-1-20250719072119.mp4",
-            //   corresponding_script_scene_id: "SCENE 4",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:33.150",
-            //   source_in_timecode: "00:00:00.000",
-            //   source_out_timecode: "00:00:08.000",
-            //   clip_duration_in_sequence: "8.0s",
-            //   transition_from_previous: {
-            //     transition_type: "fade_to_black",
-            //     transition_duration_ms: 1000,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "先淡出至黑场，再从黑场中淡入新场景，用黑场分割场景，并让钟表滴答声在黑场中提前响起，预示着新场景的核心元素：时间的压迫。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：建立抉择场景，将三个男人的象征物（钥匙、便条、名片）并置，展现玉莲面临的困境。观众效果：理解到玉莲正处于一个关键的决策点，钟声营造出紧迫感。",
-            //     emotion_priority: "演员忧虑的表情和静坐的姿态，传达出决策前的沉重与挣扎。",
-            //     story_priority: "设置场景，明确展示了玉莲需要做出的选择，这是故事的转折点。",
-            //     rhythm_priority: "以一个相对静态的长镜头开始，用持续的钟声建立一种压抑、停滞的节奏。",
-            //     eyeline_priority: "从玉莲的全身到桌上物品的特写，引导观众视线聚焦于核心选择。",
-            //     space_priority: "建立公寓内的空间，对称构图强调了环境的秩序和压抑。",
-            //     lens_language_application: "从对称的中景切换到俯视特写，在视觉上强调了这些物品对主角的重压。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "ambient_sound",
-            //       description: "钟表滴答声应作为此场景的主导音，节奏稳定但响亮，充满压迫感。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "中等偏高"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_017",
-            //   source_clip_id: "GC_Pendulum_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ33-0-20250719072626.mp4",
-            //   corresponding_script_scene_id: "SCENE 4",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:41.150",
-            //   source_in_timecode: "00:00:01.000",
-            //   source_out_timecode: "00:00:05.000",
-            //   clip_duration_in_sequence: "4.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "快速切入，通过加速蒙太奇（脸部特写/钟摆）来打破静态，将内部紧张情绪外化。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：将时间的压迫感和内心的斗争推向高潮。观众效果：感受到强烈的心理压迫和时间流逝的焦虑感，心跳与钟摆的节奏同步。",
-            //     emotion_priority: "与玉莲决绝的表情交叉剪辑，将情绪张力拉满。",
-            //     story_priority: "展现玉莲在做出最终决定前的最后挣扎。",
-            //     rhythm_priority: "这是场景的节奏高潮。通过快速剪辑制造加速蒙太奇效果，与导演要求的'压迫性的响亮钟声'完美配合。",
-            //     eyeline_priority: "在玉莲的坚定眼神和钟摆的机械运动之间切换，形成强烈的视觉对位。",
-            //     space_priority: "在人物特写和物体特写之间跳跃，空间被压缩为纯粹的情感和象征符号。",
-            //     lens_language_application: "特写镜头放大了情绪，钟摆的意象则象征着不可逆转的时间和命运的催促。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "将此片段中的钟摆声和滴答声混合，并将其音量提升至整个序列的最高点，使其具有攻击性和压迫性。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "非常高"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_018",
-            //   source_clip_id: "clip_20240521_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ26-1-20250719072055.mp4",
-            //   corresponding_script_scene_id: "SCENE 4",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:45.150",
-            //   source_in_timecode: "00:00:00.500",
-            //   source_out_timecode: "00:00:07.500",
-            //   clip_duration_in_sequence: "7.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "在紧张的顶点硬切到这个镜头，通过声音的骤停和表演的转变，实现情感的巨大转折。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：捕捉玉莲做出决定、获得内心解放的'顿悟'瞬间。观众效果：在极度紧张后体验到一种突然的平静和释放，并从她的微笑中理解到她已找到自己的出路，为她感到释然。",
-            //     emotion_priority: "这是全片的情感转折点。演员从沉思到抬头微笑的表演层次丰富，传达出'挣脱束缚'的解放感。这是'情感为王'信条的极致体现。",
-            //     story_priority: "标志着玉莲人物弧光的完成——从被动接受者到主动选择者。",
-            //     rhythm_priority: "核心在于声音的运用。在演员抬头的一瞬间（约00:00:01.000），前一镜头的压迫性钟声【必须】戛然而止，创造一个'声音真空'。这种节奏上的骤停和留白，比任何音乐都更能凸显这一刻的重要性。",
-            //     eyeline_priority: "她最终直视镜头（打破第四面墙），仿佛在向观众宣告她的决定，建立了强烈的共鸣。",
-            //     space_priority: "通过前景的窗格构图，暗示她即使在做出决定后，仍身处'牢笼'之中，但她的眼神已经超越了这层束缚。",
-            //     lens_language_application: "前景框架构图和最终的直视镜头，充满了力量和寓意。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "在source_in_timecode 00:00:01.000处，将所有背景音（尤其是钟声）硬切为绝对静音，制造'声音真空'效果，持续约3-4秒。",
-            //       timing_in_clip: "00:00:00.500 of sequence clip",
-            //       intensity_suggestion: "从高到无"
-            //     },
-            //     {
-            //       sound_type: "dialogue_enhancement",
-            //       description: "在静默之后，轻柔地叠化入玉莲的画外音：'They each offered me a world... But a key can also be a lock.'",
-            //       timing_in_clip: "从00:00:04.500 of sequence clip开始",
-            //       intensity_suggestion: "轻柔，清晰"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_019",
-            //   source_clip_id: "clip_woman_key_in_vase_01",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ28-1-20250719072255.mp4",
-            //   corresponding_script_scene_id: "SCENE 5",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:52.150",
-            //   source_in_timecode: "00:00:01.500",
-            //   source_out_timecode: "00:00:07.000",
-            //   clip_duration_in_sequence: "5.5s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "在V.O.结束后，立即切入行动。思想转为行动，无需过渡。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "意图：将内在的决定转化为外在的、具体的行动，象征性地抛弃李伟所代表的'金丝雀牢笼'。观众效果：看到第一个象征物被果断处理，感受到一种行动的快感和解放的开始。",
-            //     emotion_priority: "演员冷静、从容的动作，传达出一种不可动摇的决心。",
-            //     story_priority: "执行决策的第一步，推动情节进入收尾阶段。",
-            //     rhythm_priority: "节奏冷静而有条理，与之前内心的狂风暴雨形成对比。",
-            //     eyeline_priority: "观众的视线跟随钥匙，直到它消失在浑浊的水中。",
-            //     space_priority: "保持在公寓空间内，动作连贯。",
-            //     lens_language_application: "中近景和特写的结合，清晰地展示了整个仪式性的动作。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "突出钥匙落入水中那声沉闷的'PLUNK'声，作为这个行动的收尾音。",
-            //       timing_in_clip: "00:00:04.300 of sequence clip",
-            //       intensity_suggestion: "清晰，有分量"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_020",
-            //   source_clip_id: "CH_RITUAL_BURN_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ29-0-20250719072305.mp4",
-            //   corresponding_script_scene_id: "SCENE 5",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:01:57.650",
-            //   source_in_timecode: "00:00:01.200",
-            //   source_out_timecode: "00:00:06.200",
-            //   clip_duration_in_sequence: "5.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "硬切。从水声的沉闷到火柴的锐利，声音的质感变化强化了动作的节奏感。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "核心意图：展现玉莲对陈俊'革命之火'的拒绝，以其人之道还治其人之身。观众效果：感受到主角行动的决绝和仪式感，火焰的毁灭性力量象征着过去的彻底终结。",
-            //     emotion_priority: "传达一种冷静的、不带个人情感的决绝。她的表情庄重，如同在执行一项必须完成的任务。",
-            //     story_priority: "执行剧本中烧毁陈俊纸条的动作，象征性地拒绝了第二条道路。",
-            //     rhythm_priority: "第二个行动点，维持了果断的动作序列节奏。",
-            //     eyeline_priority: "观众的视线跟随她的目光，聚焦于燃烧的纸条，完全沉浸在她的行动中。",
-            //     space_priority: "保持在公寓的私密空间内，这是她内心世界的延伸。",
-            //     lens_language_application: "从中近景到近景的推近，将焦点从人物的决心转移到行动本身，增强了动作的象征意义。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "突出划火柴和纸张燃烧的'嘶嘶'声，使其在寂静的背景中显得异常清晰和刺耳。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "清晰、特写般的声音"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: [
-            //     {
-            //       enhancement_type: "color_grading",
-            //       description: "微调色温，确保与前后镜头的冷色调和暗沉氛围保持一致，同时增强火焰的暖色调，形成强烈的冷暖对比。",
-            //       reason: "保证整个序列视觉风格的统一性。"
-            //     }
-            //   ]
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_021",
-            //   source_clip_id: "vid_clip_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ30-1-20250719072456.mp4",
-            //   corresponding_script_scene_id: "SCENE 5",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:02:02.650",
-            //   source_in_timecode: "00:00:01.000",
-            //   source_out_timecode: "00:00:04.500",
-            //   clip_duration_in_sequence: "3.5s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "动作衔接剪辑。从燃烧的火焰硬切到撕裂的纸张，维持了毁灭性动作的连续性，节奏紧凑，毫不拖沓。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "核心意图：展现对王探长'生存之道'的拒绝，这种拒绝是物理性的、不可挽回的。观众效果：感受到一种更为直接和暴力的终结感，撕裂声带来了生理上的不适与情感上的宣泄。",
-            //     emotion_priority: "表达一种不屑和彻底的割裂，动作干脆利落，没有丝毫犹豫。",
-            //     story_priority: "执行剧本中撕毁王探长名片的动作，拒绝了第三条道路。",
-            //     rhythm_priority: "这是动作序列中的一个加速点，剪辑时长更短，动作更快，增强了序列的冲击力。",
-            //     eyeline_priority: "焦点集中在手上，强调了行动的物理性。",
-            //     space_priority: "延续公寓内的私密空间。",
-            //     lens_language_application: "中近景特写手部，隐藏了面部表情，使行动本身成为唯一的情感表达，更具力量感。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "强化纸张撕裂的声音，使其尖锐、刺耳，充满力量。纸片落入垃圾桶的声音要轻微但清晰，作为动作的收尾。",
-            //       timing_in_clip: "全程",
-            //       intensity_suggestion: "高，具有攻击性"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: [
-            //     {
-            //       enhancement_type: "color_grading",
-            //       description: "与前一个镜头进行色彩匹配，确保硬光下的皮肤色调和环境光影与整体新黑色风格一致。",
-            //       reason: "维持视觉连续性。"
-            //     }
-            //   ]
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_022",
-            //   source_clip_id: "vid_20240521_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ31-0-20250719072443.mp4",
-            //   corresponding_script_scene_id: "SCENE 5",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:02:06.150",
-            //   source_in_timecode: "00:00:01.500",
-            //   source_out_timecode: "00:00:07.500",
-            //   clip_duration_in_sequence: "6.0s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: 0,
-            //     reason_for_transition: "从特写动作硬切到全景动作，改变景别，提供节奏上的'呼吸感'。叙事上，从'毁灭'转向'建设'——准备自己的未来。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "核心意图：表明玉莲不仅仅是在拒绝，更是在主动选择。她拿起的行李箱只属于她自己，象征着她独立的身份和未来。观众效果：在连续的破坏性动作后，这个建设性的动作带来一丝希望和力量感，让观众明白她的最终目的。",
-            //     emotion_priority: "从决绝转向一种沉静的、充满力量的决心。她的步伐沉稳，表情凝重，是深思熟虑后的行动。",
-            //     story_priority: "执行剧本中拿出自己行李箱的动作，为最终的离开做准备。",
-            //     rhythm_priority: "放缓节奏，用一个更长的镜头来展示一个完整的、有始有终的动作，为最终的离开蓄力。",
-            //     eyeline_priority: "观众的视线跟随她从左到右的移动，这是一个经典的走向未来的视觉隐喻。",
-            //     space_priority: "首次以全景展示房间，强调了她即将离开这个禁锢她的空间。",
-            //     lens_language_application: "全景镜头将人物和环境联系起来，侧逆光勾勒出她的轮廓，即使在昏暗中也显得坚定有力。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "sfx",
-            //       description: "脚步声、开柜门声、皮箱的摩擦声应被保留并适当放大，这些具体、真实的声音与之前仪式化的声音形成对比，标志着她回归现实，准备踏入真实的世界。",
-            //       timing_in_clip: "与动作同步",
-            //       intensity_suggestion: "中等，清晰"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // },
-            // {
-            //   sequence_clip_id: "v1_clip_023",
-            //   source_clip_id: "clip_20231027_001",
-            //   video_url: "https://video-base-imf.oss-ap-southeast-7.aliyuncs.com/uploads/FJ32-0-20250719072441.mp4",
-            //   corresponding_script_scene_id: "SCENE 5",
-            //   clip_type: "video_and_audio",
-            //   sequence_start_timecode: "00:02:12.150",
-            //   source_in_timecode: "00:00:00.000",
-            //   source_out_timecode: "00:00:08.100",
-            //   clip_duration_in_sequence: "8.1s",
-            //   transition_from_previous: {
-            //     transition_type: "cut",
-            //     transition_duration_ms: 0,
-            //     audio_sync_offset_ms: -300,
-            //     reason_for_transition: "J-Cut。在画面切换前，提前0.3秒引入门外城市的微弱环境声，预示着即将到来的转变，并平滑地将观众带入这最后一幕。这是从内心世界走向外部世界的过渡。"
-            //   },
-            //   clip_placement_reasons: {
-            //     core_intent_and_audience_effect: "核心意图：展现最终的解放。她头也不回地离开，将过去的一切关在门后。观众效果：通过固定的、观察者的视角，观众被留在'旧世界'里，目送她走向未知但充满可能性的'新世界'，产生一种既伤感又充满力量的复杂共鸣。",
-            //     emotion_priority: "一种平静的、最终的告别。没有戏剧性的回头，只有前行的坚定。",
-            //     story_priority: "完成剧本的最后一幕，玉莲离开公寓，钟声停止，象征着旧生活的彻底终结。",
-            //     rhythm_priority: "使用一个不间断的长镜头，让时间自然流淌，给予这个告别时刻应有的重量和呼吸感，与之前快速的剪辑形成鲜明对比。",
-            //     eyeline_priority: "观众的视线被牢牢固定在门口，这个画框既是出口，也是两个世界的分界线。",
-            //     space_priority: "完美执行了导演意图，从公寓内部的固定机位拍摄，强调了空间的转换——从禁锢到自由。",
-            //     lens_language_application: "固定的全景镜头，逆光下的人物剪影，都强化了这一刻的象征意义。她不是被推出去，而是自己走出去。"
-            //   },
-            //   continuity_correction_suggestion: {
-            //     error_exists: false
-            //   },
-            //   sound_design_suggestions: [
-            //     {
-            //       sound_type: "ambient_sound",
-            //       description: "当门打开时，城市的环境声（电车、人声、远处的鸣笛）涌入，音量逐渐增大，与室内死寂形成对比。",
-            //       timing_in_clip: "从开门动作开始",
-            //       intensity_suggestion: "从中等到偏大，营造开放感"
-            //     },
-            //     {
-            //       sound_type: "sfx",
-            //       description: "在门即将关上的瞬间，插入一声清晰、响亮的钟摆'滴答'声，然后随着门'咔哒'一声关上，所有声音（包括城市声和滴答声）瞬间切断，归于绝对的寂静。这实现了剧本中'钟声停止'的意象。",
-            //       timing_in_clip: "在关门动作的末尾",
-            //       intensity_suggestion: "响亮，然后是绝对的静音"
-            //     }
-            //   ],
-            //   visual_enhancement_suggestions: []
-            // }
+            }
           ]
         }
       ],
       production_suggestions: [
         {
           suggestion_type: "missing_shot",
-          description: "【关键转折镜头】缺少一个玉莲凝视自己倒影时，眼中神情从沉思变为决绝的'极端特写（Extreme Close-Up）'。",
-          reason: "这是玉莲角色弧光的转折点，是她从被动观察到主动抉择的视觉证明。",
-          estimated_duration: "3-4s",
-          suggested_content_elements: "极端特写，仅包含玉莲的双眼。焦点精确，能捕捉到眼神中微妙的情绪变化。"
+          description: "在整个序列中，尤其是在灾难发生时，缺少主角Elara面部反应的特写镜头。例如，在鼻锥坠落和撞击时，需要交叉剪辑她震惊、恐惧的表情。",
+          reason: "根据'动作-反应'剪辑原则，观众在看到灾难后，迫切需要看到角色的反应来理解事件的情感重量。缺少Elara的反应特写，会极大削弱整个危机场景的情感共鸣，使灾难沦为纯粹的视觉奇观。",
+          estimated_duration: "2-4s per shot",
+          suggested_content_elements: "特写或中近景，Elara的面部。瞳孔收缩，表情从难以置信转为惊恐。背景可以是失焦的、闪烁着警报红光的控制台。"
+        },
+        {
+          suggestion_type: "vfx_required",
+          description: "多个AI生成的关键镜头存在潜在瑕疵，包括徽章乱码、机器人滑动、碎片物理不真实、面部表情僵硬等。强烈建议分配充足的VFX资源进行后期精修。",
+          reason: "为了确保影片最终的质量、沉浸感和情感冲击力，必须通过VFX手段弥补AI生成内容的固有缺陷。这是实现导演意图、保证影片达到工业级标准的关键步骤。",
+          estimated_duration: "N/A",
+          suggested_content_elements: "VFX任务应包括：数字修复、动画关键帧调整、物理模拟校正、面部微表情重塑等。"
+        },
+        {
+          suggestion_type: "sound_recording_enhancement",
+          description: "建议为巨型工厂场景和关键事件（如引擎点火）制作更复杂、更有层次的环境音和SFX。当前的音轨略显单一。",
+          reason: "增加更多层次的音效能极大地提升空间的真实感、深度和场景的潜在紧张感，让这个世界感觉更'活'，从而升华整体观影体验。",
+          estimated_duration: "N/A",
+          suggested_content_elements: "多轨道音效设计：多种频率的工业噪音，包含高频（电火花）、中频（机械臂）、低频（持续嗡鸣）；为引擎点火设计包含LFE在内的多层次冲击音效。"
         }
       ]
     }

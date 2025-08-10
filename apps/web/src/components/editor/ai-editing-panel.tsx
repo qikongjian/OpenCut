@@ -32,6 +32,7 @@ import { useMediaStore } from "@/stores/media-store";
 import { useVideoPreviewStore } from "@/stores/video-preview-store";
 import { VideoThumbnail } from "./video-thumbnail";
 import { toast } from "sonner";
+import { extractSubtitleDataFromAIEditing } from "@/lib/ai-subtitle-integration";
 
 export function AIEditingPanel() {
   const {
@@ -230,6 +231,32 @@ export function AIEditingPanel() {
               <p className="text-sm text-muted-foreground mt-2">
                 {currentEditingPlan?.version_summary}
               </p>
+
+              {/* 字幕信息显示 */}
+              {aiEditingData && (() => {
+                const subtitleData = extractSubtitleDataFromAIEditing(aiEditingData);
+                if (subtitleData) {
+                  const segmentCount = subtitleData.final_dialogue_segments?.length || 0;
+                  const hasSrt = !!subtitleData.final_srt_content;
+
+                  return (
+                    <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                      <div className="flex items-center gap-2 text-sm">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium text-blue-800 dark:text-blue-200">
+                          包含AI字幕数据
+                        </span>
+                      </div>
+                      <div className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                        {segmentCount > 0 && `${segmentCount} 个对话片段`}
+                        {segmentCount > 0 && hasSrt && ' • '}
+                        {hasSrt && 'SRT格式'}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* 片段列表 */}
@@ -416,10 +443,11 @@ export function AIEditingPanel() {
                 <p className="font-medium mb-1">💡 使用提示:</p>
                 <p>1. 每个片段显示实际视频，可播放预览</p>
                 <p>2. 点击视频区域在中央播放器预览</p>
-                <p>3. 点击"一键剪辑"基于真实video_url剪辑</p>
+                <p>3. 点击"一键剪辑"自动添加视频和字幕</p>
                 <p>4. AI生成的片段会有绿色标识和Bot图标</p>
-                <p>5. 注意⚠️标记的质量问题和🎵AI建议</p>
-                <p>6. 可以在时间轴中进一步调整</p>
+                <p>5. 字幕会自动添加到独立的文本轨道</p>
+                <p>6. 注意⚠️标记的质量问题和🎵AI建议</p>
+                <p>7. 可以在时间轴中进一步调整</p>
               </div>
             </div>
           </div>
