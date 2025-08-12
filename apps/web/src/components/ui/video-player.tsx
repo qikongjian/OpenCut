@@ -55,6 +55,17 @@ export function VideoPlayer({
   const isInClipRange =
     currentTime >= clipStartTime && currentTime < clipEndTime;
 
+  // 🚀 调试：只在关键时刻记录播放范围信息
+  if (isPlaying && !isInClipRange) {
+    console.log(`⚠️ VideoPlayer播放但不在范围内:`, {
+      src: src.substring(0, 50) + '...',
+      currentTime,
+      clipStartTime,
+      clipEndTime,
+      isInClipRange
+    });
+  }
+
   // Sync playback events
   useEffect(() => {
 // 常量定义 - 模块内部使用的固定值
@@ -151,8 +162,17 @@ export function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
 
+    console.log(`🎬 VideoPlayer播放状态同步:`, {
+      src: src.substring(0, 50) + '...',
+      isPlaying,
+      isInClipRange,
+      action: isPlaying && isInClipRange ? 'play' : 'pause'
+    });
+
     if (isPlaying && isInClipRange) {
-      video.play().catch(() => {});
+      video.play().catch((error) => {
+        console.error(`❌ VideoPlayer播放失败:`, error);
+      });
     } else {
       video.pause();
     }
@@ -222,7 +242,9 @@ export function VideoPlayer({
   // 🚀 优化：确保页面刷新后视频能正确初始化
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !src) return;
+
+    console.log(`🎬 VideoPlayer初始化: ${src.substring(0, 50)}...`);
 
     // 确保视频在正确的时间点
     const targetTime = trimStart + (currentTime - clipStartTime);
@@ -233,8 +255,8 @@ export function VideoPlayer({
     // 确保视频状态与播放状态同步
     if (isPlaying && isInClipRange) {
       if (video.paused) {
-        video.play().catch(() => {
-          console.log('Video play failed, likely due to autoplay policy');
+        video.play().catch((error) => {
+          console.error('🚨 VideoPlayer播放失败:', error);
         });
       }
     } else {

@@ -37,7 +37,33 @@ import {
 // 导入 React 核心库
 import { Play, Pause, Expand, SkipBack, SkipForward } from "lucide-react";
 // 导入 React 核心库
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+
+// 🚀 修复：URL缓存，避免重复创建blob URL导致播放中断
+const urlCache = new Map<string, string>();
+
+// 清理过期的URL缓存
+const cleanupUrlCache = () => {
+  for (const [key, url] of urlCache.entries()) {
+    if (url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  }
+  urlCache.clear();
+};
+
+// 获取或创建缓存的URL
+const getCachedUrl = (file: File, elementId: string): string => {
+  const cacheKey = `${elementId}-${file.size}-${file.lastModified}`;
+
+  if (urlCache.has(cacheKey)) {
+    return urlCache.get(cacheKey)!;
+  }
+
+  const url = URL.createObjectURL(file);
+  urlCache.set(cacheKey, url);
+  return url;
+};
 // 导入项目模块
 import { cn } from "@/lib/utils";
 // 导入项目模块
@@ -108,6 +134,14 @@ export function PreviewPanel() {
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
 // 常量定义 - 模块内部使用的固定值
   const { activeProject } = useProjectStore();
+
+  // 🚀 修复：组件卸载时清理URL缓存，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      // 组件卸载时清理缓存
+      cleanupUrlCache();
+    };
+  }, []);
 
 // 监听预览视频播放状态
   useEffect(() => {
@@ -260,26 +294,12 @@ export function PreviewPanel() {
               // 优先使用时间轴元素中存储的媒体文件副本
               const elementMedia = element as MediaElement;
               
-              if (elementMedia.mediaUrl) {
-                // 优先使用mediaUrl（支持远程URL和本地URL）
-                // console.log(`🎬 预览面板使用mediaUrl: ${elementMedia.mediaUrl}`);
-                mediaItem = {
-                  id: element.mediaId,
-                  name: element.name,
-                  type: elementMedia.mediaType || "video",
-                  url: elementMedia.mediaUrl,
-                  thumbnailUrl: elementMedia.thumbnailUrl,
-                  width: elementMedia.mediaWidth,
-                  height: elementMedia.mediaHeight,
-                  fps: elementMedia.mediaFps,
-                  duration: element.duration,
-                  file: elementMedia.mediaFile
-                };
-              } else if (elementMedia.mediaFile && elementMedia.mediaFile.size > 0) {
-                // 使用真实的本地文件创建URL
+              // 🚀 修复：优先使用本地文件创建缓存的URL，避免重复创建导致播放中断
+              if (elementMedia.mediaFile && elementMedia.mediaFile.size > 0) {
+                // 使用缓存机制创建URL，避免重复创建
                 try {
-                  const mediaUrl = URL.createObjectURL(elementMedia.mediaFile);
-                  console.log(`🎬 预览面板使用本地文件: ${elementMedia.mediaFile.name}, URL: ${mediaUrl}`);
+                  const mediaUrl = getCachedUrl(elementMedia.mediaFile, element.id);
+                  console.log(`🎬 预览面板使用缓存URL: ${elementMedia.mediaFile.name}, URL: ${mediaUrl}`);
                   mediaItem = {
                     id: element.mediaId,
                     name: element.name,
@@ -293,10 +313,46 @@ export function PreviewPanel() {
                     file: elementMedia.mediaFile
                   };
                 } catch (error) {
-                  console.error(`❌ 创建本地文件URL失败:`, error);
-                  // 回退到从媒体库中查找
-                  mediaItem = mediaItems.find((item) => item.id === element.mediaId) || null;
+                  console.error(`❌ 创建缓存URL失败:`, error);
+                  // 回退到使用元素中的URL
+                  if (elementMedia.mediaUrl) {
+                    console.log(`🎬 回退使用元素URL: ${elementMedia.mediaUrl}`);
+                    mediaItem = {
+                      id: element.mediaId,
+                      name: element.name,
+                      type: elementMedia.mediaType || "video",
+                      url: elementMedia.mediaUrl,
+                      thumbnailUrl: elementMedia.thumbnailUrl,
+                      width: elementMedia.mediaWidth,
+                      height: elementMedia.mediaHeight,
+                      fps: elementMedia.mediaFps,
+                      duration: element.duration,
+                      file: elementMedia.mediaFile
+                    };
+                  }
                 }
+              } else if (elementMedia.mediaUrl) {
+                // 如果没有本地文件，使用mediaUrl
+                console.log(`🎬 预览面板使用mediaUrl: ${elementMedia.mediaUrl}`);
+                console.log(`🎬 元素媒体详情:`, {
+                  mediaId: element.mediaId,
+                  hasMediaFile: !!elementMedia.mediaFile,
+                  hasMediaUrl: !!elementMedia.mediaUrl,
+                  mediaUrl: elementMedia.mediaUrl,
+                  fileSize: elementMedia.mediaFile?.size
+                });
+                mediaItem = {
+                  id: element.mediaId,
+                  name: element.name,
+                  type: elementMedia.mediaType || "video",
+                  url: elementMedia.mediaUrl,
+                  thumbnailUrl: elementMedia.thumbnailUrl,
+                  width: elementMedia.mediaWidth,
+                  height: elementMedia.mediaHeight,
+                  fps: elementMedia.mediaFps,
+                  duration: element.duration,
+                  file: elementMedia.mediaFile
+                };
               } else {
                 // 回退到从媒体库中查找
                 console.log(`🎬 预览面板回退到媒体库查找: ${element.mediaId}`);

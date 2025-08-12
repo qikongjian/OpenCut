@@ -108,13 +108,15 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       if (project) {
         set({ activeProject: project });
 
-        // Load project-specific data in parallel
+        // 🚀 修复：先加载媒体库，再加载时间轴，确保时间轴能正确恢复媒体文件引用
         const mediaStore = useMediaStore.getState();
         const timelineStore = useTimelineStore.getState();
-        await Promise.all([
-          mediaStore.loadProjectMedia(id),
-          timelineStore.loadProjectTimeline(id),
-        ]);
+
+        // 先加载媒体库
+        await mediaStore.loadProjectMedia(id);
+
+        // 然后加载时间轴（此时媒体库已加载完成，可以正确恢复文件引用）
+        await timelineStore.loadProjectTimeline(id);
       } else {
         throw new Error(`Project with id ${id} not found`);
       }

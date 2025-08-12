@@ -27,6 +27,8 @@ import {
 // 导入本地模块
 import { useEditorStore } from "./editor-store";
 // 导入模块
+import { usePlaybackStore } from "./playback-store";
+// 导入模块
 import {
   useMediaStore,
   getMediaAspectRatio,
@@ -39,6 +41,103 @@ import { storageService } from "@/lib/storage/storage-service";
 import { useProjectStore } from "./project-store";
 // 导入项目模块
 import { generateUUID } from "@/lib/utils";
+
+/**
+ * 🚀 修复：恢复媒体元素的文件引用
+ * 在时间轴加载时，确保媒体元素能够正确引用存储中的文件
+ */
+async function restoreMediaElementReferences(
+  tracks: TimelineTrack[],
+  projectId: string
+): Promise<TimelineTrack[]> {
+  const mediaStore = useMediaStore.getState();
+
+  // 确保媒体库已加载
+  if (mediaStore.mediaItems.length === 0) {
+    console.log("📥 媒体库为空，安排延迟恢复...");
+
+    // 安排延迟恢复：等待媒体库加载完成后再恢复文件引用
+    setTimeout(async () => {
+      console.log("🔄 开始延迟恢复媒体文件引用...");
+      const updatedMediaStore = useMediaStore.getState();
+      if (updatedMediaStore.mediaItems.length > 0) {
+        const timelineStore = useTimelineStore.getState();
+        await timelineStore.restoreMediaReferences(projectId);
+      }
+    }, 1000); // 1秒后尝试恢复
+
+    return tracks; // 返回原始轨道，稍后会恢复
+  }
+
+  const restoredTracks = await Promise.all(
+    tracks.map(async (track) => {
+      const restoredElements = await Promise.all(
+        track.elements.map(async (element) => {
+          // 只处理媒体元素
+          if (element.type !== "media") {
+            return element;
+          }
+
+          const mediaElement = element as MediaElement;
+
+          // 如果元素已经有有效的文件引用，跳过
+          if (mediaElement.mediaFile && mediaElement.mediaUrl) {
+            return element;
+          }
+
+          // 从媒体库中查找对应的媒体项
+          const mediaItem = mediaStore.mediaItems.find(
+            (item) => item.id === mediaElement.mediaId
+          );
+
+          if (mediaItem) {
+            console.log(`🔄 恢复媒体元素文件引用: ${mediaElement.name} -> ${mediaItem.name}`);
+            console.log(`🔄 媒体项详情:`, {
+              id: mediaItem.id,
+              name: mediaItem.name,
+              hasFile: !!mediaItem.file,
+              hasUrl: !!mediaItem.url,
+              url: mediaItem.url?.substring(0, 50) + '...',
+              fileSize: mediaItem.file?.size
+            });
+
+            // 恢复文件引用
+            const restoredElement = {
+              ...mediaElement,
+              mediaFile: mediaItem.file,
+              mediaUrl: mediaItem.url,
+              thumbnailUrl: mediaItem.thumbnailUrl,
+              mediaType: mediaItem.type,
+              mediaWidth: mediaItem.width,
+              mediaHeight: mediaItem.height,
+              mediaFps: mediaItem.fps,
+            } as MediaElement;
+
+            console.log(`✅ 恢复后的元素:`, {
+              id: restoredElement.id,
+              name: restoredElement.name,
+              hasMediaFile: !!restoredElement.mediaFile,
+              hasMediaUrl: !!restoredElement.mediaUrl,
+              mediaUrl: restoredElement.mediaUrl?.substring(0, 50) + '...'
+            });
+
+            return restoredElement;
+          } else {
+            console.warn(`⚠️ 未找到媒体项: ${mediaElement.mediaId} for element ${mediaElement.name}`);
+            return element;
+          }
+        })
+      );
+
+      return {
+        ...track,
+        elements: restoredElements,
+      };
+    })
+  );
+
+  return restoredTracks;
+}
 // 导入项目模块
 import { TIMELINE_CONSTANTS } from "@/constants/timeline-constants";
 // 导入 Sonner 通知组件
@@ -213,6 +312,8 @@ interface TimelineStore {
   loadProjectTimeline: (projectId: string) => Promise<void>;
   saveProjectTimeline: (projectId: string) => Promise<void>;
   clearTimeline: () => void;
+  // 🚀 新增：恢复媒体文件引用的公共方法
+  restoreMediaReferences: (projectId: string) => Promise<void>;
   updateTextElement: (
     trackId: string,
     elementId: string,
@@ -1586,7 +1687,21 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
 // 常量定义 - 模块内部使用的固定值
         const tracks = await storageService.loadTimeline(projectId);
         if (tracks) {
-          updateTracks(tracks);
+          // 🚀 修复：恢复媒体元素的文件引用
+          const restoredTracks = await restoreMediaElementReferences(tracks, projectId);
+          updateTracks(restoredTracks);
+
+          // 🚀 修复：设置播放头到第一个视频元素的开始位置
+          const playbackStore = usePlaybackStore.getState();
+          const firstVideoElement = restoredTracks
+            .flatMap(track => track.elements)
+            .filter(element => element.type === 'media')
+            .sort((a, b) => a.startTime - b.startTime)[0];
+
+          if (firstVideoElement && playbackStore.currentTime === 0) {
+            console.log(`🎬 设置播放头到第一个视频元素: ${firstVideoElement.startTime}s`);
+            playbackStore.setCurrentTime(firstVideoElement.startTime);
+          }
         } else {
           // No timeline saved yet, initialize with default
           const defaultTracks = ensureMainTrack([]);
@@ -1618,12 +1733,20 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       const defaultTracks = ensureMainTrack([]);
       updateTracks(defaultTracks);
       // 设置状态 - 更新状态值
-      set({ 
-        history: [], 
-        redoStack: [], 
+      set({
+        history: [],
+        redoStack: [],
         selectedElements: [],
         addedMediaItems: new Set() // 清空已添加媒体状态
       });
+    },
+
+    // 🚀 新增：恢复媒体文件引用的公共方法
+    restoreMediaReferences: async (projectId: string) => {
+      const currentTracks = get()._tracks;
+      const restoredTracks = await restoreMediaElementReferences(currentTracks, projectId);
+      updateTracks(restoredTracks);
+      console.log("✅ 媒体文件引用恢复完成");
     },
 
     // Snapping actions

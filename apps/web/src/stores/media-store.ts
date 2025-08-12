@@ -323,7 +323,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
 
     const newItem: MediaItem = {
       ...item,
-      id: generateUUID(),
+      id: item.id || generateUUID(), // 🚀 修复：如果传入的item已有ID，则使用该ID，否则生成新的
     };
 
     // Add to local state immediately for UI responsiveness
