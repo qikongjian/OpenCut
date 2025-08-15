@@ -8,6 +8,7 @@ import { SoundsView } from "./views/sounds";
 import { Separator } from "@/components/ui/separator";
 import { SettingsView } from "./views/settings";
 import { Captions } from "./views/captions";
+import { AIEditingPanel } from "../ai-editing-panel";
 
 export function MediaPanel() {
   const { activeTab } = useMediaPanelStore();
@@ -43,6 +44,7 @@ export function MediaPanel() {
       </div>
     ),
     settings: <SettingsView />,
+    "ai-editing": <AIEditingPanel />,
   };
 
   return (
