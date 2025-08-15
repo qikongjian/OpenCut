@@ -368,60 +368,92 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
       console.log(`✅ 所有视频下载完成，共 ${downloadedVideos.length} 个文件`);
 
-      // 第二阶段：生成视频缩略图并添加到媒体面板
-      set({ executionProgress: 65, currentProcessingClip: "生成视频缩略图..." });
+      // 第二阶段：🚀 并行生成视频缩略图并添加到媒体面板
+      set({ executionProgress: 65, currentProcessingClip: "并行生成视频缩略图..." });
 
-      const addedMediaItems: any[] = []; // 记录成功添加的媒体项
+      console.log(`🚀 开始并行生成 ${downloadedVideos.length} 个视频缩略图...`);
 
-      for (let i = 0; i < downloadedVideos.length; i++) {
-        const { clip, file, url } = downloadedVideos[i];
+      // 🚀 优化1：并行生成所有缩略图
+      const thumbnailPromises = downloadedVideos.map(async ({ clip, file, url }, index) => {
         const isRemoteFallback = (file as any)._isRemoteUrlFallback;
-
         let thumbnailUrl = url;
 
-        // 为本地视频生成缩略图
-        if (!isRemoteFallback && file.type.startsWith('video/')) {
-          try {
-            console.log(`🖼️ 生成缩略图: ${clip.sequence_clip_id}`);
+        try {
+          if (!isRemoteFallback && file.type.startsWith('video/')) {
+            console.log(`🖼️ [${index + 1}/${downloadedVideos.length}] 生成缩略图: ${clip.sequence_clip_id}`);
             thumbnailUrl = await generateVideoThumbnail(file, 1.0);
-            console.log(`✅ 缩略图生成成功: ${clip.sequence_clip_id}`);
-          } catch (error) {
-            console.warn(`⚠️ 缩略图生成失败，使用视频URL: ${clip.sequence_clip_id}`, error);
-            thumbnailUrl = url;
-          }
-        } else if (isRemoteFallback) {
-          // 🚀 修复：为远程URL生成缩略图
-          const originalVideoUrl = (file as any)._originalVideoUrl;
-          try {
-            console.log(`🖼️ 为远程视频生成缩略图: ${clip.sequence_clip_id}`);
-            // 创建一个临时video元素来生成缩略图
+            console.log(`✅ [${index + 1}/${downloadedVideos.length}] 缩略图生成成功: ${clip.sequence_clip_id}`);
+          } else if (isRemoteFallback) {
+            const originalVideoUrl = (file as any)._originalVideoUrl;
+            console.log(`🖼️ [${index + 1}/${downloadedVideos.length}] 为远程视频生成缩略图: ${clip.sequence_clip_id}`);
             thumbnailUrl = await generateVideoThumbnailFromUrl(originalVideoUrl, 1.0);
-            console.log(`✅ 远程视频缩略图生成成功: ${clip.sequence_clip_id}`);
-          } catch (error) {
-            console.warn(`⚠️ 远程视频缩略图生成失败，使用默认图标: ${clip.sequence_clip_id}`, error);
-            // 使用默认的视频图标作为缩略图
-            thumbnailUrl = generateDefaultVideoThumbnail();
+            console.log(`✅ [${index + 1}/${downloadedVideos.length}] 远程视频缩略图生成成功: ${clip.sequence_clip_id}`);
           }
+        } catch (error) {
+          console.warn(`⚠️ [${index + 1}/${downloadedVideos.length}] 缩略图生成失败: ${clip.sequence_clip_id}`, error);
+          thumbnailUrl = isRemoteFallback ? generateDefaultVideoThumbnail() : url;
         }
 
-        // 🚀 优化：创建媒体项，确保远程URL和本地文件都能正确处理
+        return { clip, file, url, thumbnailUrl, index };
+      });
+
+      // 等待所有缩略图生成完成
+      const thumbnailResults = await Promise.allSettled(thumbnailPromises);
+      const processedVideos: any[] = [];
+
+      thumbnailResults.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          processedVideos.push(result.value);
+        } else {
+          console.error(`❌ 缩略图 ${index + 1} 处理失败:`, result.reason);
+          // 创建一个回退项
+          const { clip, file, url } = downloadedVideos[index];
+          const isRemoteFallback = (file as any)._isRemoteUrlFallback;
+          processedVideos.push({
+            clip, file, url,
+            thumbnailUrl: isRemoteFallback ? generateDefaultVideoThumbnail() : url,
+            index
+          });
+        }
+      });
+
+      // 按原始顺序排序
+      processedVideos.sort((a, b) => a.index - b.index);
+      console.log(`✅ 所有缩略图处理完成，共 ${processedVideos.length} 个`);
+
+      // 创建媒体项
+      set({ executionProgress: 75, currentProcessingClip: "添加媒体项到媒体库..." });
+      const addedMediaItems: any[] = []; // 记录成功添加的媒体项
+
+      for (let i = 0; i < processedVideos.length; i++) {
+        const { clip, file, url, thumbnailUrl } = processedVideos[i];
+        const isRemoteFallback = (file as any)._isRemoteUrlFallback;
+
+        // 🚀 修复2：创建符合MediaItem接口的标准媒体项
         const originalVideoUrl = (file as any)._originalVideoUrl;
+
+        // 为远程URL创建一个虚拟文件对象，确保file属性始终存在
+        let mediaFile = file;
+        if (isRemoteFallback) {
+          // 创建一个虚拟File对象，指向远程URL
+          const virtualBlob = new Blob([''], { type: 'video/mp4' });
+          mediaFile = new File([virtualBlob], `AI剪辑-${clip.sequence_clip_id}.mp4`, { type: 'video/mp4' });
+          // 在虚拟文件上添加远程URL标记
+          (mediaFile as any)._isRemoteUrl = true;
+          (mediaFile as any)._originalVideoUrl = originalVideoUrl;
+        }
+
         const mediaItem = {
           id: `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`,
           name: `AI剪辑-${clip.sequence_clip_id}`,
-          url: isRemoteFallback ? originalVideoUrl : url, // 远程URL使用原始URL，本地文件使用blob URL
           type: "video" as const,
+          file: mediaFile, // 🚀 关键：确保file属性始终存在
+          url: isRemoteFallback ? originalVideoUrl : url, // 播放URL
           duration: durationToSeconds(clip.clip_duration_in_sequence),
-          size: isRemoteFallback ? 0 : file.size, // 远程文件大小未知
-          file: isRemoteFallback ? undefined : file, // 远程URL不保存文件引用
           width: 1920,
           height: 1080,
           fps: 30,
           thumbnailUrl: thumbnailUrl,
-          createdAt: new Date(),
-          // 🚀 新增：标记是否为远程URL，用于后续处理
-          _isRemoteUrl: isRemoteFallback,
-          _originalVideoUrl: originalVideoUrl,
         };
 
         // 添加到媒体库
@@ -435,79 +467,53 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         }
 
         set({
-          executionProgress: 65 + ((i + 1) / downloadedVideos.length) * 15,
-          currentProcessingClip: `添加媒体 ${i + 1}/${downloadedVideos.length}`
+          executionProgress: 75 + ((i + 1) / processedVideos.length) * 10,
+          currentProcessingClip: `添加媒体 ${i + 1}/${processedVideos.length}`
         });
       }
 
       console.log(`✅ 所有媒体项添加完成，共 ${addedMediaItems.length} 个`);
 
       // 第三阶段：创建时间轴元素（确保媒体项已存在）
-      set({ executionProgress: 80, currentProcessingClip: "创建时间轴..." });
+      set({ executionProgress: 85, currentProcessingClip: "创建时间轴..." });
 
       let currentTimelinePosition = 0;
 
-      for (let i = 0; i < downloadedVideos.length; i++) {
-        const { clip, file, url } = downloadedVideos[i];
-        const correspondingMediaItem = addedMediaItems[i]; // 使用记录的媒体项
+      for (let i = 0; i < addedMediaItems.length; i++) {
+        const correspondingMediaItem = addedMediaItems[i];
+        const { clip } = processedVideos[i]; // 使用处理后的视频数据
 
         if (!correspondingMediaItem) {
           console.warn(`⚠️ 未找到对应的媒体项: ${clip.sequence_clip_id}`);
           continue;
         }
 
-        // 创建媒体元素 - 使用连续时间轴位置和本地文件
+        // 🚀 修复3：使用与正常拖拽相同的简单逻辑
         const startTime = currentTimelinePosition;
-        const sourceIn = timecodeToSeconds(clip.source_in_timecode);
-        const sourceOut = timecodeToSeconds(clip.source_out_timecode);
-
-        // 🚀 修复：AI剪辑片段需要正确的时长计算
-        // 方案：使用足够大的原始时长，正确设置trimStart和trimEnd
-        const actualClipDuration = sourceOut - sourceIn; // 实际片段时长
-        
-        // 为了确保FFmpeg裁剪正确工作，我们需要：
-        // 1. duration = 原始视频时长（设置为足够大的值）
-        // 2. trimStart = sourceIn（从哪里开始）
-        // 3. trimEnd = 原始视频时长 - sourceOut（从结尾裁剪多少）
-        const originalVideoDuration = Math.max(sourceOut + 10, 30); // 假设原始视频至少30秒或sourceOut+10秒
-        const duration = originalVideoDuration;
-        const trimEnd = originalVideoDuration - sourceOut;
+        const actualClipDuration = durationToSeconds(clip.clip_duration_in_sequence);
 
         currentTimelinePosition += actualClipDuration; // 时间轴位置按实际时长前进
 
-        const isRemoteFallback = (file as any)._isRemoteUrlFallback;
-        const originalVideoUrl = (file as any)._originalVideoUrl;
-
-        // 🚀 修复：创建媒体元素，确保播放相关属性正确设置
+        // 🚀 关键修复：使用与timeline-store.ts addMediaAtTime相同的简单逻辑
         const mediaElement: Omit<MediaElement, "id"> = {
           type: "media",
-          name: `AI剪辑-${clip.sequence_clip_id} (${clip.source_clip_id})`,
+          name: `AI剪辑-${clip.sequence_clip_id}`,
           mediaId: correspondingMediaItem.id, // 使用已添加的媒体项ID
-          duration: duration, // 原始视频时长（用于FFmpeg裁剪）
+          duration: correspondingMediaItem.duration || actualClipDuration, // 使用媒体项的实际时长
           startTime: startTime,
-          trimStart: sourceIn, // 从源视频的开始裁剪位置
-          trimEnd: trimEnd, // 正确计算结尾裁剪，确保实际时长 = sourceOut - sourceIn
-          horizontalFlip: false,
-          // 🚀 修复播放问题：确保mediaFile和mediaUrl正确设置
-          mediaFile: isRemoteFallback ? undefined : file, // 本地文件用于播放
-          mediaUrl: isRemoteFallback ? originalVideoUrl : correspondingMediaItem.url, // 使用媒体项的URL
-          thumbnailUrl: correspondingMediaItem.thumbnailUrl, // 使用媒体项的缩略图
-          mediaType: "video",
-          mediaWidth: 1920,
-          mediaHeight: 1080,
-          mediaFps: 30,
+          trimStart: 0, // 🚀 关键：使用简单的0开始，就像正常拖拽一样
+          trimEnd: 0,   // 🚀 关键：使用简单的0结束，就像正常拖拽一样
+          muted: false, // 🚀 关键：添加muted属性，就像正常拖拽一样
         };
 
-        console.log(`📊 AI剪辑片段时长计算:`, {
+        console.log(`📊 AI剪辑片段信息:`, {
           clipId: clip.sequence_clip_id,
-          sourceIn: sourceIn,
-          sourceOut: sourceOut,
           actualClipDuration: actualClipDuration,
-          originalVideoDuration: duration,
-          trimStart: sourceIn,
-          trimEnd: trimEnd,
-          timelineCalculatedDuration: duration - sourceIn - trimEnd,
-          expectedDuration: actualClipDuration
+          mediaItemDuration: correspondingMediaItem.duration,
+          elementDuration: mediaElement.duration,
+          trimStart: mediaElement.trimStart,
+          trimEnd: mediaElement.trimEnd,
+          startTime: mediaElement.startTime
         });
 
         // 添加到时间轴
@@ -519,12 +525,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         console.log(`   缩略图: ${correspondingMediaItem.thumbnailUrl ? '已生成' : '未生成'}`);
         console.log(`   媒体URL: ${correspondingMediaItem.url}`);
         console.log(`   媒体文件: ${correspondingMediaItem.file ? '本地文件' : '远程URL'}`);
-        console.log(`   媒体元素URL: ${mediaElement.mediaUrl}`);
-        console.log(`   媒体元素文件: ${mediaElement.mediaFile ? '本地文件' : '远程URL'}`);
 
         set({
-          executionProgress: 80 + ((i + 1) / downloadedVideos.length) * 15,
-          currentProcessingClip: `时间轴 ${i + 1}/${downloadedVideos.length}`
+          executionProgress: 85 + ((i + 1) / addedMediaItems.length) * 10,
+          currentProcessingClip: `时间轴 ${i + 1}/${addedMediaItems.length}`
         });
       }
 
