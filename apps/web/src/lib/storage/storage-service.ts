@@ -126,6 +126,12 @@ class StorageService {
 
   // Media operations - now project-specific
   async saveMediaItem(projectId: string, mediaItem: MediaItem): Promise<void> {
+    // 如果没有文件，跳过保存
+    if (!mediaItem.file) {
+      console.warn(`Skipping save for media item ${mediaItem.id} - no file provided`);
+      return;
+    }
+
     const { mediaMetadataAdapter, mediaFilesAdapter } =
       this.getProjectMediaAdapters(projectId);
 

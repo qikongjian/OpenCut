@@ -9,7 +9,7 @@ export interface MediaItem {
   id: string;
   name: string;
   type: MediaType;
-  file: File;
+  file: File | null; // 允许null，用于远程媒体
   url?: string; // Object URL for preview
   thumbnailUrl?: string; // For video thumbnails
   duration?: number; // For video/audio duration
@@ -34,6 +34,7 @@ interface MediaStore {
     projectId: string,
     item: Omit<MediaItem, "id">
   ) => Promise<MediaItem>;
+  addMediaItemDirect: (item: MediaItem) => void; // 直接添加，不保存到存储
   removeMediaItem: (projectId: string, id: string) => Promise<void>;
   loadProjectMedia: (projectId: string) => Promise<void>;
   clearProjectMedia: (projectId: string) => Promise<void>;
@@ -171,18 +172,30 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
       mediaItems: [...state.mediaItems, newItem],
     }));
 
-    // Save to persistent storage in background
-    try {
-      await storageService.saveMediaItem(projectId, newItem);
-      return newItem; // 返回成功添加的媒体项
-    } catch (error) {
-      console.error("Failed to save media item:", error);
-      // Remove from local state if save failed
-      set((state) => ({
-        mediaItems: state.mediaItems.filter((media) => media.id !== newItem.id),
-      }));
-      throw error; // 重新抛出错误，让调用者知道添加失败
+    // Save to persistent storage in background (only if file exists)
+    if (newItem.file) {
+      try {
+        await storageService.saveMediaItem(projectId, newItem);
+        return newItem; // 返回成功添加的媒体项
+      } catch (error) {
+        console.error("Failed to save media item:", error);
+        // Remove from local state if save failed
+        set((state) => ({
+          mediaItems: state.mediaItems.filter((media) => media.id !== newItem.id),
+        }));
+        throw error; // 重新抛出错误，让调用者知道添加失败
+      }
+    } else {
+      // 对于没有文件的媒体项（如远程视频），直接返回
+      return newItem;
     }
+  },
+
+  addMediaItemDirect: (item) => {
+    // 直接添加到本地状态，不保存到存储
+    set((state) => ({
+      mediaItems: [...state.mediaItems, item],
+    }));
   },
 
   removeMediaItem: async (projectId: string, id: string) => {

@@ -49,6 +49,8 @@ export interface MediaElement extends BaseTimelineElement {
   mediaHeight?: number; // 媒体高度
   mediaFps?: number; // 视频帧率
   horizontalFlip: boolean; // 水平翻转
+  muted?: boolean; // 静音状态
+  hidden?: boolean; // 隐藏状态
   // 蒙板配置
   masks?: MaskConfig[]; // 应用到此元素的蒙板列表
 }

@@ -43,12 +43,16 @@ export function AIEditingPanel() {
     currentProcessingClip,
     previewClipIndex,
     isPreviewMode,
+    isShowingOriginalVideo,
+    visualEditingState,
     loadAIEditingData,
     executeEditingPlan,
+    executeVisualEditingPlan,
     previewClip,
     stopPreview,
     generateMockData,
-    clearAIData
+    clearAIData,
+    showOriginalVideoInTimeline,
   } = useAIEditingStore();
 
   const { activeProject } = useProjectStore();
@@ -67,19 +71,34 @@ export function AIEditingPanel() {
     loadAIEditingData(mockData);
   };
 
-  // 执行一键剪辑
+  // 生成剪辑计划并显示原始视频
+  const handleShowOriginalVideo = async () => {
+    if (!currentEditingPlan) {
+      toast.error("请先生成剪辑计划");
+      return;
+    }
+    await showOriginalVideoInTimeline();
+  };
+
+  // 🎯 资深工程师修复：根据不同情况执行不同的剪辑流程
   const handleExecuteEditing = async () => {
     if (!currentEditingPlan) {
       toast.error("没有可执行的剪辑计划");
       return;
     }
 
-    if (mediaItems.length === 0) {
-      toast.warning("建议先导入一些媒体文件以获得更好的演示效果");
+    if (isShowingOriginalVideo) {
+      // 情况二：已显示原视频 → 执行可视化剪辑流程
+      toast.info("🎬 开始可视化剪辑过程，请观看时间轴上的剪辑操作！");
+      await executeVisualEditingPlan();
+    } else {
+      // 情况一：未显示原视频 → 执行直接剪辑流程
+      toast.info("🚀 开始自动剪辑，正在下载并处理视频片段...");
+      await executeEditingPlan();
     }
-
-    await executeEditingPlan();
   };
+
+
 
   // 预览片段
   const handlePreviewClip = (clipIndex: number) => {
@@ -195,24 +214,53 @@ export function AIEditingPanel() {
             <div className="p-3 border-b border-border/50">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="font-medium text-sm">{currentEditingPlan?.version_name}</h4>
-                <Button
-                  onClick={handleExecuteEditing}
-                  disabled={isExecutingPlan}
-                  size="sm"
-                  className="bg-orange-600 hover:bg-orange-700 text-xs"
-                >
-                  {isExecutingPlan ? (
-                    <>
-                      <Clock className="w-3 h-3 mr-1 animate-spin" />
-                      执行中...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-3 h-3 mr-1" />
-                      一键剪辑
-                    </>
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  {/* 显示原始视频按钮 */}
+                  <Button
+                    onClick={handleShowOriginalVideo}
+                    disabled={isExecutingPlan || isShowingOriginalVideo}
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    {isShowingOriginalVideo ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+                        已显示原视频
+                      </>
+                    ) : (
+                      <>
+                        <Film className="w-3 h-3 mr-1" />
+                        显示所有原视频
+                      </>
+                    )}
+                  </Button>
+
+                  {/* 一键剪辑按钮 - 根据状态显示不同的剪辑模式 */}
+                  <Button
+                    onClick={handleExecuteEditing}
+                    disabled={isExecutingPlan}
+                    size="sm"
+                    className="bg-orange-600 hover:bg-orange-700 text-xs"
+                  >
+                    {isExecutingPlan ? (
+                      <>
+                        <Clock className="w-3 h-3 mr-1 animate-spin" />
+                        剪辑中...
+                      </>
+                    ) : isShowingOriginalVideo ? (
+                      <>
+                        <Zap className="w-3 h-3 mr-1" />
+                        可视化剪辑
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3 h-3 mr-1" />
+                        一键剪辑
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
               
               {isExecutingPlan && (
@@ -280,7 +328,7 @@ export function AIEditingPanel() {
                         </CardTitle>
                         <div className="flex items-center gap-1">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -444,11 +492,16 @@ export function AIEditingPanel() {
                 <p className="font-medium mb-1">💡 使用提示:</p>
                 <p>1. 每个片段显示实际视频，可播放预览</p>
                 <p>2. 点击视频区域在中央播放器预览</p>
-                <p>3. 点击"一键剪辑"自动添加视频和字幕</p>
-                <p>4. AI生成的片段会有绿色标识和Bot图标</p>
-                <p>5. 字幕会自动添加到独立的文本轨道</p>
-                <p>6. 注意⚠️标记的质量问题和🎵AI建议</p>
-                <p>7. 可以在时间轴中进一步调整</p>
+                <p className="font-medium text-blue-600 mt-2 mb-1">🎬 两种剪辑模式:</p>
+                <p>• <span className="font-medium">直接剪辑</span>: 生成计划后直接点击"一键剪辑"</p>
+                <p>  → 自动下载视频并快速拼接到时间轴</p>
+                <p>• <span className="font-medium">可视化剪辑</span>: 先点击"显示原视频"再点击"可视化剪辑"</p>
+                <p>  → 展示真实的剪辑操作过程（播放头移动、剪切、移动）</p>
+                <p className="font-medium mt-2 mb-1">📋 其他功能:</p>
+                <p>3. AI生成的片段会有绿色标识和Bot图标</p>
+                <p>4. 字幕会自动添加到独立的文本轨道</p>
+                <p>5. 注意⚠️标记的质量问题和🎵AI建议</p>
+                <p>6. 可以在时间轴中进一步调整剪辑结果</p>
               </div>
             </div>
           </div>
