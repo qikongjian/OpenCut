@@ -33,7 +33,7 @@ interface MediaStore {
   addMediaItem: (
     projectId: string,
     item: Omit<MediaItem, "id">
-  ) => Promise<void>;
+  ) => Promise<MediaItem>;
   removeMediaItem: (projectId: string, id: string) => Promise<void>;
   loadProjectMedia: (projectId: string) => Promise<void>;
   clearProjectMedia: (projectId: string) => Promise<void>;
@@ -163,7 +163,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
   addMediaItem: async (projectId, item) => {
     const newItem: MediaItem = {
       ...item,
-      id: generateUUID(),
+      id: generateUUID(), // 总是生成新的UUID
     };
 
     // Add to local state immediately for UI responsiveness
@@ -174,12 +174,14 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     // Save to persistent storage in background
     try {
       await storageService.saveMediaItem(projectId, newItem);
+      return newItem; // 返回成功添加的媒体项
     } catch (error) {
       console.error("Failed to save media item:", error);
       // Remove from local state if save failed
       set((state) => ({
         mediaItems: state.mediaItems.filter((media) => media.id !== newItem.id),
       }));
+      throw error; // 重新抛出错误，让调用者知道添加失败
     }
   },
 

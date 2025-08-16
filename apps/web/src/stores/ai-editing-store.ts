@@ -443,24 +443,43 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           (mediaFile as any)._originalVideoUrl = originalVideoUrl;
         }
 
+        // 🚀 关键修复：确保url和thumbnailUrl都正确设置
+        const playbackUrl = isRemoteFallback ? originalVideoUrl : url;
+        const finalThumbnailUrl = thumbnailUrl || generateDefaultVideoThumbnail();
+
         const mediaItem = {
           id: `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`,
           name: `AI剪辑-${clip.sequence_clip_id}`,
           type: "video" as const,
           file: mediaFile, // 🚀 关键：确保file属性始终存在
-          url: isRemoteFallback ? originalVideoUrl : url, // 播放URL
+          url: playbackUrl, // 🚀 修复：确保播放URL正确
           duration: durationToSeconds(clip.clip_duration_in_sequence),
           width: 1920,
           height: 1080,
           fps: 30,
-          thumbnailUrl: thumbnailUrl,
+          thumbnailUrl: finalThumbnailUrl, // 🚀 修复：确保缩略图URL始终存在
         };
+
+        console.log(`🔧 媒体项创建详情:`, {
+          clipId: clip.sequence_clip_id,
+          isRemoteFallback,
+          originalUrl: originalVideoUrl,
+          playbackUrl,
+          thumbnailUrl: finalThumbnailUrl,
+          fileType: mediaFile.type,
+          fileName: mediaFile.name
+        });
 
         // 添加到媒体库
         try {
-          await mediaStore.addMediaItem(projectStore.activeProject.id, mediaItem);
-          addedMediaItems.push(mediaItem); // 记录成功添加的媒体项
-          console.log(`✅ 媒体项已添加: ${mediaItem.name}`);
+          const actualMediaItem = await mediaStore.addMediaItem(projectStore.activeProject.id, mediaItem);
+          addedMediaItems.push(actualMediaItem); // 记录实际的媒体项
+
+          console.log(`✅ 媒体项已添加: ${actualMediaItem.name}`);
+          console.log(`   - ID: ${actualMediaItem.id}`);
+          console.log(`   - URL: ${actualMediaItem.url}`);
+          console.log(`   - 缩略图: ${actualMediaItem.thumbnailUrl ? '✅' : '❌'}`);
+          console.log(`   - 文件类型: ${actualMediaItem.file.type}`);
         } catch (error) {
           console.error(`❌ 添加媒体项失败:`, error);
           // 不抛出错误，继续处理
@@ -522,9 +541,19 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         console.log(`✅ 成功添加AI剪辑片段到时间轴:`);
         console.log(`   片段ID: ${clip.sequence_clip_id}`);
         console.log(`   媒体项ID: ${correspondingMediaItem.id}`);
-        console.log(`   缩略图: ${correspondingMediaItem.thumbnailUrl ? '已生成' : '未生成'}`);
+        console.log(`   缩略图: ${correspondingMediaItem.thumbnailUrl ? '✅ 已生成' : '❌ 未生成'}`);
         console.log(`   媒体URL: ${correspondingMediaItem.url}`);
-        console.log(`   媒体文件: ${correspondingMediaItem.file ? '本地文件' : '远程URL'}`);
+        console.log(`   媒体文件: ${correspondingMediaItem.file ? '✅ 本地文件' : '❌ 远程URL'}`);
+        console.log(`   元素时长: ${mediaElement.duration}秒`);
+        console.log(`   开始时间: ${mediaElement.startTime}秒`);
+
+        // 🚀 验证媒体项是否在媒体库中
+        const mediaInStore = mediaStore.mediaItems.find(m => m.id === correspondingMediaItem.id);
+        console.log(`   媒体库验证: ${mediaInStore ? '✅ 存在' : '❌ 不存在'}`);
+        if (mediaInStore) {
+          console.log(`   媒体库URL: ${mediaInStore.url}`);
+          console.log(`   媒体库缩略图: ${mediaInStore.thumbnailUrl ? '✅' : '❌'}`);
+        }
 
         set({
           executionProgress: 85 + ((i + 1) / addedMediaItems.length) * 10,

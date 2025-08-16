@@ -247,18 +247,13 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
         type: "audio/mpeg",
       });
 
-      await useMediaStore.getState().addMediaItem(activeProject.id, {
+      const mediaItem = await useMediaStore.getState().addMediaItem(activeProject.id, {
         name: sound.name,
         type: "audio",
         file,
         duration: sound.duration,
         url: URL.createObjectURL(file),
       });
-
-      const mediaItem = useMediaStore
-        .getState()
-        .mediaItems.find((item) => item.file === file);
-      if (!mediaItem) throw new Error("Failed to create media item");
 
       const success = useTimelineStore
         .getState()

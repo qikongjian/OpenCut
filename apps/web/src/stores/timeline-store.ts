@@ -1143,8 +1143,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           };
         }
 
+        let newMediaItem;
         try {
-          await mediaStore.addMediaItem(
+          newMediaItem = await mediaStore.addMediaItem(
             projectStore.activeProject.id,
             mediaData
           );
@@ -1152,17 +1153,6 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           return {
             success: false,
             error: `Failed to add media to project: ${error instanceof Error ? error.message : "Unknown error"}`,
-          };
-        }
-
-        const newMediaItem = mediaStore.mediaItems.find(
-          (item) => item.file === newFile
-        );
-
-        if (!newMediaItem) {
-          return {
-            success: false,
-            error: "Failed to create media item in project. Please try again.",
           };
         }
 

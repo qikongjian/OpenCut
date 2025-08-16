@@ -1066,15 +1066,8 @@ export function TimelineTrackContent({
         processMediaFiles(e.dataTransfer.files)
           .then(async (processedItems) => {
             for (const processedItem of processedItems) {
-              await addMediaItem(activeProject.id, processedItem);
-              const currentMediaItems = useMediaStore.getState().mediaItems;
-              const addedItem = currentMediaItems.find(
-                (item) =>
-                  item.name === processedItem.name &&
-                  item.url === processedItem.url
-              );
-
-              if (addedItem) {
+              try {
+                const addedItem = await addMediaItem(activeProject.id, processedItem);
                 const trackType: TrackType =
                   addedItem.type === "audio" ? "audio" : "media";
                 const targetTrackId = insertTrackAt(trackType, 0);
@@ -1087,7 +1080,11 @@ export function TimelineTrackContent({
                   startTime: currentTime,
                   trimStart: 0,
                   trimEnd: 0,
+                  muted: false,
                 });
+              } catch (error) {
+                console.error(`Failed to add media item ${processedItem.name}:`, error);
+                toast.error(`Failed to add ${processedItem.name}`);
               }
             }
           })
