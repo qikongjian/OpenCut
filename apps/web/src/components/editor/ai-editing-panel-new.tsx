@@ -2,16 +2,15 @@
 
 // 🎨 AI剪辑面板组件 - 现代化重新设计
 // 高级UI设计师重新设计，完美融合到系统中
-// 文件路径: components/editor/ai-editing-panel.tsx
+// 文件路径: components/editor/ai-editing-panel-new.tsx
 // 最后更新: 2025/1/8
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
   Bot,
   Scissors,
@@ -21,7 +20,6 @@ import {
   Film,
   Zap,
   FileText,
-  AlertCircle,
   CheckCircle,
   ExternalLink,
   Search,
@@ -36,7 +34,26 @@ import { VideoThumbnail } from "./video-thumbnail";
 import { toast } from "sonner";
 import { extractSubtitleDataFromAIEditing } from "@/lib/ai-subtitle-integration";
 
-export function AIEditingPanel() {
+// 时间码转换函数
+const timecodeToSeconds = (timecode: string): number => {
+  if (!timecode) return 0;
+  const parts = timecode.split(':');
+  if (parts.length === 4) {
+    const hours = parseInt(parts[0]);
+    const minutes = parseInt(parts[1]);
+    const seconds = parseInt(parts[2]);
+    const frames = parseInt(parts[3]);
+    return hours * 3600 + minutes * 60 + seconds + frames / 30;
+  }
+  return 0;
+};
+
+// 时间码格式化函数
+const formatTimecode = (timecode: string): string => {
+  return timecode || "00:00:00:00";
+};
+
+export function AIEditingPanelNew() {
   const {
     aiEditingData,
     currentEditingPlan,
@@ -53,33 +70,34 @@ export function AIEditingPanel() {
     previewClip,
     stopPreview,
     generateMockData,
-    clearAIData,
     showOriginalVideoInTimeline,
   } = useAIEditingStore();
 
   const { activeProject } = useProjectStore();
   const { mediaItems } = useMediaStore();
   const { startPreview } = useVideoPreviewStore();
+
   const [selectedClipIndex, setSelectedClipIndex] = useState<number | null>(null);
 
   // 生成Mock数据
   const handleGenerateMockData = () => {
     if (!activeProject) {
-      toast.error("请先创建或打开一个项目");
+      toast.error("请先创建或选择项目");
       return;
     }
 
     const mockData = generateMockData(activeProject.id);
     loadAIEditingData(mockData);
+    toast.success("AI剪辑计划已生成！");
   };
 
-  // 生成剪辑计划并显示原始视频
+  // 显示原始视频
   const handleShowOriginalVideo = async () => {
     if (!currentEditingPlan) {
       toast.error("请先生成剪辑计划");
       return;
     }
-
+    
     try {
       await showOriginalVideoInTimeline();
     } catch (error) {
@@ -88,7 +106,7 @@ export function AIEditingPanel() {
     }
   };
 
-  // 🎯 资深工程师修复：根据不同情况执行不同的剪辑流程
+  // 执行剪辑
   const handleExecuteEditing = async () => {
     if (!currentEditingPlan) {
       toast.error("没有可执行的剪辑计划");
@@ -96,17 +114,13 @@ export function AIEditingPanel() {
     }
 
     if (isShowingOriginalVideo) {
-      // 情况二：已显示原视频 → 执行可视化剪辑流程
       toast.info("🎬 开始可视化剪辑过程，请观看时间轴上的剪辑操作！");
       await executeVisualEditingPlan();
     } else {
-      // 情况一：未显示原视频 → 执行直接剪辑流程
       toast.info("🚀 开始自动剪辑，正在下载并处理视频片段...");
       await executeEditingPlan();
     }
   };
-
-
 
   // 预览片段
   const handlePreviewClip = (clipIndex: number) => {
@@ -118,56 +132,14 @@ export function AIEditingPanel() {
     }
   };
 
-  // 定位到源视频
+  // 视频预览
+  const handleVideoPreview = (url: string, time: number) => {
+    startPreview(url, time);
+  };
+
+  // 定位源视频
   const handleLocateSourceVideo = (clip: any) => {
-    // 查找对应的媒体文件
-    const mediaItem = mediaItems.find(item =>
-      item.url === clip.video_url ||
-      item.name.includes(clip.source_clip_id)
-    );
-
-    if (mediaItem) {
-      // 切换到媒体面板并高亮显示对应文件
-      toast.success(`已定位到源视频: ${mediaItem.name}`);
-      // 这里可以添加切换到媒体面板的逻辑
-    } else {
-      toast.warning(`未找到源视频文件: ${clip.source_clip_id}`);
-    }
-  };
-
-  // 处理视频预览
-  const handleVideoPreview = (videoUrl: string, startTime?: number) => {
-    // 转换时间码为秒数
-    const timeInSeconds = startTime || 0;
-
-    // 在中央预览区播放视频
-    startPreview(videoUrl, timeInSeconds);
-    toast.success("正在中央预览区播放视频");
-  };
-
-  // 时间码转换为秒数
-  const timecodeToSeconds = (timecode: string): number => {
-    const parts = timecode.split(':');
-    if (parts.length === 4) {
-      // HH:MM:SS:FF 格式
-      const hours = parseInt(parts[0]);
-      const minutes = parseInt(parts[1]);
-      const seconds = parseInt(parts[2]);
-      const frames = parseInt(parts[3]);
-      return hours * 3600 + minutes * 60 + seconds + frames / 30;
-    } else if (parts.length === 3) {
-      // HH:MM:SS 格式
-      const hours = parseInt(parts[0]);
-      const minutes = parseInt(parts[1]);
-      const seconds = parseFloat(parts[2]);
-      return hours * 3600 + minutes * 60 + seconds;
-    }
-    return 0;
-  };
-
-  // 格式化时间码
-  const formatTimecode = (timecode: string) => {
-    return timecode.replace(/\.\d+$/, ''); // 移除毫秒部分
+    toast.info(`定位源视频: ${clip.source_clip_id}`);
   };
 
   return (
@@ -183,7 +155,7 @@ export function AIEditingPanel() {
             <p className="text-xs text-muted-foreground">智能视频编辑助手</p>
           </div>
         </div>
-
+        
         {aiEditingData && (
           <Badge variant="secondary" className="text-xs font-medium">
             {currentEditingPlan?.timeline_clips.length || 0} 个片段
@@ -195,7 +167,6 @@ export function AIEditingPanel() {
         {!aiEditingData ? (
           // 🎨 重新设计的空状态
           <div className="flex flex-col h-full">
-            {/* 主要内容区域 */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
               {/* 图标和标题 */}
               <div className="relative mb-6">
@@ -223,7 +194,7 @@ export function AIEditingPanel() {
                     <p className="text-xs text-muted-foreground">自动识别精彩片段</p>
                   </div>
                 </div>
-
+                
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                     <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -285,7 +256,6 @@ export function AIEditingPanel() {
 
               {/* 🎨 现代化的操作按钮组 */}
               <div className="grid grid-cols-1 gap-2">
-                {/* 显示原始视频按钮 */}
                 <Button
                   onClick={handleShowOriginalVideo}
                   disabled={isExecutingPlan || isShowingOriginalVideo || visualEditingState === 'showing-original'}
@@ -311,7 +281,6 @@ export function AIEditingPanel() {
                   )}
                 </Button>
 
-                {/* 一键剪辑按钮 */}
                 <Button
                   onClick={handleExecuteEditing}
                   disabled={isExecutingPlan}
@@ -336,10 +305,12 @@ export function AIEditingPanel() {
                   )}
                 </Button>
               </div>
+            </div>
 
-              {/* 🎨 现代化的执行进度显示 */}
-              {isExecutingPlan && (
-                <div className="mt-4 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
+            {/* 🎨 现代化的执行进度显示 */}
+            {isExecutingPlan && (
+              <div className="p-4 border-b border-border/40">
+                <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
                   <div className="flex items-center gap-2 mb-2">
                     <Clock className="w-4 h-4 text-blue-600 animate-spin" />
                     <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
@@ -356,18 +327,20 @@ export function AIEditingPanel() {
                     </p>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* 计划描述 */}
+            {/* 计划描述和字幕信息 */}
+            <div className="p-4 border-b border-border/40 space-y-3">
               {currentEditingPlan?.version_summary && (
-                <div className="mt-4 p-3 rounded-lg bg-muted/30 border border-border/40">
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/40">
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {currentEditingPlan.version_summary}
                   </p>
                 </div>
               )}
 
-              {/* 🎨 现代化的字幕信息显示 */}
+              {/* 字幕信息 */}
               {aiEditingData && (() => {
                 const subtitleData = extractSubtitleDataFromAIEditing(aiEditingData);
                 if (subtitleData) {
@@ -375,7 +348,7 @@ export function AIEditingPanel() {
                   const hasSrt = !!subtitleData.final_srt_content;
 
                   return (
-                    <div className="mt-4 p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200/50 dark:border-purple-800/50">
+                    <div className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border border-purple-200/50 dark:border-purple-800/50">
                       <div className="flex items-center gap-2 mb-1">
                         <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                         <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
@@ -447,161 +420,63 @@ export function AIEditingPanel() {
                             </Badge>
                           </div>
                         </div>
-                    <CardContent className="pt-0 p-2">
-                      <div className="space-y-2">
-                        {/* 视频缩略图 */}
-                        <div className="flex items-center gap-2">
-                          <VideoThumbnail
-                            videoUrl={clip.video_url}
-                            startTime={timecodeToSeconds(clip.source_in_timecode)}
-                            width={120}
-                            height={68}
-                            onPreview={(url, time) => handleVideoPreview(url, time)}
-                            className="flex-shrink-0 rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium truncate">
+
+                        {/* 视频缩略图区域 */}
+                        <div className="flex items-start gap-3">
+                          <div className="relative">
+                            <VideoThumbnail
+                              videoUrl={clip.video_url}
+                              startTime={timecodeToSeconds(clip.source_in_timecode)}
+                              width={100}
+                              height={56}
+                              onPreview={(url, time) => handleVideoPreview(url, time)}
+                              className="flex-shrink-0 rounded-lg border border-border/40 overflow-hidden"
+                            />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                              <Play className="w-4 h-4 text-white" />
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="text-sm font-medium text-foreground truncate">
                               {clip.source_clip_id}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {formatTimecode(clip.source_in_timecode)} - {formatTimecode(clip.source_out_timecode)}
+                              {formatTimecode(clip.source_in_timecode)} → {formatTimecode(clip.source_out_timecode)}
                             </div>
-                            <div className="text-xs text-blue-600">
-                              点击缩略图预览
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 视频源信息 */}
-                        <div className="bg-muted/30 p-2 rounded text-xs">
-                          <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <Film className="w-3 h-3 text-blue-500" />
-                              <span className="font-medium">视频源</span>
+                              <Badge variant="outline" className="text-xs">
+                                <Clock className="w-3 h-3 mr-1" />
+                                {formatTimecode(clip.sequence_start_timecode)}
+                              </Badge>
+                              <Button
+                                variant="text"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLocateSourceVideo(clip);
+                                }}
+                                className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="定位源视频"
+                              >
+                                <Search className="w-3 h-3 text-blue-500" />
+                              </Button>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLocateSourceVideo(clip);
-                              }}
-                              className="h-5 w-5 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
-                              title="定位源视频"
-                            >
-                              <Search className="w-3 h-3 text-blue-500" />
-                            </Button>
-                          </div>
-                          <div className="text-muted-foreground">
-                            <div className="flex items-center justify-between">
-                              <span>文件: {clip.source_clip_id}</span>
-                              <ExternalLink className="w-3 h-3 opacity-50" />
-                            </div>
-                            <div>片段: {formatTimecode(clip.source_in_timecode)} - {formatTimecode(clip.source_out_timecode)}</div>
                           </div>
                         </div>
 
-                        {/* 时间轴信息 */}
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          <span>{formatTimecode(clip.sequence_start_timecode)}</span>
-                          <Separator orientation="vertical" className="h-3" />
-                          <span>{clip.corresponding_script_scene_id}</span>
-                        </div>
-
-                        {/* 类型和转场标签 */}
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={clip.clip_type === "video_and_audio" ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {clip.clip_type}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {clip.transition_from_previous.transition_type}
-                          </Badge>
-                        </div>
-
-                        {/* 剪辑意图 */}
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          <span className="font-medium">意图:</span> {clip.clip_placement_reasons.core_intent_and_audience_effect}
-                        </p>
-
-                        {/* 问题提示 */}
-                        {clip.continuity_correction_suggestion.error_exists && (
-                          <div className="bg-amber-50 dark:bg-amber-950/20 p-2 rounded border border-amber-200 dark:border-amber-800">
-                            <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 mb-1">
-                              <AlertCircle className="w-3 h-3" />
-                              <span className="font-medium">质量问题</span>
-                            </div>
-                            <div className="text-xs text-amber-600 dark:text-amber-300">
-                              {clip.continuity_correction_suggestion.error_description || "需要注意连续性问题"}
-                            </div>
+                        {/* 场景信息 */}
+                        {clip.corresponding_script_scene_id && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                            <FileText className="w-3 h-3" />
+                            <span>场景: {clip.corresponding_script_scene_id}</span>
                           </div>
                         )}
-
-                        {/* 音效和视觉建议 */}
-                        {(clip.sound_design_suggestions.length > 0 || clip.visual_enhancement_suggestions.length > 0) && (
-                          <div className="bg-green-50 dark:bg-green-950/20 p-2 rounded border border-green-200 dark:border-green-800">
-                            <div className="text-xs text-green-700 dark:text-green-400 font-medium mb-1">
-                              AI建议
-                            </div>
-                            {clip.sound_design_suggestions.length > 0 && (
-                              <div className="text-xs text-green-600 dark:text-green-300">
-                                🎵 {clip.sound_design_suggestions[0].description}
-                              </div>
-                            )}
-                            {clip.visual_enhancement_suggestions.length > 0 && (
-                              <div className="text-xs text-green-600 dark:text-green-300">
-                                🎨 {clip.visual_enhancement_suggestions[0].description}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-
-            {/* 底部操作 */}
-            <div className="p-4 border-t border-border">
-              <div className="flex items-center justify-between mb-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAIData}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  清空计划
-                </Button>
-
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <CheckCircle className="w-3 h-3 text-green-500" />
-                  <span>AI分析完成</span>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </div>
-
-              {/* 使用说明 */}
-              <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                <p className="font-medium mb-1">💡 使用提示:</p>
-                <p>1. 每个片段显示实际视频，可播放预览</p>
-                <p>2. 点击视频区域在中央播放器预览</p>
-                <p className="font-medium text-blue-600 mt-2 mb-1">🎬 两种剪辑模式:</p>
-                <p>• <span className="font-medium">直接剪辑</span>: 生成计划后直接点击"一键剪辑"</p>
-                <p>  → 自动下载视频并快速拼接到时间轴</p>
-                <p>• <span className="font-medium">可视化剪辑</span>: 先点击"显示完整原视频"再点击"可视化剪辑"</p>
-                <p>  → 先显示未剪辑的完整原始视频，然后展示真实的剪辑操作过程</p>
-                <p className="font-medium mt-2 mb-1">📋 其他功能:</p>
-                <p>3. AI生成的片段会有绿色标识和Bot图标</p>
-                <p>4. 字幕会自动添加到独立的文本轨道</p>
-                <p>5. 注意⚠️标记的质量问题和🎵AI建议</p>
-                <p>6. 可以在时间轴中进一步调整剪辑结果</p>
-              </div>
+              </ScrollArea>
             </div>
           </div>
         )}
