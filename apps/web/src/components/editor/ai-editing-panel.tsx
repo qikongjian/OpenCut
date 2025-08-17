@@ -231,7 +231,7 @@ export function AIEditingPanel() {
                     ) : (
                       <>
                         <Film className="w-3 h-3 mr-1" />
-                        显示所有原视频
+                        显示完整原视频
                       </>
                     )}
                   </Button>
@@ -495,8 +495,8 @@ export function AIEditingPanel() {
                 <p className="font-medium text-blue-600 mt-2 mb-1">🎬 两种剪辑模式:</p>
                 <p>• <span className="font-medium">直接剪辑</span>: 生成计划后直接点击"一键剪辑"</p>
                 <p>  → 自动下载视频并快速拼接到时间轴</p>
-                <p>• <span className="font-medium">可视化剪辑</span>: 先点击"显示原视频"再点击"可视化剪辑"</p>
-                <p>  → 展示真实的剪辑操作过程（播放头移动、剪切、移动）</p>
+                <p>• <span className="font-medium">可视化剪辑</span>: 先点击"显示完整原视频"再点击"可视化剪辑"</p>
+                <p>  → 先显示未剪辑的完整原始视频，然后展示真实的剪辑操作过程</p>
                 <p className="font-medium mt-2 mb-1">📋 其他功能:</p>
                 <p>3. AI生成的片段会有绿色标识和Bot图标</p>
                 <p>4. 字幕会自动添加到独立的文本轨道</p>

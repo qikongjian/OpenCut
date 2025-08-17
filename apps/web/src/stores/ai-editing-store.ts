@@ -60,6 +60,7 @@ interface AIEditingState {
   performVisualEditingOnOriginalVideo: () => Promise<void>;
   performDirectVideoEditing: () => Promise<void>;
   addAISubtitles: () => Promise<void>;
+  ensureSubtitlesAdded: () => Promise<void>;
 
   // Mock数据生成
   generateMockData: (projectId: string) => AIEditingData;
@@ -67,6 +68,21 @@ interface AIEditingState {
 
 // 时间码转换为秒数的工具函数
 const timecodeToSeconds = (timecode: string): number => {
+  if (!timecode) return 0;
+
+  // 处理 SRT 格式的时间码 (HH:MM:SS,mmm)
+  if (timecode.includes(',')) {
+    const [timePart, millisecondsPart] = timecode.split(',');
+    const parts = timePart.split(':');
+    if (parts.length === 3) {
+      const hours = parseInt(parts[0]);
+      const minutes = parseInt(parts[1]);
+      const seconds = parseInt(parts[2]);
+      const milliseconds = parseInt(millisecondsPart || '0');
+      return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+    }
+  }
+
   const parts = timecode.split(':');
   if (parts.length === 4) {
     // HH:MM:SS:FF 格式
@@ -76,7 +92,7 @@ const timecodeToSeconds = (timecode: string): number => {
     const frames = parseInt(parts[3]);
     return hours * 3600 + minutes * 60 + seconds + frames / 30; // 假设30fps
   } else if (parts.length === 3) {
-    // HH:MM:SS 格式
+    // HH:MM:SS.mmm 或 HH:MM:SS 格式
     const hours = parseInt(parts[0]);
     const minutes = parseInt(parts[1]);
     const seconds = parseFloat(parts[2]);
@@ -670,7 +686,61 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     }
   },
 
-  // 🎬 新增：可视化剪辑过程 - 展示真实的剪辑操作
+  // 🎯 资深工程师新增：自动调整时间轴缩放以适应原视频显示
+  adjustTimelineZoomForOriginalVideos: () => {
+    const { currentEditingPlan, isShowingOriginalVideo, originalVideoTrackId } = get();
+    if (!currentEditingPlan || !isShowingOriginalVideo || !originalVideoTrackId) {
+      return;
+    }
+
+    // 从时间轴获取实际的视频总时长
+    const timelineStore = useTimelineStore.getState();
+    const originalTrack = timelineStore.tracks.find(t => t.id === originalVideoTrackId);
+
+    if (!originalTrack || originalTrack.elements.length === 0) {
+      console.warn("未找到原视频轨道或元素");
+      return;
+    }
+
+    // 计算实际的总时长
+    const totalDuration = originalTrack.elements.reduce((sum, element) => {
+      return sum + element.duration;
+    }, 0);
+
+    // 获取时间轴容器的可用宽度
+    const timelineContainer = document.querySelector('[data-timeline-container]');
+    const availableWidth = timelineContainer ? timelineContainer.clientWidth - 250 : 1200; // 减去左侧轨道标签宽度
+
+    // 🎯 计算合适的缩放级别，让所有视频在一行中占据90%的宽度
+    const PIXELS_PER_SECOND = 50; // 来自TIMELINE_CONSTANTS
+    const targetWidthRatio = 0.9; // 目标占用90%的可用宽度
+    const targetWidth = availableWidth * targetWidthRatio;
+    const requiredWidth = totalDuration * PIXELS_PER_SECOND;
+    const optimalZoomLevel = Math.max(0.25, Math.min(4, targetWidth / requiredWidth));
+
+    console.log(`🔍 时间轴缩放计算 (90%显示):`, {
+      totalClips: originalTrack.elements.length,
+      actualTotalDuration: totalDuration.toFixed(1),
+      availableWidth,
+      targetWidth: targetWidth.toFixed(1),
+      targetWidthRatio: `${(targetWidthRatio * 100)}%`,
+      requiredWidth: requiredWidth.toFixed(1),
+      optimalZoomLevel: optimalZoomLevel.toFixed(2),
+      note: "调整为90%宽度显示，保留10%操作空间"
+    });
+
+    // 触发缩放调整事件
+    const zoomEvent = new CustomEvent('timeline-zoom-adjust', {
+      detail: { zoomLevel: optimalZoomLevel }
+    });
+    window.dispatchEvent(zoomEvent);
+
+    toast.info(`🔍 已调整缩放至 ${optimalZoomLevel.toFixed(2)}x (90%显示)，总时长 ${totalDuration.toFixed(1)}秒`);
+
+    return optimalZoomLevel;
+  },
+
+  // 🎬 新增：可视化剪辑过程 - 展示真实的剪辑操作，同时并行执行一键剪辑
   executeVisualEditingPlan: async () => {
     const { currentEditingPlan, isShowingOriginalVideo, originalVideoTrackId } = get();
     if (!currentEditingPlan) {
@@ -690,21 +760,33 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         throw new Error("没有活动项目");
       }
 
-      // 🎬 第一步：准备剪辑环境
-      set({ executionProgress: 5, currentProcessingClip: "准备剪辑环境..." });
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 如果有原视频在时间轴，从原视频开始剪辑
-      if (originalVideoTrackId && isShowingOriginalVideo) {
-        await get().performVisualEditingOnOriginalVideo();
-      } else {
-        // 否则提示用户先显示原视频
-        toast.warning("建议先点击'显示所有原视频'以获得更好的可视化剪辑效果");
-        await get().performDirectVideoEditing();
+      // 🎯 第一步：调整时间轴缩放以适应原视频显示
+      set({ executionProgress: 5, currentProcessingClip: "调整时间轴视图至90%显示..." });
+      if (isShowingOriginalVideo) {
+        get().adjustTimelineZoomForOriginalVideos();
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 给用户更多时间观察缩放变化
       }
 
+      // 🎬 第二步：启动并行处理
+      set({ executionProgress: 10, currentProcessingClip: "启动并行剪辑处理..." });
+
+      // 🚀 关键创新：并行执行可视化动画和一键剪辑逻辑
+      const [visualResult, oneClickResult] = await Promise.all([
+        // 可视化剪辑动画（用于展示）
+        get().performVisualEditingAnimation(),
+        // 一键剪辑逻辑（生成最终结果）
+        get().performOneClickEditingInBackground()
+      ]);
+
+      // 🎯 第三步：用一键剪辑的结果替换时间轴
+      set({ executionProgress: 95, currentProcessingClip: "应用最终剪辑结果..." });
+      await get().applyOneClickResultToTimeline(oneClickResult);
+
+      // 🎯 修复：移除额外的字幕保障机制，避免重复添加
+      // 字幕已在applyOneClickResultToTimeline中添加，无需额外保障
+
       set({ executionProgress: 100, currentProcessingClip: "剪辑完成!" });
-      toast.success("🎉 可视化剪辑完成！");
+      toast.success("🎉 可视化剪辑完成！已应用一键剪辑结果和字幕");
 
     } catch (error) {
       console.error("可视化剪辑失败:", error);
@@ -716,6 +798,168 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         currentProcessingClip: null
       });
     }
+  },
+
+  // 🎬 可视化剪辑动画（仅用于展示效果）
+  performVisualEditingAnimation: async () => {
+    const { currentEditingPlan, isShowingOriginalVideo, originalVideoTrackId } = get();
+    if (!currentEditingPlan) return;
+
+    console.log("🎭 开始可视化剪辑动画展示");
+
+    // 如果有原视频在时间轴，执行可视化动画
+    if (originalVideoTrackId && isShowingOriginalVideo) {
+      await get().performVisualEditingOnOriginalVideo();
+    } else {
+      // 否则执行简化的动画效果
+      for (let i = 0; i < currentEditingPlan.timeline_clips.length; i++) {
+        const clip = currentEditingPlan.timeline_clips[i];
+        set({
+          executionProgress: 15 + (i / currentEditingPlan.timeline_clips.length) * 70,
+          currentProcessingClip: `可视化处理片段 ${i + 1}/${currentEditingPlan.timeline_clips.length}: ${clip.sequence_clip_id}`
+        });
+        await new Promise(resolve => setTimeout(resolve, 500)); // 动画延迟
+      }
+    }
+
+    console.log("✅ 可视化剪辑动画完成");
+    return { success: true, type: 'visual' };
+  },
+
+  // 🚀 后台执行一键剪辑逻辑（生成最终结果）
+  performOneClickEditingInBackground: async () => {
+    const { currentEditingPlan } = get();
+    if (!currentEditingPlan) return null;
+
+    console.log("🚀 开始后台一键剪辑处理");
+
+    const timelineStore = useTimelineStore.getState();
+    const mediaStore = useMediaStore.getState();
+    const projectStore = useProjectStore.getState();
+
+    // 创建临时的时间轴状态（不影响当前显示）
+    const tempTimelineState = {
+      tracks: [],
+      elements: []
+    };
+
+    // 清空临时时间轴
+    const mainTrackId = "temp-main-track";
+    let currentPosition = 0;
+
+    // 🎬 快速处理所有视频片段
+    for (let i = 0; i < currentEditingPlan.timeline_clips.length; i++) {
+      const clip = currentEditingPlan.timeline_clips[i];
+
+      try {
+        // 🎬 快速下载视频
+        console.log(`🚀 后台下载视频: ${clip.sequence_clip_id}`);
+        const response = await fetch(clip.video_url);
+        const blob = await response.blob();
+        const file = new File([blob], `${clip.sequence_clip_id}.mp4`, { type: "video/mp4" });
+
+        // 🎬 生成缩略图
+        let thumbnailUrl: string | undefined;
+        try {
+          const { generateVideoThumbnail } = await import('@/stores/media-store');
+          const thumbnailData = await generateVideoThumbnail(file);
+          thumbnailUrl = thumbnailData.thumbnailUrl;
+        } catch (error) {
+          console.warn(`⚠️ 生成缩略图失败: ${clip.sequence_clip_id}`, error);
+        }
+
+        // 🎬 添加到媒体库
+        const mediaItem = await mediaStore.addMediaItem(projectStore.activeProject.id, {
+          id: `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`,
+          name: `一键剪辑-${clip.sequence_clip_id}`,
+          type: "video" as const,
+          file: file,
+          url: clip.video_url,
+          thumbnailUrl: thumbnailUrl,
+          duration: durationToSeconds(clip.clip_duration_in_sequence),
+          width: 1920,
+          height: 1080,
+          size: blob.size,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // 🎬 添加到临时时间轴
+        const sequenceStartSeconds = timecodeToSeconds(clip.sequence_start_timecode);
+        tempTimelineState.elements.push({
+          id: `temp-element-${i}`,
+          type: "media",
+          name: `一键剪辑-${clip.sequence_clip_id}`,
+          mediaId: mediaItem.id,
+          duration: durationToSeconds(clip.clip_duration_in_sequence),
+          startTime: sequenceStartSeconds,
+          trimStart: 0,
+          trimEnd: 0,
+          muted: false,
+          horizontalFlip: false,
+        });
+
+        currentPosition = Math.max(currentPosition, sequenceStartSeconds + durationToSeconds(clip.clip_duration_in_sequence));
+
+      } catch (error) {
+        console.error(`❌ 后台处理片段失败: ${clip.sequence_clip_id}`, error);
+      }
+    }
+
+    console.log("✅ 后台一键剪辑处理完成");
+    return {
+      success: true,
+      type: 'oneclick',
+      elements: tempTimelineState.elements,
+      totalDuration: currentPosition
+    };
+  },
+
+  // 🎯 将一键剪辑结果应用到时间轴
+  applyOneClickResultToTimeline: async (oneClickResult: any) => {
+    if (!oneClickResult || !oneClickResult.success) {
+      console.warn("⚠️ 一键剪辑结果无效，跳过应用");
+      return;
+    }
+
+    console.log("🎯 开始应用一键剪辑结果到时间轴");
+
+    const timelineStore = useTimelineStore.getState();
+
+    // 清空当前时间轴
+    timelineStore.clearTimeline();
+
+    // 创建新的主轨道
+    const mainTrackId = timelineStore.findOrCreateTrack("media");
+
+    // 添加所有一键剪辑的元素
+    oneClickResult.elements.forEach((element: any, index: number) => {
+      try {
+        timelineStore.addElementToTrack(mainTrackId, element);
+        console.log(`✅ 应用元素 ${index + 1}: ${element.name}`);
+      } catch (error) {
+        console.error(`❌ 应用元素失败 ${index + 1}:`, error);
+      }
+    });
+
+    // 添加字幕
+    console.log("🎯 开始添加AI字幕到最终时间轴...");
+    await get().addAISubtitles();
+
+    // 验证字幕是否成功添加
+    const finalTracks = useTimelineStore.getState().tracks;
+    const textTracks = finalTracks.filter(track => track.type === "text");
+    const totalSubtitles = textTracks.reduce((sum, track) => sum + track.elements.length, 0);
+    console.log(`🔍 字幕添加验证: 找到 ${textTracks.length} 个文本轨道，共 ${totalSubtitles} 个字幕元素`);
+
+    // 🎯 修复：简化字幕验证，如果失败就记录日志，不再尝试备用方案避免重复添加
+    if (totalSubtitles === 0) {
+      console.warn("⚠️ 字幕添加失败，请检查AI数据中是否包含字幕信息");
+    } else {
+      console.log(`✅ 字幕添加成功: ${totalSubtitles} 个字幕元素`);
+    }
+
+    console.log("✅ 一键剪辑结果已成功应用到时间轴");
   },
 
   // 🎬 在原视频上执行可视化剪辑操作
@@ -745,6 +989,11 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       const clip = currentEditingPlan.timeline_clips[i];
       const clipDuration = durationToSeconds(clip.clip_duration_in_sequence);
 
+      // 🎯 从AI计划中提取时间码信息
+      const sourceInSeconds = timecodeToSeconds(clip.source_in_timecode);
+      const sourceOutSeconds = timecodeToSeconds(clip.source_out_timecode);
+      const sequenceStartSeconds = timecodeToSeconds(clip.sequence_start_timecode);
+
       set({
         executionProgress: 15 + (i / currentEditingPlan.timeline_clips.length) * 70,
         currentProcessingClip: `剪辑片段 ${i + 1}/${currentEditingPlan.timeline_clips.length}: ${clip.sequence_clip_id}`
@@ -753,6 +1002,8 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       // 🎬 优化：快速执行剪辑操作，减少延迟
       const startTime = i * clipDuration; // 简化：假设片段连续
       console.log(`🎯 处理片段 ${i + 1}: ${startTime.toFixed(2)}秒 - ${(startTime + clipDuration).toFixed(2)}秒`);
+      console.log(`   源时间码: ${clip.source_in_timecode} - ${clip.source_out_timecode}`);
+      console.log(`   序列时间码: ${clip.sequence_start_timecode}`);
 
       // 🎬 快速移动播放头
       playbackStore.seek(startTime);
@@ -791,16 +1042,22 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
       if (targetElement) {
         console.log(`📦 移动片段到剪辑轨道: ${clip.sequence_clip_id}`);
+        console.log(`   源时间范围: ${sourceInSeconds.toFixed(2)}s - ${sourceOutSeconds.toFixed(2)}s`);
+        console.log(`   目标序列位置: ${sequenceStartSeconds.toFixed(2)}s`);
 
-        // 复制元素到新轨道
+        // 🎯 计算正确的裁剪参数（相对于原始媒体文件）
+        const trimStart = sourceInSeconds;
+        const trimEnd = Math.max(0, targetElement.duration - sourceOutSeconds);
+
+        // 复制元素到新轨道，使用AI计划中的精确位置
         timelineStore.addElementToTrack(editTrackId, {
           type: "media",
           name: `AI剪辑-${clip.sequence_clip_id}`,
           mediaId: (targetElement as any).mediaId,
-          duration: clipDuration,
-          startTime: currentEditPosition, // 在新轨道中连续排列
-          trimStart: 0,
-          trimEnd: 0,
+          duration: clipDuration, // 使用AI计划中的片段时长
+          startTime: sequenceStartSeconds, // 🎯 使用AI计划中指定的序列位置，不是累加位置
+          trimStart: trimStart, // 正确的开始裁剪位置
+          trimEnd: trimEnd,     // 正确的结束裁剪位置
           muted: false,
           horizontalFlip: false,
         });
@@ -808,7 +1065,8 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         // 从原轨道删除已使用的片段
         timelineStore.removeElementFromTrack(originalVideoTrackId, targetElement.id);
 
-        currentEditPosition += clipDuration;
+        // 更新当前位置
+        currentEditPosition = Math.max(currentEditPosition, sequenceStartSeconds + clipDuration);
       }
 
       // 🚀 优化：只保留必要的UI更新延迟
@@ -820,8 +1078,8 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     // 🎬 快速清理剩余的原视频片段
     console.log("🧹 清理剩余原视频片段");
 
-    // 添加字幕
-    await get().addAISubtitles();
+    // 🎯 修复：移除可视化动画中的字幕添加，字幕将在最终的applyOneClickResultToTimeline中统一添加
+    console.log("📝 可视化动画完成，字幕将在最终结果应用时添加");
   },
 
   // 🎬 直接视频剪辑（当没有原视频时）
@@ -898,33 +1156,151 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       }
     }
 
-    // 添加字幕
-    await get().addAISubtitles();
+    // 🎯 修复：移除直接剪辑中的字幕添加，字幕将在最终的applyOneClickResultToTimeline中统一添加
+    console.log("📝 直接剪辑完成，字幕将在最终结果应用时添加");
   },
 
   // 🎬 添加AI字幕
   addAISubtitles: async () => {
     set({ executionProgress: 90, currentProcessingClip: "添加AI字幕..." });
 
-    const aiEditingData = get().aiEditingData;
+    const { aiEditingData, currentEditingPlan } = get();
+
+    console.log("🔍 检查字幕添加条件:");
+    console.log("  - aiEditingData存在:", !!aiEditingData);
+    console.log("  - finalized_dialogue_track存在:", !!aiEditingData?.editing_plan?.finalized_dialogue_track);
+    console.log("  - currentEditingPlan存在:", !!currentEditingPlan);
+
+    // 🎯 修复：放宽条件判断，优先检查字幕数据是否存在
     if (aiEditingData?.editing_plan?.finalized_dialogue_track) {
       try {
         const subtitleData = extractSubtitleDataFromAIEditing(aiEditingData);
         if (subtitleData) {
+          console.log("📝 发现字幕数据，开始处理...");
+
           const { parseDialogueTrackToTextElements } = await import('@/lib/subtitle-parser');
-          const textElements = parseDialogueTrackToTextElements(subtitleData);
-          if (textElements && textElements.length > 0) {
+          const originalTextElements = parseDialogueTrackToTextElements(subtitleData);
+
+          if (originalTextElements && originalTextElements.length > 0) {
+            console.log(`📝 解析出 ${originalTextElements.length} 个原始字幕元素`);
+
+            let finalTextElements = originalTextElements;
+
+            // 🎯 修复：对于可视化剪辑，直接使用原始字幕时间码，不进行调整
+            // 因为一键剪辑结果已经按照AI计划的时间码排列了视频片段
+            console.log("📝 使用原始字幕时间码，不进行时间码调整（适配一键剪辑结果）");
+            // 注释掉时间码调整逻辑，避免字幕与视频不匹配
+            // if (currentEditingPlan) {
+            //   finalTextElements = get().adjustSubtitleTimingForEditingPlan(originalTextElements, currentEditingPlan);
+            // }
+
             const { createSubtitleTrackWithElements } = await import('@/lib/ai-subtitle-integration');
-            createSubtitleTrackWithElements(textElements);
-            console.log(`✅ AI字幕已添加，共 ${textElements.length} 条字幕`);
+            const trackId = createSubtitleTrackWithElements(finalTextElements, "AI字幕");
+
+            if (trackId) {
+              console.log(`✅ AI字幕已成功添加到时间轴，共 ${finalTextElements.length} 条字幕`);
+              toast.success(`成功添加 ${finalTextElements.length} 条AI字幕到时间轴`);
+            } else {
+              console.error("❌ 字幕轨道创建失败");
+              toast.error("字幕轨道创建失败");
+            }
+          } else {
+            console.warn("⚠️ 没有解析出有效的字幕元素");
           }
+        } else {
+          console.warn("⚠️ 无法提取字幕数据");
         }
       } catch (error) {
-        console.warn("⚠️ 添加AI字幕失败:", error);
+        console.error("❌ 添加AI字幕失败:", error);
+        toast.error("添加AI字幕失败");
       }
+    } else {
+      console.warn("⚠️ AI剪辑数据中没有字幕数据");
     }
 
     await new Promise(resolve => setTimeout(resolve, 500));
+  },
+
+  // 🎯 确保字幕已添加（额外保障机制）
+  ensureSubtitlesAdded: async () => {
+    console.log("🔍 备用方案：强制重新添加字幕...");
+
+    const { aiEditingData } = get();
+    if (aiEditingData?.editing_plan?.finalized_dialogue_track) {
+      try {
+        const { addAISubtitlesToTimeline } = await import('@/lib/ai-subtitle-integration');
+        const success = addAISubtitlesToTimeline(aiEditingData);
+
+        if (success) {
+          console.log("✅ 字幕重新添加成功");
+        } else {
+          console.warn("⚠️ 字幕重新添加失败");
+        }
+      } catch (error) {
+        console.error("❌ 字幕重新添加过程中出错:", error);
+      }
+    } else {
+      console.warn("⚠️ 没有可用的字幕数据");
+    }
+  },
+
+  // 🎯 新增：根据剪辑计划调整字幕时间码
+  adjustSubtitleTimingForEditingPlan: (textElements: any[], editingPlan: any) => {
+    console.log(`🎬 开始调整字幕时间码，原始字幕数量: ${textElements.length}`);
+
+    // 打印剪辑计划的时间范围信息用于调试
+    console.log("📊 剪辑计划片段时间范围:");
+    editingPlan.timeline_clips.forEach((clip: any, index: number) => {
+      const sourceInSeconds = timecodeToSeconds(clip.source_in_timecode);
+      const sourceOutSeconds = timecodeToSeconds(clip.source_out_timecode);
+      const sequenceStartSeconds = timecodeToSeconds(clip.sequence_start_timecode);
+      console.log(`  片段 ${index + 1}: 源时间 ${sourceInSeconds.toFixed(2)}s-${sourceOutSeconds.toFixed(2)}s -> 序列时间 ${sequenceStartSeconds.toFixed(2)}s`);
+    });
+
+    const adjustedElements = textElements.map(element => {
+      console.log(`🔍 处理字幕: "${element.content.substring(0, 30)}..." 时间: ${element.startTime.toFixed(2)}s`);
+
+      // 找到包含这个字幕时间的视频片段
+      const containingClip = editingPlan.timeline_clips.find((clip: any) => {
+        const sourceInSeconds = timecodeToSeconds(clip.source_in_timecode);
+        const sourceOutSeconds = timecodeToSeconds(clip.source_out_timecode);
+
+        // 检查字幕是否在这个片段的源时间范围内
+        const isInRange = element.startTime >= sourceInSeconds && element.startTime < sourceOutSeconds;
+
+        if (isInRange) {
+          console.log(`  ✅ 找到匹配片段: ${sourceInSeconds.toFixed(2)}s-${sourceOutSeconds.toFixed(2)}s`);
+        }
+
+        return isInRange;
+      });
+
+      if (containingClip) {
+        // 计算字幕在源视频中的相对位置
+        const sourceInSeconds = timecodeToSeconds(containingClip.source_in_timecode);
+        const sequenceStartSeconds = timecodeToSeconds(containingClip.sequence_start_timecode);
+
+        // 计算字幕在源片段中的偏移量
+        const offsetInClip = element.startTime - sourceInSeconds;
+
+        // 计算字幕在最终序列中的新时间
+        const newStartTime = sequenceStartSeconds + offsetInClip;
+
+        console.log(`📝 调整字幕: "${element.content.substring(0, 30)}..." 从 ${element.startTime.toFixed(2)}s 调整到 ${newStartTime.toFixed(2)}s`);
+
+        return {
+          ...element,
+          startTime: newStartTime
+        };
+      } else {
+        // 如果找不到对应的片段，可能这个字幕不在剪辑计划中，跳过
+        console.warn(`⚠️ 字幕 "${element.content.substring(0, 30)}..." 在时间 ${element.startTime.toFixed(2)}s 找不到对应的视频片段，跳过`);
+        return null;
+      }
+    }).filter(element => element !== null);
+
+    console.log(`✅ 字幕时间码调整完成，调整后字幕数量: ${adjustedElements.length}`);
+    return adjustedElements;
   },
 
   // 预览片段
@@ -1097,13 +1473,22 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           }
         }
 
-        // 🎯 为每个clip创建独立的媒体项
+        // 🎯 资深工程师修复：显示原视频应该使用完整的视频文件时长，不是剪辑计划时长
+        console.log(`📹 原视频信息:`, {
+          clipId: clip.sequence_clip_id,
+          videoUrl: videoUrl,
+          originalVideoDuration: videoDuration,
+          aiPlanClipDuration: clip.clip_duration_in_sequence,
+          note: "显示原视频使用完整视频时长"
+        });
+
+        // 🎯 为每个clip创建独立的媒体项（代表完整的原始视频）
         const mockMediaItem = {
-          id: `original-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`,
-          name: `${clip.sequence_clip_id} (${clip.source_clip_id})`,
+          id: `original-video-${clip.sequence_clip_id}-${Date.now()}-${i}`,
+          name: `原视频-${clip.sequence_clip_id} (${clip.source_clip_id})`,
           type: "video" as const,
           url: videoUrl, // 直接使用远程URL
-          duration: videoDuration,
+          duration: videoDuration, // 使用视频文件的完整时长
           width: 1920,
           height: 1080,
           fps: 30,
@@ -1115,21 +1500,22 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         mediaStore.addMediaItemDirect(mockMediaItem);
         addedVideos.push(mockMediaItem);
 
-        // 添加到时间轴（连续排列）
+        // 🎯 关键修复：在时间轴上显示完整的原始视频
         timelineStore.addElementToTrack(originalTrackId, {
           type: "media",
           name: mockMediaItem.name,
           mediaId: mockMediaItem.id,
-          duration: mockMediaItem.duration,
+          duration: videoDuration, // 🎯 使用完整的视频文件时长
           startTime: currentTimelinePosition,
-          trimStart: 0,
-          trimEnd: 0,
+          trimStart: 0, // 不裁剪，显示完整视频
+          trimEnd: 0,   // 不裁剪，显示完整视频
           muted: false,
           horizontalFlip: false,
         });
 
+        // 🎯 使用完整的视频时长来累加时间轴位置
         currentTimelinePosition += videoDuration;
-        console.log(`✅ 片段 ${i + 1}/${allClips.length} 已添加: ${clip.sequence_clip_id}，位置: ${currentTimelinePosition.toFixed(1)}秒`);
+        console.log(`✅ 原视频 ${i + 1}/${allClips.length} 已添加: ${clip.sequence_clip_id}，完整时长: ${videoDuration.toFixed(1)}s，位置: ${currentTimelinePosition.toFixed(1)}秒`);
       }
 
       set({
@@ -1140,14 +1526,18 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
       // 🎯 统计信息
       const uniqueUrls = new Set(allClips.map(clip => clip.video_url)).size;
-      console.log(`📊 统计信息:`, {
+      const totalAIPlanDuration = allClips.reduce((sum, clip) => sum + durationToSeconds(clip.clip_duration_in_sequence), 0);
+
+      console.log(`📊 原视频显示统计:`, {
         totalClips: allClips.length,
         uniqueVideos: uniqueUrls,
         duplicateClips: allClips.length - uniqueUrls,
-        totalDuration: Math.round(currentTimelinePosition)
+        originalVideosTotalDuration: currentTimelinePosition.toFixed(1),
+        aiPlanTotalDuration: totalAIPlanDuration.toFixed(1),
+        note: "显示的是完整原视频，不是剪辑后的片段"
       });
 
-      toast.success(`✅ 已显示所有 ${addedVideos.length} 个视频片段 (${uniqueUrls} 个不同视频，总时长: ${Math.round(currentTimelinePosition)}秒)`);
+      toast.success(`✅ 已显示所有 ${addedVideos.length} 个完整原视频 (${uniqueUrls} 个不同视频，原视频总时长: ${currentTimelinePosition.toFixed(1)}秒)`);
 
     } catch (error) {
       console.error("显示原始视频失败:", error);

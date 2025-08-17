@@ -81,31 +81,44 @@ export function addAISubtitlesToTimeline(aiEditingData: AIEditingData): boolean 
  * @returns 成功添加的数量
  */
 export function addTextElementsToTrack(trackId: string, textElements: CreateTextElement[]): number {
+  console.log(`📝 开始向轨道 ${trackId} 添加 ${textElements.length} 个文本元素`);
+
   const { checkElementOverlap, addElementToTrack } = useTimelineStore.getState();
   let addedCount = 0;
 
   textElements.forEach((textElement, index) => {
     try {
-      // 检查是否与现有元素重叠
-      const hasOverlap = checkElementOverlap(
-        trackId,
-        textElement.startTime,
-        textElement.duration
-      );
+      console.log(`📝 处理文本元素 ${index + 1}/${textElements.length}:`);
+      console.log(`   内容: "${textElement.content?.substring(0, 50)}..."`);
+      console.log(`   开始时间: ${textElement.startTime}s`);
+      console.log(`   持续时间: ${textElement.duration}s`);
+      console.log(`   类型: ${textElement.type}`);
 
-      if (hasOverlap) {
-        console.warn(`⚠️ Text element ${index + 1} overlaps with existing elements, skipping`);
-        return;
-      }
+      // 🎯 修复：对于AI字幕，不检查重叠，因为时间轴可能已被清空
+      // 字幕轨道通常是独立的，不需要严格的重叠检查
+      console.log(`📝 添加字幕元素 ${index + 1}，跳过重叠检查`);
+      console.log(`   字幕内容: "${textElement.content?.substring(0, 30)}..."`);
+      console.log(`   开始时间: ${textElement.startTime}s，持续时间: ${textElement.duration}s`);
 
-      addElementToTrack(trackId, textElement);
+      // 确保文本元素有必需的属性
+      const completeTextElement = {
+        ...textElement,
+        id: textElement.id || `subtitle-${Date.now()}-${index}`,
+        name: textElement.name || `字幕 ${index + 1}`,
+        trimStart: textElement.trimStart || 0,
+        trimEnd: textElement.trimEnd || 0,
+      };
+
+      addElementToTrack(trackId, completeTextElement);
       addedCount++;
-      console.log(`📝 Added text element ${index + 1}: "${textElement.content}"`);
+      console.log(`✅ 成功添加文本元素 ${index + 1}: "${textElement.content?.substring(0, 30)}..."`);
     } catch (error) {
-      console.error(`❌ Failed to add text element ${index + 1}:`, error);
+      console.error(`❌ 添加文本元素 ${index + 1} 失败:`, error);
+      console.error(`   元素数据:`, textElement);
     }
   });
 
+  console.log(`📝 完成添加文本元素，成功: ${addedCount}/${textElements.length}`);
   return addedCount;
 }
 
@@ -120,31 +133,49 @@ export function createSubtitleTrackWithElements(
   trackName: string = "AI字幕"
 ): string | null {
   try {
-    const { insertTrackAt, tracks, deleteTrack } = useTimelineStore.getState();
+    console.log(`📝 开始创建字幕轨道: "${trackName}"，包含 ${textElements.length} 个元素`);
+
+    const timelineStore = useTimelineStore.getState();
+    const { insertTrackAt, removeTrack } = timelineStore;
 
     // 创建新的文本轨道
     const trackId = insertTrackAt("text", 0);
+    console.log(`📝 创建了文本轨道，ID: ${trackId}`);
 
-    // 更新轨道名称
-    const track = tracks.find(t => t.id === trackId);
+    // 更新轨道名称 - 使用最新的tracks状态
+    const updatedTracks = useTimelineStore.getState().tracks;
+    const track = updatedTracks.find(t => t.id === trackId);
     if (track) {
       track.name = trackName;
+      console.log(`📝 轨道名称已更新为: "${trackName}"`);
+    } else {
+      console.warn(`⚠️ 找不到轨道 ${trackId} 来更新名称`);
     }
 
     // 添加文本元素到轨道
+    console.log(`📝 开始添加 ${textElements.length} 个文本元素到轨道`);
     const addedCount = addTextElementsToTrack(trackId, textElements);
 
     if (addedCount > 0) {
-      console.log(`📝 Created subtitle track "${trackName}" with ${addedCount} elements`);
+      console.log(`✅ 成功创建字幕轨道 "${trackName}"，添加了 ${addedCount} 个元素`);
+
+      // 验证轨道是否真的包含元素
+      const finalTracks = useTimelineStore.getState().tracks;
+      const finalTrack = finalTracks.find(t => t.id === trackId);
+      if (finalTrack) {
+        console.log(`🔍 验证: 轨道 "${finalTrack.name}" 包含 ${finalTrack.elements.length} 个元素`);
+      }
+
       return trackId;
     } else {
+      console.warn(`⚠️ 没有成功添加任何元素，删除空轨道 ${trackId}`);
       // 如果没有添加任何元素，删除空轨道
-      deleteTrack(trackId);
+      removeTrack(trackId);
       return null;
     }
 
   } catch (error) {
-    console.error('❌ Error creating subtitle track:', error);
+    console.error('❌ 创建字幕轨道时发生错误:', error);
     return null;
   }
 }

@@ -17,7 +17,7 @@ import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/onboarding";
-import { VisualEditingProgress } from "@/components/editor/visual-editing-progress";
+
 
 export default function Editor() {
   const {
@@ -454,7 +454,6 @@ export default function Editor() {
           )}
         </div>
         <Onboarding />
-        <VisualEditingProgress />
       </div>
     </EditorProvider>
   );

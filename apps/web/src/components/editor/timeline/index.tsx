@@ -104,6 +104,21 @@ export function Timeline() {
     isInTimeline,
   });
 
+  // 🎯 监听AI剪辑的缩放调整事件
+  useEffect(() => {
+    const handleZoomAdjust = (event: CustomEvent) => {
+      const { zoomLevel: newZoomLevel } = event.detail;
+      console.log(`🔍 接收到缩放调整事件: ${newZoomLevel.toFixed(2)}x`);
+      setZoomLevel(newZoomLevel);
+    };
+
+    window.addEventListener('timeline-zoom-adjust', handleZoomAdjust as EventListener);
+
+    return () => {
+      window.removeEventListener('timeline-zoom-adjust', handleZoomAdjust as EventListener);
+    };
+  }, [setZoomLevel]);
+
   // Old marquee selection removed - using new SelectionBox component instead
 
   // Dynamic timeline width calculation based on playhead position and duration
@@ -603,6 +618,8 @@ export function Timeline() {
       className={
         "h-full flex flex-col transition-colors duration-200 relative bg-panel rounded-sm overflow-hidden"
       }
+      data-timeline-container
+      ref={timelineRef}
       {...dragProps}
       onMouseEnter={() => setIsInTimeline(true)}
       onMouseLeave={() => setIsInTimeline(false)}

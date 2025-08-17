@@ -81,14 +81,40 @@ export function parseSrtContent(srtContent: string): SrtEntry[] {
 }
 
 /**
+ * 通用时间码转换为秒数（支持SRT格式和小数点格式）
+ * @param timeCode 时间码 (如: "00:01:23,456" 或 "00:01:23.456")
+ * @returns 秒数
+ */
+export function timeCodeToSeconds(timeCode: string): number {
+  if (!timeCode) return 0;
+
+  // 处理小数点格式 (HH:MM:SS.mmm)
+  if (timeCode.includes('.')) {
+    const parts = timeCode.split(':');
+    if (parts.length !== 3) return 0;
+
+    const hours = parseInt(parts[0], 10);
+    const minutes = parseInt(parts[1], 10);
+    const secondsParts = parts[2].split('.');
+    const seconds = parseInt(secondsParts[0], 10);
+    const milliseconds = secondsParts[1] ? parseInt(secondsParts[1].padEnd(3, '0'), 10) : 0;
+
+    return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+  }
+
+  // 处理SRT格式 (HH:MM:SS,mmm)
+  return srtTimeToSeconds(timeCode);
+}
+
+/**
  * 将DialogueSegment转换为TextElement
  * @param segment 对话片段
  * @param index 索引（用于生成名称）
  * @returns CreateTextElement对象
  */
 export function dialogueSegmentToTextElement(segment: DialogueSegment, index: number): CreateTextElement {
-  const startTime = srtTimeToSeconds(segment.start_timecode);
-  const endTime = srtTimeToSeconds(segment.end_timecode);
+  const startTime = timeCodeToSeconds(segment.start_timecode);
+  const endTime = timeCodeToSeconds(segment.end_timecode);
   const duration = endTime - startTime;
   
   return {
