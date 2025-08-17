@@ -77,7 +77,13 @@ export function AIEditingPanel() {
       toast.error("请先生成剪辑计划");
       return;
     }
-    await showOriginalVideoInTimeline();
+
+    try {
+      await showOriginalVideoInTimeline();
+    } catch (error) {
+      console.error("显示原视频失败:", error);
+      toast.error("显示原视频失败，请重试");
+    }
   };
 
   // 🎯 资深工程师修复：根据不同情况执行不同的剪辑流程
@@ -218,12 +224,17 @@ export function AIEditingPanel() {
                   {/* 显示原始视频按钮 */}
                   <Button
                     onClick={handleShowOriginalVideo}
-                    disabled={isExecutingPlan || isShowingOriginalVideo}
+                    disabled={isExecutingPlan || isShowingOriginalVideo || visualEditingState === 'showing-original'}
                     size="sm"
                     variant="outline"
                     className="text-xs"
                   >
-                    {isShowingOriginalVideo ? (
+                    {visualEditingState === 'showing-original' ? (
+                      <>
+                        <div className="w-3 h-3 mr-1 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                        正在加载...
+                      </>
+                    ) : isShowingOriginalVideo ? (
                       <>
                         <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
                         已显示原视频

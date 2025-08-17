@@ -95,6 +95,7 @@ interface TimelineStore {
   removeTrack: (trackId: string) => void;
   removeTrackWithRipple: (trackId: string) => void;
   addElementToTrack: (trackId: string, element: CreateTimelineElement) => void;
+  addElementsToTrackBatch: (trackId: string, elements: CreateTimelineElement[]) => void;
   removeElementFromTrack: (
     trackId: string,
     elementId: string,
@@ -534,6 +535,68 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       );
 
       get().selectElement(trackId, newElement.id);
+    },
+
+    // 🚀 批量添加元素到轨道（高性能版本）
+    addElementsToTrackBatch: (trackId, elements) => {
+      get().pushHistory();
+
+      const track = get()._tracks.find((t) => t.id === trackId);
+      if (!track) {
+        console.error("Track not found:", trackId);
+        return;
+      }
+
+      // 验证所有元素
+      const validElements: TimelineElement[] = [];
+
+      for (const elementData of elements) {
+        const validation = validateElementTrackCompatibility(elementData, track);
+        if (!validation.isValid) {
+          console.error(validation.errorMessage);
+          continue;
+        }
+
+        if (elementData.type === "media" && !elementData.mediaId) {
+          console.error("Media element must have mediaId");
+          continue;
+        }
+
+        if (elementData.type === "text" && !elementData.content) {
+          console.error("Text element must have content");
+          continue;
+        }
+
+        // 创建新元素
+        const newElement: TimelineElement = {
+          id: generateUUID(),
+          ...elementData,
+        };
+
+        validElements.push(newElement);
+      }
+
+      if (validElements.length === 0) {
+        console.warn("No valid elements to add");
+        return;
+      }
+
+      // 批量更新轨道（一次性操作，避免多次重新渲染）
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? { ...track, elements: [...track.elements, ...validElements] }
+            : track
+        )
+      );
+
+      // 选择最后一个添加的元素
+      if (validElements.length > 0) {
+        const lastElement = validElements[validElements.length - 1];
+        get().selectElement(trackId, lastElement.id);
+      }
+
+      console.log(`✅ 批量添加 ${validElements.length} 个元素到轨道 ${trackId}`);
     },
 
     removeElementFromTrack: (trackId, elementId, pushHistory = true) => {

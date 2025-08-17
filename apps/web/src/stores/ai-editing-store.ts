@@ -5,7 +5,7 @@
 
 import { create } from "zustand";
 import { toast } from "sonner";
-import { AIEditingData, AIEditingPlan, MediaElement, CreateMediaElement } from "@/types/timeline";
+import { AIEditingData, AIEditingPlan, CreateMediaElement } from "@/types/timeline";
 import { useTimelineStore } from "./timeline-store";
 import { useMediaStore } from "./media-store";
 import { useProjectStore } from "./project-store";
@@ -16,6 +16,7 @@ import {
   createSubtitleTrackWithElements
 } from "@/lib/ai-subtitle-integration";
 import { parseDialogueTrackToTextElements } from "@/lib/subtitle-parser";
+import { storageService } from "@/lib/storage/storage-service";
 
 
 
@@ -64,6 +65,15 @@ interface AIEditingState {
 
   // Mock数据生成
   generateMockData: (projectId: string) => AIEditingData;
+
+  // 高性能视频元数据获取
+  getVideoMetadataOptimized: (videoUrl: string, index: number) => Promise<{duration: number, thumbnail: string}>;
+
+  // 内部方法
+  adjustTimelineZoomForOriginalVideos: () => number | undefined;
+  performVisualEditingAnimation: () => Promise<{success: boolean, type: string}>;
+  performOneClickEditingInBackground: () => Promise<any>;
+  applyOneClickResultToTimeline: (result: any) => Promise<void>;
 }
 
 // 时间码转换为秒数的工具函数
@@ -803,7 +813,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   // 🎬 可视化剪辑动画（仅用于展示效果）
   performVisualEditingAnimation: async () => {
     const { currentEditingPlan, isShowingOriginalVideo, originalVideoTrackId } = get();
-    if (!currentEditingPlan) return;
+    if (!currentEditingPlan) return { success: false, type: 'visual' };
 
     console.log("🎭 开始可视化剪辑动画展示");
 
@@ -840,7 +850,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     // 创建临时的时间轴状态（不影响当前显示）
     const tempTimelineState = {
       tracks: [],
-      elements: []
+      elements: [] as any[]
     };
 
     // 清空临时时间轴
@@ -869,8 +879,11 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         }
 
         // 🎬 添加到媒体库
+        if (!projectStore.activeProject) {
+          throw new Error("没有活动项目");
+        }
+
         const mediaItem = await mediaStore.addMediaItem(projectStore.activeProject.id, {
-          id: `ai-clip-${clip.sequence_clip_id}-${Date.now()}-${i}`,
           name: `一键剪辑-${clip.sequence_clip_id}`,
           type: "video" as const,
           file: file,
@@ -879,9 +892,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           duration: durationToSeconds(clip.clip_duration_in_sequence),
           width: 1920,
           height: 1080,
-          size: blob.size,
-          createdAt: new Date(),
-          updatedAt: new Date(),
         });
 
         // 🎬 添加到临时时间轴
@@ -1118,6 +1128,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         // 🎬 步骤2：添加到媒体库
         console.log(`📚 添加到媒体库: ${clip.sequence_clip_id}`);
 
+        if (!projectStore.activeProject) {
+          throw new Error("没有活动项目");
+        }
+
         const mediaItem = await mediaStore.addMediaItem(projectStore.activeProject.id, {
           name: `AI剪辑-${clip.sequence_clip_id}`,
           type: "video" as const,
@@ -1125,7 +1139,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           duration: durationToSeconds(clip.clip_duration_in_sequence),
           width: 1920,
           height: 1080,
-          fps: 30,
         });
 
         // 🎬 步骤3：添加到时间轴
@@ -1343,7 +1356,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     });
   },
 
-  // 新增：在时间轴显示所有原始视频
+  // 新增：在时间轴显示所有原始视频（高性能并行版本）
   showOriginalVideoInTimeline: async () => {
     const { currentEditingPlan } = get();
     if (!currentEditingPlan) {
@@ -1363,165 +1376,125 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       // 创建原始视频轨道
       const originalTrackId = timelineStore.findOrCreateTrack("media");
 
-      // 🎯 资深工程师修复：显示所有clip作为独立视频片段，不去重
       const allClips = currentEditingPlan.timeline_clips;
-      console.log(`📹 发现 ${allClips.length} 个视频片段`);
+      console.log(`🚀 开始并行处理 ${allClips.length} 个视频片段`);
 
       if (allClips.length === 0) {
         toast.error("没有找到视频片段");
         return;
       }
 
-      let currentTimelinePosition = 0;
-      const addedVideos: any[] = [];
-      const processedUrls = new Map<string, {duration: number, thumbnail: string}>(); // 缓存已处理的URL信息
+      // 🚀 性能优化1：并行处理所有视频的元数据获取
+      console.log(`⚡ 并行获取 ${allClips.length} 个视频的元数据...`);
 
-      // 🎯 为每个clip创建独立的媒体项
-      for (let i = 0; i < allClips.length; i++) {
-        const clip = allClips[i];
-        const videoUrl = clip.video_url;
-        console.log(`🔄 处理视频片段 ${i + 1}/${allClips.length}: ${clip.sequence_clip_id} (${videoUrl})`);
-
-        // 🎯 智能缓存：检查是否已经处理过这个URL
-        let videoDuration = 120; // 默认值
-        let thumbnailUrl: string;
-
-        if (processedUrls.has(videoUrl)) {
-          // 使用缓存的信息
-          const cached = processedUrls.get(videoUrl)!;
-          videoDuration = cached.duration;
-          thumbnailUrl = cached.thumbnail;
-          console.log(`📋 使用缓存信息: ${clip.sequence_clip_id}, 时长: ${videoDuration}秒`);
-        } else {
-          // 首次处理这个URL，获取视频信息
-          try {
-            // 创建临时video元素获取真实时长和缩略图
-            const tempVideo = document.createElement('video');
-            tempVideo.crossOrigin = 'anonymous';
-            tempVideo.preload = 'metadata';
-
-            const videoLoadPromise = new Promise<{duration: number, thumbnail: string}>((resolve, reject) => {
-              const timeoutId = setTimeout(() => {
-                reject(new Error('视频加载超时'));
-              }, 10000); // 10秒超时
-
-              tempVideo.onloadedmetadata = async () => {
-                try {
-                  clearTimeout(timeoutId);
-                  videoDuration = tempVideo.duration;
-                  console.log(`✅ 视频 ${i + 1} 真实时长: ${videoDuration}秒`);
-
-                  // 生成缩略图（从视频开始1秒处）
-                  const canvas = document.createElement('canvas');
-                  const ctx = canvas.getContext('2d');
-
-                  if (!ctx) {
-                    throw new Error('无法创建Canvas上下文');
-                  }
-
-                  canvas.width = 320;
-                  canvas.height = 180;
-
-                  // 跳转到1秒处生成缩略图
-                  tempVideo.currentTime = Math.min(1, videoDuration - 0.1);
-
-                  tempVideo.onseeked = () => {
-                    try {
-                      ctx.drawImage(tempVideo, 0, 0, canvas.width, canvas.height);
-                      const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
-
-                      // 清理
-                      tempVideo.remove();
-                      canvas.remove();
-
-                      resolve({ duration: videoDuration, thumbnail });
-                    } catch (error) {
-                      clearTimeout(timeoutId);
-                      reject(error);
-                    }
-                  };
-                } catch (error) {
-                  clearTimeout(timeoutId);
-                  reject(error);
-                }
-              };
-
-              tempVideo.onerror = () => {
-                clearTimeout(timeoutId);
-                reject(new Error('视频加载失败'));
-              };
-            });
-
-            tempVideo.src = videoUrl;
-
-            // 等待视频加载完成
-            const { duration, thumbnail } = await videoLoadPromise;
-            videoDuration = duration;
-            thumbnailUrl = thumbnail;
-
-            // 缓存结果
-            processedUrls.set(videoUrl, { duration: videoDuration, thumbnail: thumbnailUrl });
-
-            console.log(`✅ 视频 ${i + 1} 信息获取成功`, { duration: videoDuration, hasThumbnail: !!thumbnailUrl });
-
-          } catch (error) {
-            console.warn(`⚠️ 视频 ${i + 1} 信息获取失败，使用默认值:`, error);
-            thumbnailUrl = generateDefaultVideoThumbnail(i);
-
-            // 缓存默认值
-            processedUrls.set(videoUrl, { duration: videoDuration, thumbnail: thumbnailUrl });
-          }
+      const videoProcessingPromises = allClips.map(async (clip, index) => {
+        try {
+          const { duration, thumbnail } = await get().getVideoMetadataOptimized(clip.video_url, index);
+          return {
+            clip,
+            index,
+            duration,
+            thumbnail,
+            success: true
+          };
+        } catch (error) {
+          console.warn(`⚠️ 视频 ${index + 1} 元数据获取失败:`, error);
+          return {
+            clip,
+            index,
+            duration: 120, // 默认时长
+            thumbnail: generateDefaultVideoThumbnail(index),
+            success: false
+          };
         }
+      });
 
-        // 🎯 资深工程师修复：显示原视频应该使用完整的视频文件时长，不是剪辑计划时长
-        console.log(`📹 原视频信息:`, {
-          clipId: clip.sequence_clip_id,
-          videoUrl: videoUrl,
-          originalVideoDuration: videoDuration,
-          aiPlanClipDuration: clip.clip_duration_in_sequence,
-          note: "显示原视频使用完整视频时长"
-        });
+      // 等待所有视频元数据并行获取完成
+      const videoResults = await Promise.all(videoProcessingPromises);
+      console.log(`✅ 所有视频元数据获取完成，成功: ${videoResults.filter(r => r.success).length}/${videoResults.length}`);
 
-        // 🎯 为每个clip创建独立的媒体项（代表完整的原始视频）
-        const mockMediaItem = {
-          id: `original-video-${clip.sequence_clip_id}-${Date.now()}-${i}`,
+      // 🚀 性能优化2：批量创建媒体项和时间轴元素
+      const mediaItems: any[] = [];
+      const timelineElements: any[] = [];
+      let currentTimelinePosition = 0;
+
+      videoResults.forEach(({ clip, index, duration, thumbnail }) => {
+        // 创建媒体项
+        const mediaItem = {
+          id: `original-video-${clip.sequence_clip_id}-${Date.now()}-${index}`,
           name: `原视频-${clip.sequence_clip_id} (${clip.source_clip_id})`,
           type: "video" as const,
-          url: videoUrl, // 直接使用远程URL
-          duration: videoDuration, // 使用视频文件的完整时长
+          url: clip.video_url,
+          duration: duration,
           width: 1920,
           height: 1080,
           fps: 30,
-          thumbnailUrl: thumbnailUrl,
-          file: null, // 不保存实际文件，避免OPFS错误
+          thumbnailUrl: thumbnail,
+          file: null,
         };
 
-        // 直接添加到媒体store
-        mediaStore.addMediaItemDirect(mockMediaItem);
-        addedVideos.push(mockMediaItem);
+        mediaItems.push(mediaItem);
 
-        // 🎯 关键修复：在时间轴上显示完整的原始视频
-        timelineStore.addElementToTrack(originalTrackId, {
+        // 创建时间轴元素
+        const timelineElement = {
           type: "media",
-          name: mockMediaItem.name,
-          mediaId: mockMediaItem.id,
-          duration: videoDuration, // 🎯 使用完整的视频文件时长
+          name: mediaItem.name,
+          mediaId: mediaItem.id,
+          duration: duration,
           startTime: currentTimelinePosition,
-          trimStart: 0, // 不裁剪，显示完整视频
-          trimEnd: 0,   // 不裁剪，显示完整视频
+          trimStart: 0,
+          trimEnd: 0,
           muted: false,
           horizontalFlip: false,
-        });
+        };
 
-        // 🎯 使用完整的视频时长来累加时间轴位置
-        currentTimelinePosition += videoDuration;
-        console.log(`✅ 原视频 ${i + 1}/${allClips.length} 已添加: ${clip.sequence_clip_id}，完整时长: ${videoDuration.toFixed(1)}s，位置: ${currentTimelinePosition.toFixed(1)}秒`);
+        timelineElements.push(timelineElement);
+        currentTimelinePosition += duration;
+
+        console.log(`📋 准备视频 ${index + 1}: ${clip.sequence_clip_id}, 时长: ${duration.toFixed(1)}s`);
+      });
+
+      // 🚀 性能优化3：批量添加媒体项到store并保存到持久化存储
+      console.log(`⚡ 批量添加 ${mediaItems.length} 个媒体项到媒体库...`);
+
+      const { activeProject } = useProjectStore.getState();
+      if (!activeProject) {
+        throw new Error("没有活动项目");
       }
+
+      // 并行保存所有媒体项到持久化存储
+      const savePromises = mediaItems.map(async (mediaItem) => {
+        try {
+          // 先添加到本地状态
+          mediaStore.addMediaItemDirect(mediaItem);
+          // 然后保存到持久化存储
+          await storageService.saveMediaItem(activeProject.id, mediaItem);
+          console.log(`✅ 媒体项已保存: ${mediaItem.name}`);
+          return mediaItem;
+        } catch (error) {
+          console.error(`❌ 保存媒体项失败: ${mediaItem.name}`, error);
+          // 如果保存失败，从本地状态移除
+          const currentItems = mediaStore.mediaItems.filter(item => item.id !== mediaItem.id);
+          mediaStore.clearAllMedia();
+          currentItems.forEach(item => mediaStore.addMediaItemDirect(item));
+          return null;
+        }
+      });
+
+      const savedMediaItems = await Promise.all(savePromises);
+      const successfulItems = savedMediaItems.filter(item => item !== null);
+      console.log(`✅ 成功保存 ${successfulItems.length}/${mediaItems.length} 个媒体项`);
+
+      // 🚀 性能优化4：批量添加时间轴元素（一次性更新，避免多次重新渲染）
+      console.log(`⚡ 批量添加 ${timelineElements.length} 个元素到时间轴...`);
+      timelineStore.addElementsToTrackBatch(originalTrackId, timelineElements);
+
+      console.log(`🎉 高性能并行处理完成！总时长: ${currentTimelinePosition.toFixed(1)}秒`);
 
       set({
         isShowingOriginalVideo: true,
         originalVideoTrackId: originalTrackId,
-        visualEditingState: 'showing-original'
+        visualEditingState: 'idle' // 🔧 修复：完成后重置状态
       });
 
       // 🎯 统计信息
@@ -1537,12 +1510,15 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         note: "显示的是完整原视频，不是剪辑后的片段"
       });
 
-      toast.success(`✅ 已显示所有 ${addedVideos.length} 个完整原视频 (${uniqueUrls} 个不同视频，原视频总时长: ${currentTimelinePosition.toFixed(1)}秒)`);
+      toast.success(`✅ 已显示所有 ${mediaItems.length} 个完整原视频 (${uniqueUrls} 个不同视频，原视频总时长: ${currentTimelinePosition.toFixed(1)}秒)`);
 
     } catch (error) {
       console.error("显示原始视频失败:", error);
       toast.error(`显示原始视频失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      set({ visualEditingState: 'idle' });
+      set({
+        visualEditingState: 'idle',
+        isShowingOriginalVideo: false // 🔧 修复：出错时也要重置状态
+      });
     }
   },
 
@@ -1561,5 +1537,77 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   // 生成Mock数据
   generateMockData: (projectId: string): AIEditingData => {
     return generateAIEditingMockData(projectId);
+  },
+
+  // 🚀 高性能视频元数据获取（优化版本）
+  getVideoMetadataOptimized: async (videoUrl: string, index: number) => {
+    return new Promise<{duration: number, thumbnail: string}>((resolve, reject) => {
+      const video = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        reject(new Error('无法创建Canvas上下文'));
+        return;
+      }
+
+      // 设置超时
+      const timeoutId = setTimeout(() => {
+        video.remove();
+        canvas.remove();
+        reject(new Error('视频加载超时'));
+      }, 8000); // 8秒超时，比原来更短
+
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      video.muted = true; // 静音以避免音频问题
+
+      video.onloadedmetadata = () => {
+        try {
+          clearTimeout(timeoutId);
+          const duration = video.duration;
+
+          // 设置canvas尺寸
+          canvas.width = 320;
+          canvas.height = 180;
+
+          // 跳转到指定时间生成缩略图
+          const thumbnailTime = Math.min(1 + (index * 0.2), duration - 0.1);
+          video.currentTime = thumbnailTime;
+
+          video.onseeked = () => {
+            try {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+
+              // 清理
+              video.remove();
+              canvas.remove();
+
+              resolve({ duration, thumbnail });
+            } catch (error) {
+              clearTimeout(timeoutId);
+              video.remove();
+              canvas.remove();
+              reject(error);
+            }
+          };
+        } catch (error) {
+          clearTimeout(timeoutId);
+          video.remove();
+          canvas.remove();
+          reject(error);
+        }
+      };
+
+      video.onerror = () => {
+        clearTimeout(timeoutId);
+        video.remove();
+        canvas.remove();
+        reject(new Error('视频加载失败'));
+      };
+
+      video.src = videoUrl;
+    });
   },
 }));

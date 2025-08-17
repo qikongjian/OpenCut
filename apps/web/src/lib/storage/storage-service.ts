@@ -126,31 +126,33 @@ class StorageService {
 
   // Media operations - now project-specific
   async saveMediaItem(projectId: string, mediaItem: MediaItem): Promise<void> {
-    // 如果没有文件，跳过保存
-    if (!mediaItem.file) {
-      console.warn(`Skipping save for media item ${mediaItem.id} - no file provided`);
-      return;
-    }
-
     const { mediaMetadataAdapter, mediaFilesAdapter } =
       this.getProjectMediaAdapters(projectId);
 
-    // Save file to project-specific OPFS
-    await mediaFilesAdapter.set(mediaItem.id, mediaItem.file);
-
-    // Save metadata to project-specific IndexedDB
+    // Save metadata to project-specific IndexedDB (always save metadata)
     const metadata: MediaFileData = {
       id: mediaItem.id,
       name: mediaItem.name,
       type: mediaItem.type,
-      size: mediaItem.file.size,
-      lastModified: mediaItem.file.lastModified,
+      size: mediaItem.file?.size,
+      lastModified: mediaItem.file?.lastModified,
       width: mediaItem.width,
       height: mediaItem.height,
       duration: mediaItem.duration,
+      url: mediaItem.url,
+      thumbnailUrl: mediaItem.thumbnailUrl,
+      fps: (mediaItem as any).fps,
+      isRemote: !mediaItem.file, // 标识是否为远程视频
     };
 
     await mediaMetadataAdapter.set(mediaItem.id, metadata);
+
+    // Save file to project-specific OPFS (only if file exists)
+    if (mediaItem.file) {
+      await mediaFilesAdapter.set(mediaItem.id, mediaItem.file);
+    } else {
+      console.log(`Saving remote media item ${mediaItem.id} - no file to store in OPFS`);
+    }
   }
 
   async loadMediaItem(
@@ -160,15 +162,20 @@ class StorageService {
     const { mediaMetadataAdapter, mediaFilesAdapter } =
       this.getProjectMediaAdapters(projectId);
 
-    const [file, metadata] = await Promise.all([
-      mediaFilesAdapter.get(id),
-      mediaMetadataAdapter.get(id),
-    ]);
+    const metadata = await mediaMetadataAdapter.get(id);
+    if (!metadata) return null;
 
-    if (!file || !metadata) return null;
+    let file: File | null = null;
+    let url: string | undefined = metadata.url;
 
-    // Create new object URL for the file
-    const url = URL.createObjectURL(file);
+    // 如果不是远程视频，尝试加载本地文件
+    if (!metadata.isRemote) {
+      file = await mediaFilesAdapter.get(id);
+      if (!file) return null; // 本地文件丢失
+
+      // Create new object URL for the local file
+      url = URL.createObjectURL(file);
+    }
 
     return {
       id: metadata.id,
@@ -179,7 +186,8 @@ class StorageService {
       width: metadata.width,
       height: metadata.height,
       duration: metadata.duration,
-      // thumbnailUrl would need to be regenerated or cached separately
+      thumbnailUrl: metadata.thumbnailUrl, // 现在保存和恢复缩略图URL
+      ...(metadata.fps && { fps: metadata.fps }),
     };
   }
 

@@ -172,22 +172,17 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
       mediaItems: [...state.mediaItems, newItem],
     }));
 
-    // Save to persistent storage in background (only if file exists)
-    if (newItem.file) {
-      try {
-        await storageService.saveMediaItem(projectId, newItem);
-        return newItem; // 返回成功添加的媒体项
-      } catch (error) {
-        console.error("Failed to save media item:", error);
-        // Remove from local state if save failed
-        set((state) => ({
-          mediaItems: state.mediaItems.filter((media) => media.id !== newItem.id),
-        }));
-        throw error; // 重新抛出错误，让调用者知道添加失败
-      }
-    } else {
-      // 对于没有文件的媒体项（如远程视频），直接返回
-      return newItem;
+    // Save to persistent storage in background (always save metadata)
+    try {
+      await storageService.saveMediaItem(projectId, newItem);
+      return newItem; // 返回成功添加的媒体项
+    } catch (error) {
+      console.error("Failed to save media item:", error);
+      // Remove from local state if save failed
+      set((state) => ({
+        mediaItems: state.mediaItems.filter((media) => media.id !== newItem.id),
+      }));
+      throw error; // 重新抛出错误，让调用者知道添加失败
     }
   },
 
@@ -263,10 +258,11 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
     try {
       const mediaItems = await storageService.loadAllMediaItems(projectId);
 
-      // Regenerate thumbnails for video items
+      // Regenerate thumbnails for local video items (not remote videos)
       const updatedMediaItems = await Promise.all(
         mediaItems.map(async (item) => {
-          if (item.type === "video" && item.file) {
+          // 只为有本地文件的视频重新生成缩略图
+          if (item.type === "video" && item.file && !item.thumbnailUrl) {
             try {
               const { thumbnailUrl, width, height } =
                 await generateVideoThumbnail(item.file);
@@ -284,6 +280,7 @@ export const useMediaStore = create<MediaStore>((set, get) => ({
               return item;
             }
           }
+          // 远程视频或已有缩略图的视频直接返回
           return item;
         })
       );

@@ -13,12 +13,16 @@ export interface MediaFileData {
   id: string;
   name: string;
   type: "image" | "video" | "audio";
-  size: number;
-  lastModified: number;
+  size?: number; // 远程视频可能没有size
+  lastModified?: number; // 远程视频可能没有lastModified
   width?: number;
   height?: number;
   duration?: number;
-  // File will be stored separately in OPFS
+  url?: string; // 远程视频的URL
+  thumbnailUrl?: string; // 缩略图URL
+  fps?: number; // 视频帧率
+  isRemote?: boolean; // 标识是否为远程视频
+  // File will be stored separately in OPFS (for local files)
 }
 
 export interface TimelineData {
