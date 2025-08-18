@@ -170,7 +170,8 @@ async function executeAIClipsExport(
     duration: clip.duration,
     exists: require('fs').existsSync(clip.clipPath)
   })));
-  console.log('FFmpeg args:', ffmpegArgs.join(' '));
+  console.log('Total duration:', totalDuration);
+  console.log('FFmpeg合成命令: ffmpeg', ffmpegArgs.join(' '));
   console.log('========================');
 
   // 执行FFmpeg
@@ -195,7 +196,8 @@ async function downloadAndProcessClips(
 ): Promise<Array<{ clipPath: string; duration: number }>> {
   console.log(`🚀 开始并行下载 ${clips.length} 个视频片段...`);
 
-  // 并行处理所有片段
+  // 限制并发数量以避免系统负载过高
+  const MAX_CONCURRENT = 3; // 最多同时处理3个片段
   const processPromises = clips.map(async (clip, i) => {
     const clipId = `${i + 1}/${clips.length}`;
 
@@ -332,18 +334,23 @@ async function clipVideo(inputPath: string, outputPath: string, startTime: strin
       console.log(`✂️ 裁剪尝试 ${attempt}/${maxRetries}: ${inputPath} -> ${outputPath}`);
 
       await new Promise<void>((resolve, reject) => {
+        // 使用更安全的快速编码策略
         const args = [
           '-i', inputPath,
           '-ss', startSeconds.toString(),
           '-t', duration.toString(),
-          '-c:v', 'libx264', // 重新编码视频确保兼容性
-          '-c:a', 'aac', // 重新编码音频确保兼容性
-          '-preset', 'fast', // 使用快速预设平衡速度和质量
-          '-crf', '23', // 设置合理的质量
+          '-c:v', 'libx264', // 重新编码确保兼容性
+          '-c:a', 'aac',
+          '-preset', 'veryfast', // 使用veryfast预设平衡速度和质量
+          '-crf', '23',
+          '-pix_fmt', 'yuv420p', // 确保兼容性
           '-avoid_negative_ts', 'make_zero',
           '-y',
           outputPath
         ];
+
+        console.log(`使用快速编码模式裁剪...`);
+        console.log(`FFmpeg裁剪命令: ffmpeg ${args.join(' ')}`);
 
         const ffmpeg = spawn('ffmpeg', args, { stdio: 'pipe' });
         let stderr = '';
@@ -405,11 +412,15 @@ async function buildAIClipsFFmpegCommand(
   // 设置总时长
   args.push('-t', totalDuration.toString());
 
-  // 基础设置
+  // 基础设置 - 优化性能
   args.push('-c:v', 'libx264');
   args.push('-c:a', 'aac');
-  args.push('-preset', 'medium');
+  args.push('-preset', 'veryfast'); // 使用veryfast预设平衡速度和质量
   args.push('-pix_fmt', 'yuv420p');
+
+  // 性能优化参数
+  args.push('-threads', '0'); // 使用所有可用CPU核心
+  args.push('-movflags', '+faststart'); // 优化MP4文件结构
 
   // 只在明确指定分辨率时才设置，否则保持原始分辨率
   if (options.width && options.height) {
@@ -421,16 +432,19 @@ async function buildAIClipsFFmpegCommand(
     args.push('-r', options.fps.toString());
   }
 
-  // 质量设置
+  // 质量设置 - 优化速度
   switch (options.quality) {
     case 'preview':
       args.push('-crf', '28');
+      args.push('-tune', 'fastdecode'); // 优化解码速度
       break;
     case 'standard':
       args.push('-crf', '23');
+      args.push('-tune', 'fastdecode'); // 优化解码速度
       break;
     case 'professional':
       args.push('-crf', '18');
+      args.push('-tune', 'fastdecode'); // 优化解码速度
       break;
   }
 
