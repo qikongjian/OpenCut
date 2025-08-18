@@ -1,17 +1,34 @@
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toBlobURL } from "@ffmpeg/util";
+// 使用动态导入避免模块解析问题
+// import { FFmpeg } from "@ffmpeg/ffmpeg";
+// import { toBlobURL } from "@ffmpeg/util";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { useMediaStore } from "@/stores/media-store";
 
-let ffmpeg: FFmpeg | null = null;
+let ffmpeg: any | null = null;
 
-export const initFFmpeg = async (): Promise<FFmpeg> => {
+export const initFFmpeg = async (): Promise<any> => {
   if (ffmpeg) return ffmpeg;
 
-  ffmpeg = new FFmpeg();
-  await ffmpeg.load(); // Use default config
+  try {
+    // 动态导入FFmpeg模块
+    const { FFmpeg } = await import("@ffmpeg/ffmpeg");
+    const { toBlobURL } = await import("@ffmpeg/util");
 
-  return ffmpeg;
+    ffmpeg = new FFmpeg();
+
+    // 加载FFmpeg核心文件
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+
+    return ffmpeg;
+  } catch (error) {
+    console.error('Failed to initialize FFmpeg:', error);
+    throw new Error(`FFmpeg初始化失败: ${error instanceof Error ? error.message : '未知错误'}`);
+  }
 };
 
 export const generateThumbnail = async (

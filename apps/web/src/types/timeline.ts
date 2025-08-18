@@ -391,3 +391,229 @@ export function validateElementTrackCompatibility(
 
   return { isValid: true };
 }
+
+// ==================== 导出系统类型定义 ====================
+
+// 时间类型定义（毫秒）
+export type Time = number;
+
+// 导出质量级别
+export type ExportQuality = 'preview' | 'standard' | 'professional';
+
+// 导出方法
+export type ExportMethod = 'frontend' | 'backend' | 'hybrid';
+
+// 隐私级别
+export type PrivacyLevel = 'strict' | 'balanced' | 'performance';
+
+// 设备性能级别
+export type DevicePerformance = 'low' | 'medium' | 'high';
+
+// 中间表示(IR) - 导出系统的核心数据结构
+export interface TimelineIR {
+  // 项目基本信息
+  width: number;
+  height: number;
+  fps: number;
+  duration: number; // 总时长（毫秒）
+
+  // 媒体轨道
+  video: Array<{
+    id: string;
+    src: string; // 文件路径或URL
+    in: Time; // 素材内部开始时间
+    out: Time; // 素材内部结束时间
+    start: Time; // 在时间线上的开始时间
+    trackId: string;
+    transform?: {
+      x?: number;
+      y?: number;
+      scale?: number;
+      rotate?: number;
+    };
+    muted?: boolean;
+    hidden?: boolean;
+  }>;
+
+  // 音频轨道
+  audio: Array<{
+    id: string;
+    src: string;
+    in: Time;
+    out: Time;
+    start: Time;
+    trackId: string;
+    gain?: number; // 音量增益
+  }>;
+
+  // 文本/字幕轨道
+  texts: Array<{
+    id: string;
+    text: string;
+    start: Time;
+    end: Time;
+    style: {
+      x: number;
+      y: number;
+      fontFamily: string;
+      fontSize: number;
+      color: string;
+      backgroundColor?: string;
+      align?: 'left' | 'center' | 'right';
+      fontWeight?: 'normal' | 'bold';
+      fontStyle?: 'normal' | 'italic';
+      textDecoration?: 'none' | 'underline' | 'line-through';
+      opacity?: number;
+      rotation?: number;
+      shadow?: {
+        x: number;
+        y: number;
+        blur: number;
+        color: string;
+      };
+    };
+  }>;
+
+  // 转场效果
+  transitions: Array<{
+    id: string;
+    between: [string, string]; // [fromElementId, toElementId]
+    kind: 'cross' | 'fade' | 'wipe' | 'slide' | 'zoom';
+    duration: Time;
+    direction?: TransitionDirection;
+    intensity?: number;
+  }>;
+}
+
+// 设备信息
+export interface DeviceInfo {
+  // 硬件信息
+  availableMemory: number; // 可用内存（字节）
+  cpuCores: number; // CPU核心数
+  isLowEndDevice: boolean; // 是否为低端设备
+
+  // 网络信息
+  networkSpeed: 'slow' | 'medium' | 'fast'; // 网络速度
+  isOnline: boolean; // 是否在线
+
+  // 浏览器能力
+  supportsWebCodecs: boolean; // 是否支持WebCodecs
+  supportsOffscreenCanvas: boolean; // 是否支持OffscreenCanvas
+  supportsWebWorkers: boolean; // 是否支持Web Workers
+
+  // 性能评级
+  performanceLevel: DevicePerformance;
+}
+
+// 项目数据分析
+export interface ProjectAnalysis {
+  // 基本统计
+  totalDuration: number; // 总时长（毫秒）
+  videoCount: number; // 视频片段数量
+  audioCount: number; // 音频片段数量
+  textCount: number; // 文本片段数量
+  transitionCount: number; // 转场数量
+
+  // 文件大小
+  totalFileSize: number; // 总文件大小（字节）
+  largestFileSize: number; // 最大单文件大小（字节）
+
+  // 复杂度分析
+  hasComplexEffects: boolean; // 是否包含复杂效果
+  hasAIFeatures: boolean; // 是否使用AI功能
+  hasCustomTransitions: boolean; // 是否有自定义转场
+  complexityScore: number; // 复杂度评分（0-100）
+
+  // 质量要求
+  maxResolution: { width: number; height: number }; // 最高分辨率
+  requiresHighQuality: boolean; // 是否需要高质量输出
+}
+
+// 用户偏好设置
+export interface UserPreference {
+  privacy: PrivacyLevel; // 隐私级别
+  quality: ExportQuality; // 质量偏好
+  method?: ExportMethod; // 导出方法偏好（可选，auto为自动选择）
+  maxWaitTime?: number; // 最大等待时间（秒）
+  allowCloudProcessing?: boolean; // 是否允许云端处理
+}
+
+// 导出策略
+export interface ExportStrategy {
+  method: ExportMethod; // 推荐的导出方法
+  quality: ExportQuality; // 推荐的质量级别
+  reason: string; // 推荐理由
+  estimatedTime: number; // 预估时间（秒）
+  estimatedSize: number; // 预估文件大小（字节）
+  warnings?: string[]; // 警告信息
+  alternatives?: ExportStrategy[]; // 备选方案
+}
+
+// 导出选项
+export interface ExportOptions {
+  // 基本设置
+  quality: ExportQuality;
+  method: ExportMethod;
+
+  // 输出设置
+  format: 'mp4' | 'webm' | 'mov'; // 输出格式
+  codec: 'h264' | 'h265' | 'vp9' | 'av1'; // 编码器
+  bitrate?: number; // 码率（kbps）
+
+  // 字幕设置
+  subtitleMode: 'hard' | 'soft' | 'none'; // 字幕模式
+  fontDir?: string; // 字体目录
+
+  // 高级设置
+  useGPU?: boolean; // 是否使用GPU加速
+  useProxy?: boolean; // 是否使用代理媒体
+  segmentDuration?: number; // 分段时长（秒）
+
+  // 回调函数
+  onProgress?: (progress: ExportProgress) => void;
+  onComplete?: (result: ExportResult) => void;
+  onError?: (error: ExportError) => void;
+}
+
+// 导出进度
+export interface ExportProgress {
+  // 总体进度
+  overall: number; // 总体进度（0-1）
+  stage: 'preparing' | 'processing' | 'encoding' | 'finalizing'; // 当前阶段
+
+  // 分段进度（前端导出）
+  currentSegment?: number; // 当前处理的段
+  totalSegments?: number; // 总段数
+  segmentProgress?: number; // 当前段进度（0-1）
+
+  // 时间信息
+  elapsedTime: number; // 已用时间（秒）
+  estimatedTimeRemaining?: number; // 预估剩余时间（秒）
+
+  // 详细信息
+  message?: string; // 进度消息
+  currentFile?: string; // 当前处理的文件
+  processedFrames?: number; // 已处理帧数
+  totalFrames?: number; // 总帧数
+}
+
+// 导出结果
+export interface ExportResult {
+  success: boolean;
+  blob?: Blob; // 导出的文件
+  url?: string; // 文件URL
+  size?: number; // 文件大小（字节）
+  duration?: number; // 实际处理时间（秒）
+  quality?: ExportQuality; // 实际质量级别
+  method?: ExportMethod; // 实际使用的方法
+}
+
+// 导出错误
+export interface ExportError {
+  code: string; // 错误代码
+  message: string; // 错误消息
+  stage?: string; // 出错阶段
+  details?: any; // 详细错误信息
+  recoverable?: boolean; // 是否可恢复
+  suggestions?: string[]; // 解决建议
+}

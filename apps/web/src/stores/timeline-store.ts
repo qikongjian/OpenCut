@@ -170,6 +170,10 @@ interface TimelineStore {
   getTotalDuration: () => number;
   getProjectThumbnail: (projectId: string) => Promise<string | null>;
 
+  // Export functions
+  toIR: () => import("@/types/timeline").TimelineIR;
+  computeSegments: () => import("@/types/export").TimelineSegment[];
+
   // History actions
   undo: () => void;
   redo: () => void;
@@ -1564,6 +1568,165 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
           "opacity" in item && item.opacity !== undefined ? item.opacity : 1,
       });
       return true;
+    },
+
+    // Export functions
+    toIR: () => {
+      const state = get();
+      const mediaStore = useMediaStore.getState();
+
+      // 计算项目总时长
+      const totalDuration = state.getTotalDuration();
+
+      // 默认项目设置 - 可以从项目store获取
+      const width = 1920;
+      const height = 1080;
+      const fps = 30;
+
+      const ir: import("@/types/timeline").TimelineIR = {
+        width,
+        height,
+        fps,
+        duration: totalDuration * 1000, // 转换为毫秒
+        video: [],
+        audio: [],
+        texts: [],
+        transitions: [],
+      };
+
+      // 处理所有轨道
+      for (const track of state.tracks) {
+        for (const element of track.elements) {
+          if (element.type === "media") {
+            // 查找对应的媒体项
+            const mediaItem = mediaStore.mediaItems.find(m => m.id === element.mediaId);
+            if (mediaItem) {
+              if (mediaItem.type === "video" || mediaItem.type === "image") {
+                ir.video.push({
+                  id: element.id,
+                  src: element.mediaUrl || mediaItem.url || "",
+                  in: element.trimStart * 1000, // 转换为毫秒
+                  out: (element.trimStart + element.duration) * 1000,
+                  start: element.startTime * 1000,
+                  trackId: track.id,
+                  transform: {
+                    x: 0,
+                    y: 0,
+                    scale: 1,
+                    rotate: 0,
+                  },
+                  muted: element.muted,
+                  hidden: element.hidden,
+                });
+              } else if (mediaItem.type === "audio") {
+                ir.audio.push({
+                  id: element.id,
+                  src: element.mediaUrl || mediaItem.url || "",
+                  in: element.trimStart * 1000,
+                  out: (element.trimStart + element.duration) * 1000,
+                  start: element.startTime * 1000,
+                  trackId: track.id,
+                  gain: 1.0,
+                });
+              }
+            }
+          } else if (element.type === "text") {
+            ir.texts.push({
+              id: element.id,
+              text: element.content,
+              start: element.startTime * 1000,
+              end: (element.startTime + element.duration) * 1000,
+              style: {
+                x: element.x,
+                y: element.y,
+                fontFamily: element.fontFamily,
+                fontSize: element.fontSize,
+                color: element.color,
+                backgroundColor: element.backgroundColor,
+                align: element.textAlign,
+                fontWeight: element.fontWeight,
+                fontStyle: element.fontStyle,
+                textDecoration: element.textDecoration,
+                opacity: element.opacity,
+                rotation: element.rotation,
+              },
+            });
+          }
+        }
+      }
+
+      return ir;
+    },
+
+    computeSegments: () => {
+      const state = get();
+      const segments: import("@/types/export").TimelineSegment[] = [];
+
+      // 收集所有时间点
+      const timePoints = new Set<number>();
+      timePoints.add(0); // 开始时间
+
+      for (const track of state.tracks) {
+        for (const element of track.elements) {
+          timePoints.add(element.startTime * 1000);
+          timePoints.add((element.startTime + element.duration) * 1000);
+        }
+      }
+
+      const sortedTimePoints = Array.from(timePoints).sort((a, b) => a - b);
+
+      // 创建分段
+      for (let i = 0; i < sortedTimePoints.length - 1; i++) {
+        const startTime = sortedTimePoints[i];
+        const endTime = sortedTimePoints[i + 1];
+        const duration = endTime - startTime;
+
+        if (duration > 0) {
+          const segment: import("@/types/export").TimelineSegment = {
+            id: `segment_${i}`,
+            startTime,
+            endTime,
+            duration,
+            videoElements: [],
+            audioElements: [],
+            textElements: [],
+            transitions: [],
+            hasComplexEffects: false,
+            estimatedMemoryUsage: 0,
+            priority: 1,
+          };
+
+          // 查找在此时间段内的元素
+          for (const track of state.tracks) {
+            for (const element of track.elements) {
+              const elementStart = element.startTime * 1000;
+              const elementEnd = (element.startTime + element.duration) * 1000;
+
+              // 检查元素是否与当前段重叠
+              if (elementStart < endTime && elementEnd > startTime) {
+                if (element.type === "media") {
+                  const mediaItem = useMediaStore.getState().mediaItems.find(m => m.id === element.mediaId);
+                  if (mediaItem?.type === "video" || mediaItem?.type === "image") {
+                    segment.videoElements.push(element.id);
+                  } else if (mediaItem?.type === "audio") {
+                    segment.audioElements.push(element.id);
+                  }
+                } else if (element.type === "text") {
+                  segment.textElements.push(element.id);
+                }
+              }
+            }
+          }
+
+          // 估算内存使用和复杂度
+          segment.estimatedMemoryUsage = (segment.videoElements.length + segment.audioElements.length) * 50 * 1024 * 1024; // 50MB per element
+          segment.hasComplexEffects = segment.textElements.length > 0 || segment.videoElements.length > 2;
+
+          segments.push(segment);
+        }
+      }
+
+      return segments;
     },
   };
 });

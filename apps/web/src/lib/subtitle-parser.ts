@@ -134,7 +134,7 @@ export function dialogueSegmentToTextElement(segment: DialogueSegment, index: nu
     fontStyle: "normal",
     textDecoration: "none",
     x: 0, // 居中
-    y: 400, // 更靠下的位置
+    y: 0, // 使用样式的alignment而不是绝对位置
     rotation: 0,
     opacity: 1,
     horizontalFlip: false,
@@ -166,7 +166,7 @@ export function srtEntryToTextElement(entry: SrtEntry): CreateTextElement {
     fontStyle: "normal",
     textDecoration: "none",
     x: 0, // 居中
-    y: 200, // 底部偏上位置
+    y: 0, // 使用样式的alignment而不是绝对位置
     rotation: 0,
     opacity: 1,
     horizontalFlip: false,

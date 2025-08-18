@@ -200,7 +200,7 @@ export function applyAISubtitleStyles(
     color: "#ffffff",
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     textAlign: "center" as const,
-    y: 200, // 底部位置
+    y: 0, // 使用样式的alignment而不是绝对位置
   }));
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Button } from "./ui/button";
 import {
   ChevronDown,
@@ -168,25 +169,134 @@ export function EditorHeader() {
 }
 
 function ExportButton() {
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    // NOTE: This is already being worked on
-    console.log("Export project");
-    window.open("https://youtube.com/watch?v=dQw4w9WgXcQ", "_blank");
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [exportProgress, setExportProgress] = React.useState<number>(0);
+  const [exportMessage, setExportMessage] = React.useState<string>("");
+
+  const handleExport = async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
+    setExportProgress(0);
+    setExportMessage("初始化导出系统...");
+
+    try {
+      // 动态导入导出系统
+      const { exportManager } = await import("@/lib/export");
+
+      // 初始化导出管理器
+      await exportManager.initialize();
+      console.log("导出管理器初始化完成");
+
+      setExportMessage("分析项目...");
+      setExportProgress(0.1);
+
+      // 检查项目数据
+      const { IRGenerator } = await import("@/lib/export");
+      const ir = IRGenerator.generateIR();
+      console.log("生成的IR:", ir);
+
+      if (!ir.video.length && !ir.audio.length && !ir.texts.length) {
+        throw new Error("项目为空，请先添加媒体内容");
+      }
+
+      console.log(`项目信息: ${ir.video.length}个视频, ${ir.audio.length}个音频, ${ir.texts.length}个文本, 总时长${(ir.duration/1000).toFixed(1)}秒`);
+
+      // 智能导出
+      const result = await exportManager.smartExport(
+        {
+          privacy: 'balanced',
+          quality: 'standard',
+          allowCloudProcessing: true,
+        },
+        (progress) => {
+          setExportProgress(progress.overall);
+          setExportMessage(progress.message || "处理中...");
+        }
+      );
+
+      // 导出成功
+      setExportMessage("导出完成!");
+      setExportProgress(1);
+
+      // 自动下载
+      if (result.url) {
+        const a = document.createElement('a');
+        a.href = result.url;
+        a.download = result.filename || 'opencut-export.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // 显示成功消息
+        console.log("导出成功:", {
+          size: `${(result.size! / 1024 / 1024).toFixed(1)}MB`,
+          duration: `${result.duration?.toFixed(1)}秒`,
+          method: result.method,
+          quality: result.quality
+        });
+      }
+
+    } catch (error) {
+      // 更详细的错误日志
+      console.error('导出失败:', error);
+      const msg = (error && typeof error === 'object' && 'message' in (error as any))
+        ? String((error as any).message)
+        : (error instanceof Error ? error.message : '未知错误');
+      setExportMessage('导出失败: ' + msg);
+
+      // 3秒后重置状态
+      setTimeout(() => {
+        setIsExporting(false);
+        setExportProgress(0);
+        setExportMessage('');
+      }, 3000);
+      return;
+    }
+
+    // 2秒后重置状态
+    setTimeout(() => {
+      setIsExporting(false);
+      setExportProgress(0);
+      setExportMessage("");
+    }, 2000);
   };
 
   return (
-    <button
-      className="flex items-center gap-1.5 bg-[#38BDF8] text-white rounded-md px-[0.1rem] py-[0.1rem] cursor-pointer hover:brightness-95 transition-all duration-200"
-      onClick={handleExport}
-    >
-            <div className="flex items-center gap-1.5 bg-linear-270 from-[#2567EC] to-[#37B6F7] rounded-[0.8rem] px-4 py-1 relative shadow-[0_1px_3px_0px_rgba(0,0,0,0.45)]">
-        <TransitionUpIcon className="z-50" />
-        <span className="text-[0.875rem] z-50">Export</span>
-        <div className="absolute w-full h-full left-0 top-0 bg-linear-to-t from-white/0 to-white/50 z-10 rounded-[0.8rem] flex items-center justify-center">
-          <div className="absolute w-[calc(100%-4px)] h-[calc(100%-4px)] top-[0.12rem] bg-linear-270 from-[#2567EC] to-[#37B6F7] z-50 rounded-lg"></div>
+    <div className="relative">
+      <button
+        className={`flex items-center gap-1.5 bg-[#38BDF8] text-white rounded-md px-[0.1rem] py-[0.1rem] transition-all duration-200 ${
+          isExporting ? 'cursor-not-allowed opacity-75' : 'cursor-pointer hover:brightness-95'
+        }`}
+        onClick={handleExport}
+        disabled={isExporting}
+      >
+        <div className="flex items-center gap-1.5 bg-linear-270 from-[#2567EC] to-[#37B6F7] rounded-[0.8rem] px-4 py-1 relative shadow-[0_1px_3px_0px_rgba(0,0,0,0.45)]">
+          {isExporting ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin z-50" />
+          ) : (
+            <TransitionUpIcon className="z-50" />
+          )}
+          <span className="text-[0.875rem] z-50 min-w-[3rem]">
+            {isExporting ? `${Math.round(exportProgress * 100)}%` : 'Export'}
+          </span>
+          <div className="absolute w-full h-full left-0 top-0 bg-linear-to-t from-white/0 to-white/50 z-10 rounded-[0.8rem] flex items-center justify-center">
+            <div className="absolute w-[calc(100%-4px)] h-[calc(100%-4px)] top-[0.12rem] bg-linear-270 from-[#2567EC] to-[#37B6F7] z-50 rounded-lg"></div>
+          </div>
+          {/* 进度条 */}
+          {isExporting && (
+            <div className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-[0.8rem] z-60 transition-all duration-300"
+                 style={{ width: `${exportProgress * 100}%` }} />
+          )}
         </div>
-      </div>
-    </button>
+      </button>
+
+      {/* 进度提示 */}
+      {isExporting && exportMessage && (
+        <div className="absolute top-full left-0 mt-2 px-3 py-1 bg-black/80 text-white text-xs rounded whitespace-nowrap z-50">
+          {exportMessage}
+        </div>
+      )}
+    </div>
   );
 }
