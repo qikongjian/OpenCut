@@ -50,6 +50,7 @@ import {
   TimelinePlayhead,
   useTimelinePlayheadRuler,
 } from "./timeline-playhead";
+import { ScissorsHighlight, useScissorsAnimation } from "./scissors-highlight";
 import { SelectionBox } from "../selection-box";
 import { useSelectionBox } from "@/hooks/use-selection-box";
 import { SnapIndicator } from "../snap-indicator";
@@ -89,6 +90,9 @@ export function Timeline() {
   const timelineRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
   const [isInTimeline, setIsInTimeline] = useState(false);
+
+  // 剪刀动画控制
+  const { isAnimating: isScissorsAnimating, animationPosition, triggerScissorsAnimation } = useScissorsAnimation();
 
   // Track mouse down/up for distinguishing clicks from drag/resize ends
   const mouseTrackingRef = useRef({
@@ -516,6 +520,7 @@ export function Timeline() {
               trimStart: 0,
               trimEnd: 0,
               muted: false,
+              horizontalFlip: false,
             });
           } catch (error) {
             console.error(`Failed to add media item ${processedItem.name}:`, error);
@@ -628,6 +633,7 @@ export function Timeline() {
         zoomLevel={zoomLevel}
         setZoomLevel={setZoomLevel}
         seek={seek}
+        triggerScissorsAnimation={triggerScissorsAnimation}
       />
 
       {/* Timeline Container */}
@@ -650,6 +656,12 @@ export function Timeline() {
           isSnappingToPlayhead={
             showSnapIndicator && currentSnapPoint?.type === "playhead"
           }
+        />
+        {/* 剪刀高亮动画 */}
+        <ScissorsHighlight
+          zoomLevel={zoomLevel}
+          isVisible={isScissorsAnimating}
+          position={animationPosition}
         />
         <SnapIndicator
           snapPoint={currentSnapPoint}
@@ -953,10 +965,12 @@ function TimelineToolbar({
   zoomLevel,
   setZoomLevel,
   seek,
+  triggerScissorsAnimation,
 }: {
   zoomLevel: number;
   setZoomLevel: (zoom: number) => void;
   seek: (time: number) => void;
+  triggerScissorsAnimation: (position?: number) => void;
 }) {
   const {
     tracks,
@@ -979,24 +993,63 @@ function TimelineToolbar({
   const { toggleBookmark, isBookmarked } = useProjectStore();
 
   const handleSplitSelected = () => {
-    if (selectedElements.length === 0) return;
+    // 🎬 触发剪刀动画
+    triggerScissorsAnimation(currentTime);
+
     let splitCount = 0;
-    selectedElements.forEach(({ trackId, elementId }) => {
-      const track = tracks.find((t) => t.id === trackId);
-      const element = track?.elements.find((c) => c.id === elementId);
-      if (element && track) {
-        const effectiveStart = element.startTime;
-        const effectiveEnd =
-          element.startTime +
-          (element.duration - element.trimStart - element.trimEnd);
-        if (currentTime > effectiveStart && currentTime < effectiveEnd) {
-          const newElementId = splitElement(trackId, elementId, currentTime);
-          if (newElementId) splitCount++;
-        }
+
+    // 🎯 优化：如果没有选中元素，自动查找播放头下的元素
+    if (selectedElements.length === 0) {
+      // 查找播放头位置下的所有元素
+      const elementsAtPlayhead: { trackId: string; elementId: string; element: any }[] = [];
+
+      tracks.forEach((track) => {
+        track.elements.forEach((element) => {
+          const effectiveStart = element.startTime;
+          const effectiveEnd = element.startTime + (element.duration - element.trimStart - element.trimEnd);
+
+          if (currentTime > effectiveStart && currentTime < effectiveEnd) {
+            elementsAtPlayhead.push({
+              trackId: track.id,
+              elementId: element.id,
+              element
+            });
+          }
+        });
+      });
+
+      if (elementsAtPlayhead.length === 0) {
+        toast.error("No elements found at playhead position to split");
+        return;
       }
-    });
-    if (splitCount === 0) {
-      toast.error("Playhead must be within selected elements to split");
+
+      // 剪切播放头下的所有元素
+      elementsAtPlayhead.forEach(({ trackId, elementId }) => {
+        const newElementId = splitElement(trackId, elementId, currentTime);
+        if (newElementId) splitCount++;
+      });
+
+      toast.success(`Split ${splitCount} element${splitCount > 1 ? 's' : ''} at playhead`);
+    } else {
+      // 原有逻辑：剪切选中的元素
+      selectedElements.forEach(({ trackId, elementId }) => {
+        const track = tracks.find((t) => t.id === trackId);
+        const element = track?.elements.find((c) => c.id === elementId);
+        if (element && track) {
+          const effectiveStart = element.startTime;
+          const effectiveEnd =
+            element.startTime +
+            (element.duration - element.trimStart - element.trimEnd);
+          if (currentTime > effectiveStart && currentTime < effectiveEnd) {
+            const newElementId = splitElement(trackId, elementId, currentTime);
+            if (newElementId) splitCount++;
+          }
+        }
+      });
+
+      if (splitCount === 0) {
+        toast.error("Playhead must be within selected elements to split");
+      }
     }
   };
 
@@ -1094,16 +1147,37 @@ function TimelineToolbar({
   };
 
   const handleZoomIn = () => {
-    setZoomLevel(Math.min(4, zoomLevel + 0.25));
+    // 使用更小的步长以适应新的最小缩放级别
+    const step = zoomLevel < 0.5 ? 0.05 : 0.25;
+    setZoomLevel(Math.min(4, zoomLevel + step));
   };
 
   const handleZoomOut = () => {
-    setZoomLevel(Math.max(0.25, zoomLevel - 0.25));
+    // 使用更小的步长以适应新的最小缩放级别
+    const step = zoomLevel > 0.5 ? 0.25 : 0.05;
+    setZoomLevel(Math.max(0.05, zoomLevel - step));
   };
 
   const handleZoomSliderChange = (values: number[]) => {
     setZoomLevel(values[0]);
   };
+
+  // 🎨 监听时间轴缩放调整事件（用于AI剪辑渐进式加载）
+  useEffect(() => {
+    const handleTimelineZoomAdjust = (event: CustomEvent) => {
+      const { zoomLevel: targetZoomLevel } = event.detail;
+      if (targetZoomLevel && targetZoomLevel !== zoomLevel) {
+        console.log(`🎯 自动调整时间轴缩放级别: ${zoomLevel} → ${targetZoomLevel}`);
+        setZoomLevel(targetZoomLevel);
+      }
+    };
+
+    window.addEventListener('timeline-zoom-adjust', handleTimelineZoomAdjust as EventListener);
+
+    return () => {
+      window.removeEventListener('timeline-zoom-adjust', handleTimelineZoomAdjust as EventListener);
+    };
+  }, [zoomLevel]);
 
   const handleToggleBookmark = async () => {
     await toggleBookmark(currentTime);
@@ -1171,6 +1245,8 @@ function TimelineToolbar({
                         startTime: 0,
                         trimStart: 0,
                         trimEnd: 0,
+                        muted: false,
+                        horizontalFlip: false,
                       });
                     }}
                     className="text-xs"
@@ -1189,7 +1265,7 @@ function TimelineToolbar({
                 <Scissors className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Split element (Ctrl+S)</TooltipContent>
+            <TooltipContent>Split at playhead (Ctrl+S)</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -1307,9 +1383,9 @@ function TimelineToolbar({
             className="w-24"
             value={[zoomLevel]}
             onValueChange={handleZoomSliderChange}
-            min={0.25}
+            min={0.05}
             max={4}
-            step={0.25}
+            step={0.05}
           />
           <Button variant="text" size="icon" onClick={handleZoomIn}>
             <ZoomIn className="h-4 w-4" />

@@ -93,22 +93,83 @@ export function VisualEditingProgress() {
           {/* 标题和进度 */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Scissors className="w-5 h-5 text-primary" />
+              <motion.div
+                animate={visualEditingState === 'executing' ? {
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1]
+                } : {}}
+                transition={{
+                  duration: 1.5,
+                  repeat: visualEditingState === 'executing' ? Infinity : 0,
+                  ease: "easeInOut"
+                }}
+              >
+                <Scissors className="w-5 h-5 text-primary" />
+              </motion.div>
               <h3 className="font-semibold text-sm">AI一键剪辑</h3>
             </div>
-            <Badge variant="secondary" className="text-xs">
-              {Math.round(executionProgress)}%
-            </Badge>
+            <div className="flex items-center gap-2">
+              {/* 状态指示器 */}
+              <div className={`w-2 h-2 rounded-full ${
+                visualEditingState === 'executing' ? 'bg-orange-500 animate-pulse' :
+                visualEditingState === 'completed' ? 'bg-green-500' : 'bg-gray-400'
+              }`} />
+              <Badge variant="secondary" className="text-xs">
+                {Math.round(executionProgress)}%
+              </Badge>
+            </div>
           </div>
 
           {/* 总体进度条 */}
           <div className="mb-4">
-            <Progress value={executionProgress} className="h-2" />
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium">总体进度</span>
+              <span className="text-xs text-muted-foreground">
+                {executionProgress < 70 ? "可视化剪辑中" :
+                 executionProgress < 90 ? "生成最终结果" : "应用到时间轴"}
+              </span>
+            </div>
+            <Progress value={executionProgress} className="h-3" />
             {currentProcessingClip && (
-              <p className="text-xs text-muted-foreground mt-1">
-                正在处理: {currentProcessingClip}
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="w-3 h-3 border border-primary border-t-transparent rounded-full"
+                />
+                {currentProcessingClip}
               </p>
             )}
+          </div>
+
+          {/* 阶段指示器 */}
+          <div className="mb-4 flex items-center justify-between text-xs">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded ${
+              executionProgress < 70 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                executionProgress < 70 ? 'bg-blue-500 animate-pulse' : 'bg-gray-400'
+              }`} />
+              可视化剪辑
+            </div>
+            <div className="w-4 h-px bg-gray-300" />
+            <div className={`flex items-center gap-1 px-2 py-1 rounded ${
+              executionProgress >= 70 && executionProgress < 90 ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                executionProgress >= 70 && executionProgress < 90 ? 'bg-orange-500 animate-pulse' : 'bg-gray-400'
+              }`} />
+              生成结果
+            </div>
+            <div className="w-4 h-px bg-gray-300" />
+            <div className={`flex items-center gap-1 px-2 py-1 rounded ${
+              executionProgress >= 90 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                executionProgress >= 90 ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+              }`} />
+              应用到时间轴
+            </div>
           </div>
 
           {/* 步骤列表 */}

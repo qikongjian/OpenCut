@@ -70,10 +70,40 @@ export function useTimelinePlayhead({
     [duration, zoomLevel]
   );
 
+  // 🎯 性能优化：节流拖拽更新，避免过度频繁的计算
+  const scrubThrottleRef = useRef<number | null>(null);
+  const lastScrubTimeRef = useRef<number>(0);
+
   const handleScrub = useCallback(
+    (e: MouseEvent | React.MouseEvent) => {
+      const now = performance.now();
+
+      // 🎯 节流：限制更新频率到60fps (16.67ms)
+      if (now - lastScrubTimeRef.current < 16.67) {
+        // 取消之前的节流更新
+        if (scrubThrottleRef.current) {
+          cancelAnimationFrame(scrubThrottleRef.current);
+        }
+
+        // 安排新的节流更新
+        scrubThrottleRef.current = requestAnimationFrame(() => {
+          performScrub(e);
+          scrubThrottleRef.current = null;
+        });
+        return;
+      }
+
+      lastScrubTimeRef.current = now;
+      performScrub(e);
+    },
+    [duration, zoomLevel, seek, rulerRef]
+  );
+
+  const performScrub = useCallback(
     (e: MouseEvent | React.MouseEvent) => {
       const ruler = rulerRef.current;
       if (!ruler) return;
+
       const rect = ruler.getBoundingClientRect();
       const rawX = e.clientX - rect.left;
 
@@ -84,13 +114,14 @@ export function useTimelinePlayhead({
       const x = Math.max(0, Math.min(timelineContentWidth, rawX));
 
       const rawTime = Math.max(0, Math.min(duration, x / (50 * zoomLevel)));
-      // Use frame snapping for playhead scrubbing
+
+      // 🎯 性能优化：缓存项目FPS，避免重复获取
       const projectStore = useProjectStore.getState();
       const projectFps = projectStore.activeProject?.fps || 30;
       const time = snapTimeToFrame(rawTime, projectFps);
 
-      // Debug logging
-      if (rawX < 0 || x !== rawX) {
+      // 🎯 优化：只在开发模式下输出调试信息
+      if (process.env.NODE_ENV === 'development' && (rawX < 0 || x !== rawX)) {
         console.log(
           "PLAYHEAD DEBUG:",
           JSON.stringify({
@@ -171,11 +202,13 @@ export function useTimelinePlayhead({
     }
   }, [isScrubbing, rulerScrollRef, tracksScrollRef, duration, zoomLevel]);
 
-  // Mouse move/up event handlers
+  // 🎯 性能优化：鼠标事件处理
   useEffect(() => {
     if (!isScrubbing) return;
 
     const onMouseMove = (e: MouseEvent) => {
+      // 🎯 优化：使用 passive 事件监听器提升性能
+      e.preventDefault();
       handleScrub(e);
       // Mark that we've dragged if ruler drag is active
       if (isDraggingRuler) {
@@ -187,6 +220,12 @@ export function useTimelinePlayhead({
       setIsScrubbing(false);
       if (scrubTime !== null) seek(scrubTime); // finalize seek
       setScrubTime(null);
+
+      // 🎯 清理节流更新
+      if (scrubThrottleRef.current) {
+        cancelAnimationFrame(scrubThrottleRef.current);
+        scrubThrottleRef.current = null;
+      }
 
       // Stop auto-scrolling
       if (autoScrollRef.current) {
@@ -205,8 +244,9 @@ export function useTimelinePlayhead({
       }
     };
 
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    // 🎯 性能优化：使用 passive 事件监听器
+    window.addEventListener("mousemove", onMouseMove, { passive: false });
+    window.addEventListener("mouseup", onMouseUp, { passive: true });
 
     // Start auto-scrolling
     autoScrollRef.current = requestAnimationFrame(performAutoScroll);
@@ -214,6 +254,12 @@ export function useTimelinePlayhead({
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+
+      // 🎯 清理节流更新
+      if (scrubThrottleRef.current) {
+        cancelAnimationFrame(scrubThrottleRef.current);
+        scrubThrottleRef.current = null;
+      }
       if (autoScrollRef.current) {
         cancelAnimationFrame(autoScrollRef.current);
         autoScrollRef.current = null;

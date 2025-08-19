@@ -38,6 +38,10 @@ export function TimelinePlayhead({
   const playheadRef = externalPlayheadRef || internalPlayheadRef;
   const [scrollLeft, setScrollLeft] = useState(0);
 
+  // 🎯 性能优化：使用 RAF 节流滚动更新
+  const scrollUpdateRef = useRef<number | null>(null);
+  const lastScrollLeftRef = useRef(0);
+
   const { playheadPosition, handlePlayheadMouseDown } = useTimelinePlayhead({
     currentTime,
     duration,
@@ -49,21 +53,43 @@ export function TimelinePlayhead({
     playheadRef,
   });
 
-  // Track scroll position to lock playhead to frame
+  // 🎯 性能优化：节流滚动事件处理，避免频繁重绘
   useEffect(() => {
     const tracksViewport = tracksScrollRef.current;
 
     if (!tracksViewport) return;
 
     const handleScroll = () => {
-      setScrollLeft(tracksViewport.scrollLeft);
+      const newScrollLeft = tracksViewport.scrollLeft;
+
+      // 避免不必要的更新
+      if (Math.abs(newScrollLeft - lastScrollLeftRef.current) < 1) return;
+
+      lastScrollLeftRef.current = newScrollLeft;
+
+      // 使用 RAF 节流更新
+      if (scrollUpdateRef.current) {
+        cancelAnimationFrame(scrollUpdateRef.current);
+      }
+
+      scrollUpdateRef.current = requestAnimationFrame(() => {
+        setScrollLeft(newScrollLeft);
+        scrollUpdateRef.current = null;
+      });
     };
 
     // Set initial scroll position
-    setScrollLeft(tracksViewport.scrollLeft);
+    const initialScrollLeft = tracksViewport.scrollLeft;
+    setScrollLeft(initialScrollLeft);
+    lastScrollLeftRef.current = initialScrollLeft;
 
-    tracksViewport.addEventListener("scroll", handleScroll);
-    return () => tracksViewport.removeEventListener("scroll", handleScroll);
+    tracksViewport.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      tracksViewport.removeEventListener("scroll", handleScroll);
+      if (scrollUpdateRef.current) {
+        cancelAnimationFrame(scrollUpdateRef.current);
+      }
+    };
   }, [tracksScrollRef]);
 
   // Use timeline container height minus a few pixels for breathing room
@@ -127,18 +153,33 @@ export function TimelinePlayhead({
         left: `${leftPosition}px`,
         top: 0,
         height: `${totalHeight}px`,
-        width: "2px", // Slightly wider for better click target
+        width: "2px", // 2px宽度用于更好的点击目标
+        // 🎯 性能优化：使用 transform3d 启用硬件加速
+        transform: "translate3d(-1px, 0, 0)", // 向左偏移1px确保2px容器居中
+        // 🎯 优化：提示浏览器这个元素会频繁变化
+        willChange: "left",
       }}
       onMouseDown={handlePlayheadMouseDown}
     >
       {/* The playhead line spanning full height */}
       <div
-        className={`absolute left-0 w-0.5 cursor-col-resize h-full ${isSnappingToPlayhead ? "bg-foreground" : "bg-foreground"}`}
+        className={`absolute w-0.5 cursor-col-resize h-full ${isSnappingToPlayhead ? "bg-foreground" : "bg-foreground"}`}
+        style={{
+          // 🎯 性能优化：使用 transform3d 启用硬件加速 + 居中对齐
+          left: "50%",
+          transform: "translate3d(-50%, 0, 0)", // 相对于容器中心对齐
+        }}
       />
 
       {/* Playhead dot indicator at the top (in ruler area) */}
       <div
-        className={`absolute top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full border-2 shadow-xs ${isSnappingToPlayhead ? "bg-foreground border-foreground" : "bg-foreground border-foreground/50"}`}
+        className={`absolute w-3 h-3 rounded-full border-2 shadow-xs ${isSnappingToPlayhead ? "bg-foreground border-foreground" : "bg-foreground border-foreground/50"}`}
+        style={{
+          // 🎯 性能优化：使用 transform3d 启用硬件加速 + 居中对齐
+          left: "50%",
+          top: "0", // 向上移动3px (原来是top-1即4px，现在是1px)
+          transform: "translate3d(-50%, 0, 0)", // 相对于容器中心对齐，与线条完全一致
+        }}
       />
     </div>
   );

@@ -119,25 +119,58 @@ export function useEditorActions() {
   useActionHandler(
     "split-element",
     () => {
-      if (selectedElements.length !== 1) {
-        toast.error("Select exactly one element to split");
-        return;
-      }
+      let splitCount = 0;
 
-      const { trackId, elementId } = selectedElements[0];
-      const track = tracks.find((t: any) => t.id === trackId);
-      const element = track?.elements.find((el: any) => el.id === elementId);
+      // 🎯 优化：如果没有选中元素，自动查找播放头下的元素
+      if (selectedElements.length === 0) {
+        // 查找播放头位置下的所有元素
+        const elementsAtPlayhead: { trackId: string; elementId: string }[] = [];
 
-      if (element) {
-        const effectiveStart = element.startTime;
-        const effectiveEnd =
-          element.startTime +
-          (element.duration - element.trimStart - element.trimEnd);
+        tracks.forEach((track: any) => {
+          track.elements.forEach((element: any) => {
+            const effectiveStart = element.startTime;
+            const effectiveEnd = element.startTime + (element.duration - element.trimStart - element.trimEnd);
 
-        if (currentTime > effectiveStart && currentTime < effectiveEnd) {
-          splitElement(trackId, elementId, currentTime);
-        } else {
-          toast.error("Playhead must be within selected element");
+            if (currentTime > effectiveStart && currentTime < effectiveEnd) {
+              elementsAtPlayhead.push({
+                trackId: track.id,
+                elementId: element.id
+              });
+            }
+          });
+        });
+
+        if (elementsAtPlayhead.length === 0) {
+          toast.error("No elements found at playhead position to split");
+          return;
+        }
+
+        // 剪切播放头下的所有元素
+        elementsAtPlayhead.forEach(({ trackId, elementId }) => {
+          const newElementId = splitElement(trackId, elementId, currentTime);
+          if (newElementId) splitCount++;
+        });
+
+        toast.success(`Split ${splitCount} element${splitCount > 1 ? 's' : ''} at playhead`);
+      } else {
+        // 原有逻辑：剪切选中的元素
+        selectedElements.forEach(({ trackId, elementId }: any) => {
+          const track = tracks.find((t: any) => t.id === trackId);
+          const element = track?.elements.find((el: any) => el.id === elementId);
+
+          if (element) {
+            const effectiveStart = element.startTime;
+            const effectiveEnd = element.startTime + (element.duration - element.trimStart - element.trimEnd);
+
+            if (currentTime > effectiveStart && currentTime < effectiveEnd) {
+              const newElementId = splitElement(trackId, elementId, currentTime);
+              if (newElementId) splitCount++;
+            }
+          }
+        });
+
+        if (splitCount === 0) {
+          toast.error("Playhead must be within selected elements to split");
         }
       }
     },

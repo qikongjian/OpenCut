@@ -14,11 +14,11 @@ const textData: TextElement = {
   color: "#ffffff",
   backgroundColor: "transparent",
   textAlign: "center" as const,
-  fontWeight: "normal" as const,
+  fontWeight: "bold" as const, // 🎯 默认字体加粗
   fontStyle: "normal" as const,
   textDecoration: "none" as const,
   x: 0,
-  y: 0,
+  y: 410, // 🎯 默认字幕位置：距离底部适当距离
   rotation: 0,
   opacity: 1,
   duration: TIMELINE_CONSTANTS.DEFAULT_TEXT_DURATION,

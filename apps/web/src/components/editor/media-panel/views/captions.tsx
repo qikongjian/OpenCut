@@ -177,7 +177,7 @@ export function Captions() {
           fontStyle: "normal",
           textDecoration: "none",
           x: 0,
-          y: 0,
+          y: 410, // 🎯 字幕位置：距离底部适当距离
           rotation: 0,
           opacity: 1,
         } as TextElement);

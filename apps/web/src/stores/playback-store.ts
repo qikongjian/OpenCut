@@ -52,9 +52,17 @@ const startTimer = (store: () => PlaybackStore) => {
         );
       } else {
         state.setCurrentTime(newTime);
-        // Notify video elements to sync
+        // 🎯 优化：增强的播放更新事件，包含预测信息
         window.dispatchEvent(
-          new CustomEvent("playback-update", { detail: { time: newTime } })
+          new CustomEvent("playback-update", {
+            detail: {
+              time: newTime,
+              delta: delta,
+              speed: state.speed,
+              // 添加预测信息，帮助视频组件提前准备
+              nextTime: newTime + (delta * state.speed)
+            }
+          })
         );
       }
     }

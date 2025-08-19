@@ -96,6 +96,15 @@ interface TimelineStore {
   removeTrackWithRipple: (trackId: string) => void;
   addElementToTrack: (trackId: string, element: CreateTimelineElement) => void;
   addElementsToTrackBatch: (trackId: string, elements: CreateTimelineElement[]) => void;
+  addElementsToTrackProgressive: (
+    trackId: string,
+    elements: CreateTimelineElement[],
+    options?: {
+      delayBetweenElements?: number;
+      onProgress?: (current: number, total: number, element: TimelineElement) => void;
+      showAnimation?: boolean;
+    }
+  ) => Promise<void>;
   removeElementFromTrack: (
     trackId: string,
     elementId: string,
@@ -601,6 +610,89 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       }
 
       console.log(`✅ 批量添加 ${validElements.length} 个元素到轨道 ${trackId}`);
+    },
+
+    // 🎨 渐进式添加元素到轨道（优化用户体验版本）
+    addElementsToTrackProgressive: async (trackId, elements, options = {}) => {
+      const {
+        delayBetweenElements = 300,
+        onProgress,
+        showAnimation = true
+      } = options;
+
+      get().pushHistory();
+
+      const track = get()._tracks.find((t) => t.id === trackId);
+      if (!track) {
+        console.error("Track not found:", trackId);
+        return;
+      }
+
+      console.log(`🎨 开始渐进式添加 ${elements.length} 个元素到轨道 ${trackId}`);
+
+      for (let i = 0; i < elements.length; i++) {
+        const elementData = elements[i];
+
+        // 验证元素
+        const validation = validateElementTrackCompatibility(elementData, track);
+        if (!validation.isValid) {
+          console.error(validation.errorMessage);
+          continue;
+        }
+
+        if (elementData.type === "media" && !elementData.mediaId) {
+          console.error("Media element must have mediaId");
+          continue;
+        }
+
+        if (elementData.type === "text" && !elementData.content) {
+          console.error("Text element must have content");
+          continue;
+        }
+
+        // 创建新元素
+        const newElement: TimelineElement = {
+          id: generateUUID(),
+          ...elementData,
+        };
+
+        // 添加单个元素到轨道
+        const currentTrack = get()._tracks.find((t) => t.id === trackId);
+        if (currentTrack) {
+          updateTracksAndSave(
+            get()._tracks.map((track) =>
+              track.id === trackId
+                ? { ...track, elements: [...track.elements, newElement] }
+                : track
+            )
+          );
+
+          // 选择当前添加的元素
+          get().selectElement(trackId, newElement.id);
+
+          // 🎯 触发缩放调整事件，让时间轴自动适应新内容
+          if (i === 0) {
+            const event = new CustomEvent('timeline-zoom-adjust', {
+              detail: { zoomLevel: 0.5 } // 适当的缩放级别
+            });
+            window.dispatchEvent(event);
+          }
+
+          console.log(`✨ 渐进式添加第 ${i + 1}/${elements.length} 个元素: ${newElement.name}`);
+
+          // 进度回调
+          if (onProgress) {
+            onProgress(i + 1, elements.length, newElement);
+          }
+
+          // 延迟以创建渐进效果
+          if (i < elements.length - 1 && showAnimation) {
+            await new Promise(resolve => setTimeout(resolve, delayBetweenElements));
+          }
+        }
+      }
+
+      console.log(`🎉 渐进式添加完成！共添加 ${elements.length} 个元素`);
     },
 
     removeElementFromTrack: (trackId, elementId, pushHistory = true) => {

@@ -6,6 +6,22 @@
 import { TextElement, CreateTextElement } from "@/types/timeline";
 import { DialogueSegment, FinalizedDialogueTrack } from "@/types/timeline";
 
+// 🎯 新增：智能字幕位置计算
+/**
+ * 根据画布尺寸计算字幕的底部位置
+ * @param canvasHeight 画布高度
+ * @returns 字幕的Y坐标
+ */
+function calculateSubtitleBottomPosition(canvasHeight: number = 1080): number {
+  // 🎯 修复：字幕距离底部的边距比例（12%），让字幕更靠近底部
+  const bottomMarginRatio = 0.12;
+  // 计算距离中心的偏移量
+  // 对于1080p: (1080/2) * (1 - 2*0.12) = 540 * 0.76 = 410.4
+  const offsetFromCenter = (canvasHeight / 2) * (1 - 2 * bottomMarginRatio);
+  console.log(`🎯 字幕位置计算: 画布高度=${canvasHeight}, Y坐标=${offsetFromCenter}`);
+  return offsetFromCenter;
+}
+
 /**
  * SRT时间码转换为秒数
  * @param timeCode SRT格式时间码 (如: "00:01:23,456")
@@ -127,14 +143,14 @@ export function dialogueSegmentToTextElement(segment: DialogueSegment, index: nu
     trimEnd: 0,
     fontSize: 48,
     fontFamily: "Arial",
+    fontWeight: "bold", // 🎯 添加：字体加粗
     color: "#ffffff",
-    backgroundColor: "transparent", // 透明背景
+    backgroundColor: "transparent", // 🎯 修复：移除背景颜色，使用透明背景
     textAlign: "center",
-    fontWeight: "normal",
     fontStyle: "normal",
     textDecoration: "none",
     x: 0, // 居中
-    y: 0, // 使用样式的alignment而不是绝对位置
+    y: calculateSubtitleBottomPosition(1080), // 🎯 关键修复：使用智能位置计算，让字幕显示在底部
     rotation: 0,
     opacity: 1,
     horizontalFlip: false,
@@ -162,11 +178,11 @@ export function srtEntryToTextElement(entry: SrtEntry): CreateTextElement {
     color: "#ffffff",
     backgroundColor: "rgba(0, 0, 0, 0.7)", // 半透明黑色背景
     textAlign: "center",
-    fontWeight: "normal",
+    fontWeight: "bold", // 🎯 添加：字体加粗
     fontStyle: "normal",
     textDecoration: "none",
     x: 0, // 居中
-    y: 0, // 使用样式的alignment而不是绝对位置
+    y: calculateSubtitleBottomPosition(1080), // 🎯 关键修复：使用智能位置计算，让字幕显示在底部
     rotation: 0,
     opacity: 1,
     horizontalFlip: false,

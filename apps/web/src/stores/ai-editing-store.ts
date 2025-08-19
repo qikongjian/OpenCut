@@ -45,6 +45,15 @@ interface AIEditingState {
     status: 'pending' | 'executing' | 'completed';
     clipIndex?: number;
   }>;
+
+  // 🎨 新增：渐进式加载状态
+  progressiveLoadingState: {
+    isVisible: boolean;
+    currentItem: number;
+    totalItems: number;
+    currentItemName: string;
+    stage: 'loading' | 'adding' | 'completed';
+  };
   
   // 操作方法
   loadAIEditingData: (data: AIEditingData) => void;
@@ -78,45 +87,127 @@ interface AIEditingState {
 
 // 时间码转换为秒数的工具函数
 const timecodeToSeconds = (timecode: string): number => {
-  if (!timecode) return 0;
+  if (!timecode || typeof timecode !== 'string') {
+    console.warn('⚠️ 无效的时间码:', timecode);
+    return 0;
+  }
 
-  // 处理 SRT 格式的时间码 (HH:MM:SS,mmm)
-  if (timecode.includes(',')) {
-    const [timePart, millisecondsPart] = timecode.split(',');
-    const parts = timePart.split(':');
-    if (parts.length === 3) {
-      const hours = parseInt(parts[0]);
-      const minutes = parseInt(parts[1]);
-      const seconds = parseInt(parts[2]);
-      const milliseconds = parseInt(millisecondsPart || '0');
-      return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+  try {
+    // 处理 SRT 格式的时间码 (HH:MM:SS,mmm)
+    if (timecode.includes(',')) {
+      const [timePart, millisecondsPart] = timecode.split(',');
+      const parts = timePart.split(':');
+      if (parts.length === 3) {
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        const seconds = parseInt(parts[2]) || 0;
+        const milliseconds = parseInt(millisecondsPart || '0') || 0;
+
+        // 验证数值范围
+        if (hours < 0 || minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60 || milliseconds < 0 || milliseconds >= 1000) {
+          console.warn('⚠️ SRT时间码数值超出有效范围:', timecode);
+          return 0;
+        }
+
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
+
+        // 🎯 关键修复：检测异常长的时间码（超过24小时）
+        if (totalSeconds > 86400) { // 24小时 = 86400秒
+          console.error('❌ 检测到异常长的SRT时间码:', timecode, '转换结果:', totalSeconds, '秒');
+          return 0; // 返回0而不是异常值
+        }
+
+        return totalSeconds;
+      }
     }
-  }
 
-  const parts = timecode.split(':');
-  if (parts.length === 4) {
-    // HH:MM:SS:FF 格式
-    const hours = parseInt(parts[0]);
-    const minutes = parseInt(parts[1]);
-    const seconds = parseInt(parts[2]);
-    const frames = parseInt(parts[3]);
-    return hours * 3600 + minutes * 60 + seconds + frames / 30; // 假设30fps
-  } else if (parts.length === 3) {
-    // HH:MM:SS.mmm 或 HH:MM:SS 格式
-    const hours = parseInt(parts[0]);
-    const minutes = parseInt(parts[1]);
-    const seconds = parseFloat(parts[2]);
-    return hours * 3600 + minutes * 60 + seconds;
+    const parts = timecode.split(':');
+    if (parts.length === 4) {
+      // HH:MM:SS:FF 格式
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const seconds = parseInt(parts[2]) || 0;
+      const frames = parseInt(parts[3]) || 0;
+
+      // 验证数值范围
+      if (hours < 0 || minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60 || frames < 0 || frames >= 30) {
+        console.warn('⚠️ 帧时间码数值超出有效范围:', timecode);
+        return 0;
+      }
+
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds + frames / 30;
+
+      // 🎯 关键修复：检测异常长的时间码（超过24小时）
+      if (totalSeconds > 86400) { // 24小时 = 86400秒
+        console.error('❌ 检测到异常长的帧时间码:', timecode, '转换结果:', totalSeconds, '秒');
+        return 0; // 返回0而不是异常值
+      }
+
+      return totalSeconds;
+    } else if (parts.length === 3) {
+      // HH:MM:SS.mmm 或 HH:MM:SS 格式
+      const hours = parseInt(parts[0]) || 0;
+      const minutes = parseInt(parts[1]) || 0;
+      const seconds = parseFloat(parts[2]) || 0;
+
+      // 验证数值范围
+      if (hours < 0 || minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60) {
+        console.warn('⚠️ 标准时间码数值超出有效范围:', timecode);
+        return 0;
+      }
+
+      const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+      // 🎯 关键修复：检测异常长的时间码（超过24小时）
+      if (totalSeconds > 86400) { // 24小时 = 86400秒
+        console.error('❌ 检测到异常长的标准时间码:', timecode, '转换结果:', totalSeconds, '秒');
+        return 0; // 返回0而不是异常值
+      }
+
+      return totalSeconds;
+    }
+
+    console.warn('⚠️ 不支持的时间码格式:', timecode);
+    return 0;
+  } catch (error) {
+    console.error('❌ 时间码转换失败:', timecode, error);
+    return 0;
   }
-  return 0;
 };
 
-// 持续时间字符串转换为秒数
+// 持续时间字符串转换为秒数 - 增强版本，添加错误处理和验证
 const durationToSeconds = (duration: string): number => {
-  if (duration.endsWith('s')) {
-    return parseFloat(duration.replace('s', ''));
+  if (!duration || typeof duration !== 'string') {
+    console.warn('⚠️ 无效的持续时间:', duration);
+    return 0;
   }
-  return parseFloat(duration);
+
+  try {
+    let seconds: number;
+
+    if (duration.endsWith('s')) {
+      seconds = parseFloat(duration.replace('s', ''));
+    } else {
+      seconds = parseFloat(duration);
+    }
+
+    // 验证数值有效性
+    if (isNaN(seconds) || seconds < 0) {
+      console.warn('⚠️ 无效的持续时间数值:', duration);
+      return 0;
+    }
+
+    // 🎯 关键修复：检测异常长的持续时间（超过24小时）
+    if (seconds > 86400) { // 24小时 = 86400秒
+      console.error('❌ 检测到异常长的持续时间:', duration, '转换结果:', seconds, '秒');
+      return Math.min(seconds, 3600); // 限制最大1小时
+    }
+
+    return seconds;
+  } catch (error) {
+    console.error('❌ 持续时间转换失败:', duration, error);
+    return 0;
+  }
 };
 
 // 生成视频缩略图的工具函数
@@ -283,6 +374,15 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   visualEditingState: 'idle',
   currentEditingStep: null,
   editingSteps: [],
+
+  // 🎨 渐进式加载初始状态
+  progressiveLoadingState: {
+    isVisible: false,
+    currentItem: 0,
+    totalItems: 0,
+    currentItemName: '',
+    stage: 'loading',
+  },
 
   // 加载AI剪辑数据
   loadAIEditingData: (data: AIEditingData) => {
@@ -726,7 +826,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     const targetWidthRatio = 0.9; // 目标占用90%的可用宽度
     const targetWidth = availableWidth * targetWidthRatio;
     const requiredWidth = totalDuration * PIXELS_PER_SECOND;
-    const optimalZoomLevel = Math.max(0.25, Math.min(4, targetWidth / requiredWidth));
+    const optimalZoomLevel = Math.max(0.05, Math.min(4, targetWidth / requiredWidth));
 
     console.log(`🔍 时间轴缩放计算 (90%显示):`, {
       totalClips: originalTrack.elements.length,
@@ -780,23 +880,54 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       // 🎬 第二步：启动并行处理
       set({ executionProgress: 10, currentProcessingClip: "启动并行剪辑处理..." });
 
-      // 🚀 关键创新：并行执行可视化动画和一键剪辑逻辑
-      const [visualResult, oneClickResult] = await Promise.all([
-        // 可视化剪辑动画（用于展示）
-        get().performVisualEditingAnimation(),
-        // 一键剪辑逻辑（生成最终结果）
-        get().performOneClickEditingInBackground()
-      ]);
+      // 🚀 关键创新：智能并行执行策略
+      let visualResult, oneClickResult;
 
-      // 🎯 第三步：用一键剪辑的结果替换时间轴
-      set({ executionProgress: 95, currentProcessingClip: "应用最终剪辑结果..." });
+      // 🎯 策略1：如果有原视频，先执行可视化动画，然后并行处理
+      if (get().isShowingOriginalVideo && get().originalVideoTrackId) {
+        // 先执行可视化动画（用户可以看到剪辑过程）
+        set({ executionProgress: 15, currentProcessingClip: "开始可视化剪辑演示..." });
+        visualResult = await get().performVisualEditingAnimation();
+
+        // 可视化完成后，立即开始后台处理
+        set({ executionProgress: 70, currentProcessingClip: "生成最终剪辑结果..." });
+        oneClickResult = await get().performOneClickEditingInBackground();
+      } else {
+        // 🎯 策略2：没有原视频时，并行执行以提高效率
+        const [vResult, ocResult] = await Promise.all([
+          get().performVisualEditingAnimation(),
+          get().performOneClickEditingInBackground()
+        ]);
+        visualResult = vResult;
+        oneClickResult = ocResult;
+      }
+
+      // 🎯 第三步：流畅应用最终结果
+      set({ executionProgress: 90, currentProcessingClip: "应用最终剪辑结果..." });
       await get().applyOneClickResultToTimeline(oneClickResult);
 
       // 🎯 修复：移除额外的字幕保障机制，避免重复添加
       // 字幕已在applyOneClickResultToTimeline中添加，无需额外保障
 
-      set({ executionProgress: 100, currentProcessingClip: "剪辑完成!" });
+      // 🎯 完成状态反馈
+      set({
+        executionProgress: 100,
+        currentProcessingClip: "剪辑完成!",
+        visualEditingState: 'completed'
+      });
+
+      // 🎉 成功提示
       toast.success("🎉 可视化剪辑完成！已应用一键剪辑结果和字幕");
+
+      // 🎯 延迟清理状态，让用户看到完成状态
+      setTimeout(() => {
+        set({
+          isExecutingPlan: false,
+          executionProgress: 0,
+          currentProcessingClip: null,
+          visualEditingState: 'idle'
+        });
+      }, 2000);
 
     } catch (error) {
       console.error("可视化剪辑失败:", error);
@@ -817,18 +948,32 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
     console.log("🎭 开始可视化剪辑动画展示");
 
-    // 如果有原视频在时间轴，执行可视化动画
+    // 🎬 根据情况执行不同的可视化动画
     if (originalVideoTrackId && isShowingOriginalVideo) {
+      // 有原视频：执行真实的可视化剪辑操作
+      set({ currentProcessingClip: "在时间轴上执行可视化剪辑..." });
       await get().performVisualEditingOnOriginalVideo();
     } else {
-      // 否则执行简化的动画效果
+      // 无原视频：执行模拟的可视化动画效果
+      set({ currentProcessingClip: "模拟可视化剪辑过程..." });
       for (let i = 0; i < currentEditingPlan.timeline_clips.length; i++) {
         const clip = currentEditingPlan.timeline_clips[i];
+
+        // 🎯 更详细的进度反馈
+        const progress = 15 + (i / currentEditingPlan.timeline_clips.length) * 55; // 15-70%
         set({
-          executionProgress: 15 + (i / currentEditingPlan.timeline_clips.length) * 70,
-          currentProcessingClip: `可视化处理片段 ${i + 1}/${currentEditingPlan.timeline_clips.length}: ${clip.sequence_clip_id}`
+          executionProgress: progress,
+          currentProcessingClip: `🎬 可视化片段 ${i + 1}/${currentEditingPlan.timeline_clips.length}: ${clip.sequence_clip_id}`
         });
-        await new Promise(resolve => setTimeout(resolve, 500)); // 动画延迟
+
+        // 🎯 触发剪刀动画（模拟剪切）
+        if (i > 0) { // 第一个片段不需要剪切
+          window.dispatchEvent(new CustomEvent('trigger-scissors-animation', {
+            detail: { position: i * 3 } // 模拟位置
+          }));
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 800)); // 稍长的动画延迟
       }
     }
 
@@ -1024,6 +1169,11 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
       // 🎬 执行剪切操作
       const endTime = startTime + clipDuration;
+
+      // 🎯 触发剪刀高亮动画
+      window.dispatchEvent(new CustomEvent('trigger-scissors-animation', {
+        detail: { position: startTime }
+      }));
 
       // 起始剪切
       if (startTime > currentElement.startTime && startTime < currentElement.startTime + currentElement.duration) {
@@ -1384,34 +1534,69 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         return;
       }
 
-      // 🚀 性能优化1：并行处理所有视频的元数据获取
-      console.log(`⚡ 并行获取 ${allClips.length} 个视频的元数据...`);
+      // 🚀 性能优化1：分批流式处理视频元数据获取（避免并发过载）
+      console.log(`⚡ 分批获取 ${allClips.length} 个视频的元数据...`);
 
-      const videoProcessingPromises = allClips.map(async (clip, index) => {
-        try {
-          const { duration, thumbnail } = await get().getVideoMetadataOptimized(clip.video_url, index);
-          return {
-            clip,
-            index,
-            duration,
-            thumbnail,
-            success: true
-          };
-        } catch (error) {
-          console.warn(`⚠️ 视频 ${index + 1} 元数据获取失败:`, error);
-          return {
-            clip,
-            index,
-            duration: 120, // 默认时长
-            thumbnail: generateDefaultVideoThumbnail(index),
-            success: false
-          };
+      const BATCH_SIZE = 3; // 每批处理3个视频，避免网络拥塞
+      const videoResults: Array<{
+        clip: any;
+        index: number;
+        duration: number;
+        thumbnail: string;
+        success: boolean;
+      }> = [];
+
+      // 分批处理视频
+      for (let batchStart = 0; batchStart < allClips.length; batchStart += BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE, allClips.length);
+        const currentBatch = allClips.slice(batchStart, batchEnd);
+
+        console.log(`📦 处理第 ${Math.floor(batchStart / BATCH_SIZE) + 1} 批视频 (${batchStart + 1}-${batchEnd}/${allClips.length})`);
+
+        // 🎯 关键优化：每批内部并行，批次之间串行
+        const batchPromises = currentBatch.map(async (clip, batchIndex) => {
+          const globalIndex = batchStart + batchIndex;
+          try {
+            console.log(`🔄 开始处理视频 ${globalIndex + 1}: ${clip.sequence_clip_id}`);
+            const { duration, thumbnail } = await get().getVideoMetadataOptimized(clip.video_url, globalIndex);
+            console.log(`✅ 视频 ${globalIndex + 1} 处理完成: ${duration}s`);
+
+            return {
+              clip,
+              index: globalIndex,
+              duration,
+              thumbnail,
+              success: true
+            };
+          } catch (error) {
+            console.warn(`⚠️ 视频 ${globalIndex + 1} 元数据获取失败:`, error);
+            return {
+              clip,
+              index: globalIndex,
+              duration: 120, // 默认时长
+              thumbnail: generateDefaultVideoThumbnail(globalIndex),
+              success: false
+            };
+          }
+        });
+
+        // 等待当前批次完成
+        const batchResults = await Promise.all(batchPromises);
+        videoResults.push(...batchResults);
+
+        // 🎯 流式更新进度和UI反馈
+        const completedCount = videoResults.length;
+        const progressPercent = Math.round((completedCount / allClips.length) * 100);
+        console.log(`📊 进度更新: ${completedCount}/${allClips.length} (${progressPercent}%)`);
+
+        // 短暂延迟，让UI有时间更新，避免阻塞
+        if (batchEnd < allClips.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
-      });
+      }
 
-      // 等待所有视频元数据并行获取完成
-      const videoResults = await Promise.all(videoProcessingPromises);
-      console.log(`✅ 所有视频元数据获取完成，成功: ${videoResults.filter(r => r.success).length}/${videoResults.length}`);
+      const successfulVideos = videoResults.filter(result => result.success);
+      console.log(`✅ 分批处理完成！成功获取 ${successfulVideos.length}/${allClips.length} 个视频的元数据`);
 
       // 🚀 性能优化2：批量创建媒体项和时间轴元素
       const mediaItems: any[] = [];
@@ -1485,9 +1670,55 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       const successfulItems = savedMediaItems.filter(item => item !== null);
       console.log(`✅ 成功保存 ${successfulItems.length}/${mediaItems.length} 个媒体项`);
 
-      // 🚀 性能优化4：批量添加时间轴元素（一次性更新，避免多次重新渲染）
-      console.log(`⚡ 批量添加 ${timelineElements.length} 个元素到时间轴...`);
-      timelineStore.addElementsToTrackBatch(originalTrackId, timelineElements);
+      // 🎨 用户体验优化：渐进式添加时间轴元素（提升视觉体验）
+      console.log(`✨ 渐进式添加 ${timelineElements.length} 个元素到时间轴...`);
+
+      // 显示渐进式加载指示器
+      set({
+        progressiveLoadingState: {
+          isVisible: true,
+          currentItem: 0,
+          totalItems: timelineElements.length,
+          currentItemName: '',
+          stage: 'adding',
+        }
+      });
+
+      await timelineStore.addElementsToTrackProgressive(originalTrackId, timelineElements, {
+        delayBetweenElements: 200, // 每个元素间隔200ms
+        showAnimation: true,
+        onProgress: (current, total, element) => {
+          // 更新进度显示
+          const progressPercent = Math.round((current / total) * 100);
+          console.log(`📊 时间轴添加进度: ${current}/${total} (${progressPercent}%) - ${element.name}`);
+
+          // 更新渐进式加载状态
+          set({
+            executionProgress: 20 + (current / total) * 60, // 20-80%的进度用于时间轴添加
+            currentProcessingClip: `添加到时间轴: ${element.name} (${current}/${total})`,
+            progressiveLoadingState: {
+              isVisible: true,
+              currentItem: current,
+              totalItems: total,
+              currentItemName: element.name || `视频片段 ${current}`,
+              stage: current === total ? 'completed' : 'adding',
+            }
+          });
+        }
+      });
+
+      // 完成后隐藏指示器
+      setTimeout(() => {
+        set({
+          progressiveLoadingState: {
+            isVisible: false,
+            currentItem: 0,
+            totalItems: 0,
+            currentItemName: '',
+            stage: 'loading',
+          }
+        });
+      }, 2000); // 显示完成状态2秒后隐藏
 
       console.log(`🎉 高性能并行处理完成！总时长: ${currentTimelinePosition.toFixed(1)}秒`);
 
@@ -1539,52 +1770,96 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     return generateAIEditingMockData(projectId);
   },
 
-  // 🚀 高性能视频元数据获取（优化版本）
+  // 🚀 高性能视频元数据获取（优化版本 - 带重试和异常检测）
   getVideoMetadataOptimized: async (videoUrl: string, index: number) => {
-    return new Promise<{duration: number, thumbnail: string}>((resolve, reject) => {
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+    const cacheKey = `video_metadata_${videoUrl}`;
 
-      if (!ctx) {
-        reject(new Error('无法创建Canvas上下文'));
-        return;
+    // 检查缓存
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsedCache = JSON.parse(cached);
+        console.log(`📋 使用缓存的视频元数据 ${index + 1}: ${parsedCache.duration}s`);
+        return parsedCache;
+      } catch (error) {
+        console.warn(`⚠️ 缓存解析失败，重新获取: ${index + 1}`);
       }
+    }
 
-      // 设置超时
-      const timeoutId = setTimeout(() => {
-        video.remove();
-        canvas.remove();
-        reject(new Error('视频加载超时'));
-      }, 8000); // 8秒超时，比原来更短
+    console.log(`🔍 获取视频元数据 ${index + 1}: ${videoUrl}`);
 
-      video.crossOrigin = 'anonymous';
-      video.preload = 'metadata';
-      video.muted = true; // 静音以避免音频问题
+    // 🎯 新增：网络重试机制
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      video.onloadedmetadata = () => {
-        try {
-          clearTimeout(timeoutId);
-          const duration = video.duration;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 尝试获取视频元数据 ${index + 1} (第${attempt}/${maxRetries}次)`);
 
-          // 设置canvas尺寸
-          canvas.width = 320;
-          canvas.height = 180;
+        const metadata = await new Promise<{duration: number, thumbnail: string}>((resolve, reject) => {
+          const video = document.createElement('video');
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
 
-          // 跳转到指定时间生成缩略图
-          const thumbnailTime = Math.min(1 + (index * 0.2), duration - 0.1);
-          video.currentTime = thumbnailTime;
+          if (!ctx) {
+            reject(new Error('无法创建Canvas上下文'));
+            return;
+          }
 
-          video.onseeked = () => {
+          // 设置超时 - 根据重试次数调整
+          const timeoutDuration = 10000 + (attempt - 1) * 5000; // 10s, 15s, 20s
+          const timeoutId = setTimeout(() => {
+            video.remove();
+            canvas.remove();
+            reject(new Error(`视频加载超时 (${timeoutDuration/1000}s)`));
+          }, timeoutDuration);
+
+          video.crossOrigin = 'anonymous';
+          video.preload = 'metadata';
+          video.muted = true; // 静音以避免音频问题
+
+          video.onloadedmetadata = () => {
             try {
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+              clearTimeout(timeoutId);
+              const duration = video.duration;
 
-              // 清理
-              video.remove();
-              canvas.remove();
+              // 🎯 关键修复：验证duration是否合理
+              if (isNaN(duration) || duration <= 0 || duration > 86400) { // 超过24小时
+                console.warn(`⚠️ 检测到异常的视频时长: ${duration}秒，使用默认值`);
+                video.remove();
+                canvas.remove();
+                resolve({
+                  duration: 120, // 使用默认2分钟
+                  thumbnail: generateDefaultVideoThumbnail(index)
+                });
+                return;
+              }
 
-              resolve({ duration, thumbnail });
+              // 设置canvas尺寸
+              canvas.width = 320;
+              canvas.height = 180;
+
+              // 跳转到指定时间生成缩略图
+              const thumbnailTime = Math.min(1 + (index * 0.2), duration - 0.1);
+              video.currentTime = thumbnailTime;
+
+              video.onseeked = () => {
+                try {
+                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+
+                  // 清理
+                  video.remove();
+                  canvas.remove();
+
+                  resolve({ duration, thumbnail });
+                } catch (error) {
+                  clearTimeout(timeoutId);
+                  video.remove();
+                  canvas.remove();
+                  reject(error);
+                }
+              };
             } catch (error) {
               clearTimeout(timeoutId);
               video.remove();
@@ -1592,22 +1867,43 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
               reject(error);
             }
           };
-        } catch (error) {
-          clearTimeout(timeoutId);
-          video.remove();
-          canvas.remove();
-          reject(error);
+
+          video.onerror = () => {
+            clearTimeout(timeoutId);
+            video.remove();
+            canvas.remove();
+            reject(new Error('视频加载失败'));
+          };
+
+          video.src = videoUrl;
+        });
+
+        // 缓存结果
+        sessionStorage.setItem(cacheKey, JSON.stringify(metadata));
+        console.log(`✅ 视频元数据获取成功 ${index + 1}: ${metadata.duration}s`);
+
+        return metadata;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.warn(`⚠️ 视频元数据获取失败 ${index + 1} (第${attempt}/${maxRetries}次):`, lastError.message);
+
+        if (attempt < maxRetries) {
+          // 指数退避延迟
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          console.log(`⏳ 等待 ${delay}ms 后重试...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
-      };
+      }
+    }
 
-      video.onerror = () => {
-        clearTimeout(timeoutId);
-        video.remove();
-        canvas.remove();
-        reject(new Error('视频加载失败'));
-      };
+    console.error(`❌ 视频元数据获取最终失败 ${index + 1}，使用默认值:`, lastError?.message);
 
-      video.src = videoUrl;
-    });
+    // 返回默认值
+    const defaultMetadata = {
+      duration: 120, // 默认2分钟
+      thumbnail: generateDefaultVideoThumbnail(index)
+    };
+
+    return defaultMetadata;
   },
 }));

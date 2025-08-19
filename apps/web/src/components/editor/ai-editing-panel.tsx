@@ -35,6 +35,7 @@ import { useVideoPreviewStore } from "@/stores/video-preview-store";
 import { VideoThumbnail } from "./video-thumbnail";
 import { toast } from "sonner";
 import { extractSubtitleDataFromAIEditing } from "@/lib/ai-subtitle-integration";
+import { ProgressiveLoadingIndicator } from "./progressive-loading-indicator";
 
 export function AIEditingPanel() {
   const {
@@ -47,6 +48,7 @@ export function AIEditingPanel() {
     isPreviewMode,
     isShowingOriginalVideo,
     visualEditingState,
+    progressiveLoadingState,
     loadAIEditingData,
     executeEditingPlan,
     executeVisualEditingPlan,
@@ -447,6 +449,7 @@ export function AIEditingPanel() {
                             </Badge>
                           </div>
                         </div>
+                      </CardContent>
                     <CardContent className="pt-0 p-2">
                       <div className="space-y-2">
                         {/* 视频缩略图 */}
@@ -606,6 +609,15 @@ export function AIEditingPanel() {
           </div>
         )}
       </div>
+
+      {/* 🎨 渐进式加载指示器 */}
+      <ProgressiveLoadingIndicator
+        isVisible={progressiveLoadingState.isVisible}
+        currentItem={progressiveLoadingState.currentItem}
+        totalItems={progressiveLoadingState.totalItems}
+        currentItemName={progressiveLoadingState.currentItemName}
+        stage={progressiveLoadingState.stage}
+      />
     </div>
   );
 }

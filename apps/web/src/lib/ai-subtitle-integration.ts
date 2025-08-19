@@ -197,6 +197,7 @@ export function applyAISubtitleStyles(
     ...element,
     // 可以根据AI数据调整样式
     fontSize: 48,
+    fontWeight: "bold" as const, // 🎯 添加：字体加粗
     color: "#ffffff",
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     textAlign: "center" as const,
