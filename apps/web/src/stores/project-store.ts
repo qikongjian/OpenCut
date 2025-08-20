@@ -32,7 +32,7 @@ interface ProjectStore {
   invalidProjectIds?: Set<string>;
 
   // Actions
-  createNewProject: (name: string) => Promise<string>;
+  createNewProject: (name: string, customId?: string) => Promise<string>;
   loadProject: (id: string) => Promise<void>;
   saveCurrentProject: () => Promise<void>;
   loadAllProjects: () => Promise<void>;
@@ -162,8 +162,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }
   },
 
-  createNewProject: async (name: string) => {
-    const newProject: TProject = { ...DEFAULT_PROJECT, name };
+  createNewProject: async (name: string, customId?: string) => {
+    const newProject: TProject = {
+      ...DEFAULT_PROJECT,
+      name,
+      id: customId || generateUUID() // 使用自定义ID或生成新ID
+    };
 
     set({ activeProject: newProject });
 

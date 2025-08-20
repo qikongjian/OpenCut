@@ -106,20 +106,38 @@ export default function Editor() {
             error.message.includes("Project not found"));
 
         if (isProjectNotFound) {
-          // Mark this project ID as invalid globally BEFORE creating project
-          markProjectIdAsInvalid(projectId);
+          // 不再标记为无效，而是使用URL中的ID创建新项目
+          console.log(`项目 ${projectId} 不存在，使用该ID创建新项目`);
 
           try {
-            const newProjectId = await createNewProject("Untitled Project");
+            // 使用URL中的项目ID创建新项目，而不是生成新ID
+            const createdProjectId = await createNewProject("Untitled Project", projectId);
 
             // Check again if component was unmounted
             if (isCancelled) {
               return;
             }
 
-            router.replace(`/editor/${newProjectId}`);
+            // 验证创建的项目ID是否与URL中的ID一致
+            if (createdProjectId === projectId) {
+              console.log(`成功创建项目: ${projectId}`);
+              // 不需要重定向，因为URL已经是正确的
+              // 重新尝试加载项目
+              await loadProject(projectId);
+            } else {
+              console.error("创建的项目ID与URL不匹配");
+              router.replace(`/editor/${createdProjectId}`);
+            }
           } catch (createError) {
             console.error("Failed to create new project:", createError);
+            // 如果创建失败，标记为无效并重定向到新项目
+            markProjectIdAsInvalid(projectId);
+            try {
+              const fallbackProjectId = await createNewProject("Untitled Project");
+              router.replace(`/editor/${fallbackProjectId}`);
+            } catch (fallbackError) {
+              console.error("Failed to create fallback project:", fallbackError);
+            }
           }
         } else {
           // For other errors (storage issues, corruption, etc.), don't create new project

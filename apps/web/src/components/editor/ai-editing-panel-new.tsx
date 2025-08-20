@@ -6,6 +6,7 @@
 // 最后更新: 2025/1/8
 
 import React, { useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -54,10 +55,15 @@ const formatTimecode = (timecode: string): string => {
 };
 
 export function AIEditingPanelNew() {
+  // 获取URL参数中的项目ID
+  const params = useParams();
+  const urlProjectId = params?.project_id as string;
+
   const {
     aiEditingData,
     currentEditingPlan,
     isExecutingPlan,
+    isLoadingPlan,
     executionProgress,
     currentProcessingClip,
     previewClipIndex,
@@ -70,6 +76,7 @@ export function AIEditingPanelNew() {
     previewClip,
     stopPreview,
     generateMockData,
+    generateAIEditingPlanFromAPI,
     showOriginalVideoInTimeline,
   } = useAIEditingStore();
 
@@ -79,14 +86,43 @@ export function AIEditingPanelNew() {
 
   const [selectedClipIndex, setSelectedClipIndex] = useState<number | null>(null);
 
-  // 生成Mock数据
-  const handleGenerateMockData = () => {
-    if (!activeProject) {
-      toast.error("请先创建或选择项目");
+  // 获取项目ID - 优先使用URL中的ID，然后是activeProject的ID
+  const getProjectId = () => {
+    if (urlProjectId) {
+      console.log('使用URL中的项目ID:', urlProjectId);
+      return urlProjectId;
+    }
+    if (activeProject?.id) {
+      console.log('使用activeProject的ID:', activeProject.id);
+      return activeProject.id;
+    }
+    console.warn('没有找到有效的项目ID');
+    return null;
+  };
+
+  // 生成AI剪辑计划（真实API调用）
+  const handleGenerateAIEditingPlan = async () => {
+    const projectId = getProjectId();
+
+    if (!projectId) {
+      toast.error("请先创建或打开一个项目");
       return;
     }
 
-    const mockData = generateMockData(activeProject.id);
+    console.log('🚀 开始生成AI剪辑计划，项目ID:', projectId);
+    await generateAIEditingPlanFromAPI(projectId);
+  };
+
+  // 生成Mock数据（保留作为备用）
+  const handleGenerateMockData = () => {
+    const projectId = getProjectId();
+
+    if (!projectId) {
+      toast.error("请先创建或打开一个项目");
+      return;
+    }
+
+    const mockData = generateMockData(projectId);
     loadAIEditingData(mockData);
     toast.success("AI剪辑计划已生成！");
   };
@@ -226,13 +262,36 @@ export function AIEditingPanelNew() {
 
               {/* 主要操作按钮 */}
               <Button
-                onClick={handleGenerateMockData}
+                onClick={handleGenerateAIEditingPlan}
+                disabled={isLoadingPlan}
                 size="default"
-                className="w-full max-w-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                className="w-full max-w-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Bot className="w-4 h-4 mr-2" />
-                生成AI剪辑计划
+                {isLoadingPlan ? (
+                  <>
+                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    正在生成...
+                  </>
+                ) : (
+                  <>
+                    <Bot className="w-4 h-4 mr-2" />
+                    生成AI剪辑计划
+                  </>
+                )}
               </Button>
+
+              {/* 开发模式：Mock数据按钮 */}
+              {process.env.NODE_ENV === 'development' && (
+                <Button
+                  onClick={handleGenerateMockData}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 text-xs"
+                >
+                  <Bot className="w-3 h-3 mr-1" />
+                  生成Mock数据（开发）
+                </Button>
+              )}
             </div>
           </div>
         ) : (
