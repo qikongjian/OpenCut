@@ -124,11 +124,40 @@ export class BackendExporter {
       console.log('🚀 Starting export process...');
       console.log('IR:', { videoCount: ir.video.length, duration: ir.duration, textCount: ir.texts.length });
 
-      // 优先检查是否为AI剪辑（最快）
+      // 🚀 优先检查是否可以使用增量导出（利用本地已处理的视频）
       const aiClipsData = await this.checkForAIClips();
       if (aiClipsData) {
-        console.log('✅ Using AI clips fast export API');
-        return this.streamExportAIClips(aiClipsData, options);
+        console.log('🔍 Found AI clips data, checking for incremental export opportunity...');
+
+        try {
+          // 检查时间轴是否有本地处理的视频文件
+          const timelineStore = useTimelineStore.getState();
+          const mediaStore = useMediaStore.getState();
+
+          console.log('🔍 Starting media data collection...');
+          const processedMediaData = await this.collectProcessedMediaData(ir, mediaStore);
+          const localFilesCount = processedMediaData.filter(m => m.hasLocalFile && m.type === 'video').length;
+
+          console.log('📊 Local files analysis:', {
+            totalVideoElements: ir.video.length,
+            localFilesCount,
+            processedDataLength: processedMediaData.length,
+            canUseIncremental: localFilesCount > 0
+          });
+
+          // 如果有本地文件，优先使用增量导出
+          if (localFilesCount > 0) {
+            console.log('⚡ Using incremental AI export (local files detected)');
+            return this.streamExportIncrementalAI(aiClipsData, options);
+          } else {
+            console.log('🌐 Using standard AI clips export (no local files)');
+            return this.streamExportAIClips(aiClipsData, options);
+          }
+        } catch (error) {
+          console.error('❌ Error during media data collection:', error);
+          console.log('🔄 Falling back to standard AI clips export');
+          return this.streamExportAIClips(aiClipsData, options);
+        }
       }
 
       // 其次尝试使用文件上传API来获取真实视频内容
@@ -148,11 +177,14 @@ export class BackendExporter {
 
   /**
    * 检查是否为AI剪辑（优先级最高）
+   * 增强版：同时检查时间轴状态，优化导出策略
    */
   private async checkForAIClips(): Promise<any | null> {
     try {
       console.log('🔍 Checking for AI clips...');
       const aiEditingStore = useAIEditingStore.getState();
+      const timelineStore = useTimelineStore.getState();
+
       console.log('AI editing store state:', {
         hasCurrentEditingPlan: !!aiEditingStore.currentEditingPlan,
         planKeys: aiEditingStore.currentEditingPlan ? Object.keys(aiEditingStore.currentEditingPlan) : []
@@ -164,8 +196,25 @@ export class BackendExporter {
           aiEditingStore.currentEditingPlan.timeline_clips.length > 0) {
 
         console.log('✅ Found AI editing plan with', aiEditingStore.currentEditingPlan.timeline_clips.length, 'clips');
-        console.log('First clip sample:', aiEditingStore.currentEditingPlan.timeline_clips[0]);
-        return aiEditingStore.currentEditingPlan;
+
+        // 🚀 新增：检查时间轴是否已有处理好的内容
+        const timelineAnalysis = this.analyzeTimelineContent(timelineStore);
+        console.log('📊 Timeline analysis:', timelineAnalysis);
+
+        // 增强AI剪辑数据，包含时间轴状态
+        const enhancedAIData = {
+          ...aiEditingStore.currentEditingPlan,
+          timelineState: timelineAnalysis,
+          optimizationHints: {
+            hasProcessedClips: timelineAnalysis.hasVideoElements,
+            hasSubtitles: timelineAnalysis.hasTextElements,
+            canUseIncrementalExport: timelineAnalysis.hasVideoElements && timelineAnalysis.hasTextElements,
+            estimatedSpeedupFactor: timelineAnalysis.hasVideoElements ? 3.5 : 1.0
+          }
+        };
+
+        console.log('🎯 Enhanced AI data with timeline optimization hints');
+        return enhancedAIData;
       } else {
         console.log('❌ No AI editing plan found or no clips');
       }
@@ -174,6 +223,471 @@ export class BackendExporter {
     }
 
     return null;
+  }
+
+  /**
+   * 分析时间轴内容，为导出优化提供数据
+   */
+  private analyzeTimelineContent(timelineStore: any): {
+    hasVideoElements: boolean;
+    hasTextElements: boolean;
+    hasAudioElements: boolean;
+    totalElements: number;
+    videoDuration: number;
+    textDuration: number;
+    canOptimize: boolean;
+  } {
+    let hasVideoElements = false;
+    let hasTextElements = false;
+    let hasAudioElements = false;
+    let totalElements = 0;
+    let videoDuration = 0;
+    let textDuration = 0;
+
+    for (const track of timelineStore.tracks) {
+      totalElements += track.elements.length;
+
+      for (const element of track.elements) {
+        if (element.type === 'video' || element.type === 'media') {
+          hasVideoElements = true;
+          videoDuration += element.duration || 0;
+        } else if (element.type === 'text') {
+          hasTextElements = true;
+          textDuration += element.duration || 0;
+        } else if (element.type === 'audio') {
+          hasAudioElements = true;
+        }
+      }
+    }
+
+    return {
+      hasVideoElements,
+      hasTextElements,
+      hasAudioElements,
+      totalElements,
+      videoDuration,
+      textDuration,
+      canOptimize: hasVideoElements && totalElements > 0
+    };
+  }
+
+  /**
+   * 增量导出：利用时间轴已处理的内容
+   * 这是性能优化的核心方法
+   */
+  private async streamExportIncrementalAI(aiPlan: any, options: ExportOptions): Promise<ExportResult> {
+    try {
+      console.log('⚡ Starting incremental AI export...');
+
+      const timelineStore = useTimelineStore.getState();
+      const mediaStore = useMediaStore.getState();
+
+      // 生成增强的IR，包含时间轴状态
+      const ir = timelineStore.toIR();
+      const assContent = ASSGenerator.generateASS(ir);
+
+      // 🚀 关键优化：收集已处理的媒体数据
+      const processedMediaData = await this.collectProcessedMediaData(ir, mediaStore);
+
+      console.log('📊 Processed media analysis:', {
+        totalVideoElements: ir.video.length,
+        totalTextElements: ir.texts.length,
+        processedFilesCount: processedMediaData.length,
+        canSkipDownload: processedMediaData.filter(m => m.hasLocalFile).length
+      });
+
+      // 准备增量导出请求
+      const incrementalRequestData = {
+        exportType: 'incremental',
+        timeline: {
+          ir: ir,
+          subtitles: assContent,
+          totalDuration: ir.duration / 1000,
+        },
+        processedMedia: processedMediaData,
+        aiPlan: {
+          clips: aiPlan.timeline_clips,
+          optimizationHints: aiPlan.optimizationHints
+        },
+        options: {
+          quality: options.quality,
+          width: ir.width || 1920,
+          height: ir.height || 1080,
+          fps: ir.fps || 30,
+        },
+      };
+
+      console.log('🎯 Incremental export request prepared');
+
+      // 使用 FormData 来传输文件和数据
+      const formData = new FormData();
+
+      // 添加基本数据（不包含文件）
+      const requestDataWithoutFiles = {
+        ...incrementalRequestData,
+        processedMedia: incrementalRequestData.processedMedia.map(item => ({
+          ...item,
+          fileData: undefined // 移除文件数据，单独传输
+        }))
+      };
+
+      formData.append('requestData', JSON.stringify(requestDataWithoutFiles));
+
+      // 单独添加文件
+      for (let i = 0; i < processedMediaData.length; i++) {
+        const mediaItem = processedMediaData[i];
+        if (mediaItem.hasLocalFile && mediaItem.fileData) {
+          // 从 Base64 转换回 Blob
+          const binaryString = atob(mediaItem.fileData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let j = 0; j < binaryString.length; j++) {
+            bytes[j] = binaryString.charCodeAt(j);
+          }
+          const blob = new Blob([bytes], { type: 'video/mp4' });
+          formData.append(`file_${mediaItem.elementId}`, blob, `${mediaItem.elementId}.mp4`);
+        }
+      }
+
+      // 调用增量导出API
+      const response = await fetch('/api/export/incremental', {
+        method: 'POST',
+        body: formData,
+        signal: this.abortController?.signal,
+      });
+
+      if (!response.ok) {
+        console.warn('⚠️ Incremental export failed, falling back to standard export');
+        const timelineStore = useTimelineStore.getState();
+        return this.streamExportStandard(timelineStore.toIR(), options);
+      }
+
+      return this.handleStreamResponseInternal(response);
+
+    } catch (error) {
+      console.error('❌ Incremental export failed:', error);
+      console.log('🔄 Falling back to standard AI clips export');
+
+      // 回退到标准导出
+      const timelineStore = useTimelineStore.getState();
+      return this.streamExportStandard(timelineStore.toIR(), options);
+    }
+  }
+
+  /**
+   * 收集已处理的媒体数据
+   */
+  private async collectProcessedMediaData(ir: TimelineIR, mediaStore: any): Promise<Array<{
+    elementId: string;
+    type: 'video' | 'audio' | 'text';
+    hasLocalFile: boolean;
+    isRemoteVideo?: boolean; // 标识是否为远程视频
+    fileData?: string; // Base64 编码的文件数据
+    metadata: any;
+    timelinePosition: {
+      start: number;
+      duration: number;
+      trackId: string;
+    };
+  }>> {
+    console.log('🔍 collectProcessedMediaData started:', {
+      videoElementsCount: ir.video.length,
+      mediaItemsCount: mediaStore.mediaItems?.length || 0
+    });
+
+    const processedData: any[] = [];
+
+    // 处理视频元素
+    for (const videoElement of ir.video) {
+      const mediaItem = mediaStore.mediaItems.find((item: any) =>
+        item.url === videoElement.src || item.id === videoElement.id
+      );
+
+      console.log(`🔍 Processing video element ${videoElement.id}:`, {
+        mediaItemFound: !!mediaItem,
+        hasFile: !!mediaItem?.file,
+        hasUrl: !!mediaItem?.url,
+        url: mediaItem?.url,
+        urlType: mediaItem?.url ? (
+          mediaItem.url.startsWith('blob:') ? 'blob' :
+          mediaItem.url.startsWith('http') ? 'remote' : 'other'
+        ) : 'none'
+      });
+
+      let fileData: string | undefined;
+      let isRemoteVideo = false;
+      let hasValidFileData = false;
+
+      // 🚀 修复1：优先处理blob URL（一键剪辑生成的本地文件）
+      if (mediaItem?.url && mediaItem.url.startsWith('blob:')) {
+        try {
+          console.log(`📥 Fetching blob URL for ${videoElement.id}: ${mediaItem.url}`);
+          const response = await fetch(mediaItem.url);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const arrayBuffer = await response.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // 🚀 修复：避免Maximum call stack size exceeded
+          // 分块处理大文件，避免展开操作符导致的栈溢出
+          let binaryString = '';
+          const chunkSize = 8192; // 8KB chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          fileData = btoa(binaryString);
+          hasValidFileData = true;
+          console.log(`✅ Converted blob to Base64 for ${videoElement.id}: ${fileData.length} chars`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to fetch blob URL for ${videoElement.id}:`, error);
+        }
+      }
+
+      // 🚀 修复2：如果blob失败，尝试本地文件
+      if (!hasValidFileData && mediaItem?.file) {
+        try {
+          console.log(`📁 Processing local file for ${videoElement.id}: ${mediaItem.file.name}`);
+          const arrayBuffer = await mediaItem.file.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // 🚀 修复：避免Maximum call stack size exceeded
+          // 分块处理大文件，避免展开操作符导致的栈溢出
+          let binaryString = '';
+          const chunkSize = 8192; // 8KB chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          fileData = btoa(binaryString);
+          hasValidFileData = true;
+          console.log(`✅ Converted local file to Base64 for ${videoElement.id}: ${fileData.length} chars`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to convert file to Base64 for ${videoElement.id}:`, error);
+        }
+      }
+
+      // 🚀 修复3：如果都失败，尝试远程URL
+      if (!hasValidFileData && mediaItem?.url && mediaItem.url.startsWith('http')) {
+        isRemoteVideo = true;
+        try {
+          console.log(`📥 Downloading remote video for ${videoElement.id}: ${mediaItem.url}`);
+          const response = await fetch(mediaItem.url);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const arrayBuffer = await response.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // 🚀 修复：避免Maximum call stack size exceeded
+          // 分块处理大文件，避免展开操作符导致的栈溢出
+          let binaryString = '';
+          const chunkSize = 8192; // 8KB chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          fileData = btoa(binaryString);
+          hasValidFileData = true;
+          console.log(`✅ Downloaded and converted remote video to Base64 for ${videoElement.id}: ${fileData.length} chars`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to download and convert remote video for ${videoElement.id}:`, error);
+          // 远程视频下载失败时，仍然传递URL给后端处理
+          console.log(`🔄 Will pass remote URL to backend for ${videoElement.id}: ${mediaItem.url}`);
+        }
+      }
+
+      // 🚀 修复4：智能判断文件类型和可用性
+      const hasLocalFile = hasValidFileData || !!(mediaItem?.file) || (mediaItem?.url && mediaItem.url.startsWith('blob:'));
+      const remoteUrl = isRemoteVideo ? mediaItem?.url : undefined;
+
+      console.log(`📊 Video element ${videoElement.id} processing result:`, {
+        hasLocalFile,
+        hasValidFileData,
+        isRemoteVideo,
+        hasRemoteUrl: !!remoteUrl,
+        fileDataLength: fileData?.length || 0
+      });
+
+      processedData.push({
+        elementId: videoElement.id,
+        type: 'video',
+        hasLocalFile,
+        isRemoteVideo,
+        fileData,
+        metadata: {
+          src: videoElement.src,
+          remoteUrl, // 添加远程URL
+          in: videoElement.in,
+          out: videoElement.out,
+          transform: videoElement.transform,
+          muted: videoElement.muted,
+          width: mediaItem?.width,
+          height: mediaItem?.height,
+          duration: mediaItem?.duration,
+          thumbnailUrl: mediaItem?.thumbnailUrl
+        },
+        timelinePosition: {
+          start: videoElement.start,
+          duration: (videoElement.out || 0) - (videoElement.in || 0),
+          trackId: videoElement.trackId
+        }
+      });
+    }
+
+    // 处理音频元素
+    for (const audioElement of ir.audio) {
+      const mediaItem = mediaStore.mediaItems.find((item: any) =>
+        item.url === audioElement.src || item.id === audioElement.id
+      );
+
+      let fileData: string | undefined;
+      let isRemoteAudio = false;
+
+      if (mediaItem?.file) {
+        // 本地文件：转换为Base64
+        try {
+          const arrayBuffer = await mediaItem.file.arrayBuffer();
+          // 转换为 Base64 字符串以便 JSON 序列化
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // 🚀 修复：避免Maximum call stack size exceeded
+          // 分块处理大文件，避免展开操作符导致的栈溢出
+          let binaryString = '';
+          const chunkSize = 8192; // 8KB chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          fileData = btoa(binaryString);
+          console.log(`✅ Converted local audio file to Base64 for ${audioElement.id}: ${fileData.length} chars`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to convert audio file to Base64 for ${audioElement.id}:`, error);
+        }
+      } else if (mediaItem?.url && (mediaItem.url.startsWith('http') || mediaItem.url.startsWith('blob:'))) {
+        // 远程音频：下载并转换为Base64
+        isRemoteAudio = true;
+        try {
+          console.log(`📥 Downloading remote audio for ${audioElement.id}: ${mediaItem.url}`);
+          const response = await fetch(mediaItem.url);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          const arrayBuffer = await response.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          // 🚀 修复：避免Maximum call stack size exceeded
+          // 分块处理大文件，避免展开操作符导致的栈溢出
+          let binaryString = '';
+          const chunkSize = 8192; // 8KB chunks
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            const chunk = uint8Array.slice(i, i + chunkSize);
+            binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+          }
+          fileData = btoa(binaryString);
+          console.log(`✅ Downloaded and converted remote audio to Base64 for ${audioElement.id}: ${fileData.length} chars`);
+        } catch (error) {
+          console.warn(`⚠️ Failed to download and convert remote audio for ${audioElement.id}:`, error);
+          // 远程音频下载失败时，仍然传递URL给后端处理
+          console.log(`🔄 Will pass remote URL to backend for ${audioElement.id}: ${mediaItem.url}`);
+        }
+      }
+
+      processedData.push({
+        elementId: audioElement.id,
+        type: 'audio',
+        hasLocalFile: !!(mediaItem?.file),
+        isRemoteVideo: isRemoteAudio, // 复用字段名保持一致性
+        fileData,
+        metadata: {
+          src: audioElement.src,
+          remoteUrl: isRemoteAudio ? mediaItem?.url : undefined, // 添加远程URL
+          in: audioElement.in,
+          out: audioElement.out,
+          gain: audioElement.gain
+        },
+        timelinePosition: {
+          start: audioElement.start,
+          duration: (audioElement.out || 0) - (audioElement.in || 0),
+          trackId: audioElement.trackId
+        }
+      });
+    }
+
+    // 处理文本元素（字幕）
+    for (const textElement of ir.texts) {
+      processedData.push({
+        elementId: textElement.id,
+        type: 'text',
+        hasLocalFile: true, // 文本总是"本地"的
+        metadata: {
+          text: textElement.text,
+          style: textElement.style
+        },
+        timelinePosition: {
+          start: textElement.start,
+          duration: textElement.end - textElement.start,
+          trackId: 'text'
+        }
+      });
+    }
+
+    return processedData;
+  }
+
+  /**
+   * 处理流式响应（内部方法）
+   */
+  private async handleStreamResponseInternal(response: Response): Promise<ExportResult> {
+    if (!response.body) {
+      throw new Error('No response body');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let downloadUrl = '';
+    let fileSize = 0;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              this.handleStreamEvent(data);
+
+              if (data.type === 'complete') {
+                downloadUrl = data.downloadUrl;
+                fileSize = data.fileSize;
+              }
+            } catch (error) {
+              console.warn('Failed to parse stream data:', line);
+            }
+          }
+        }
+      }
+
+      if (!downloadUrl) {
+        throw new Error('No download URL received');
+      }
+
+      return {
+        success: true,
+        url: downloadUrl,
+        size: fileSize,
+        filename: `export_${Date.now()}.mp4`,
+        format: 'mp4'
+      };
+
+    } finally {
+      reader.releaseLock();
+    }
   }
 
   /**
@@ -245,22 +759,49 @@ export class BackendExporter {
   }
 
   /**
-   * AI剪辑快速导出
+   * AI剪辑快速导出 - 增强版
+   * 支持增量导出和时间轴优化
    */
   private async streamExportAIClips(aiPlan: any, options: ExportOptions): Promise<ExportResult> {
     try {
-      console.log('🚀 Starting AI clips export...');
+      console.log('🚀 Starting enhanced AI clips export...');
 
-      // 生成字幕
+      // 检查是否可以使用增量导出优化
+      const canUseIncrementalExport = aiPlan.optimizationHints?.canUseIncrementalExport;
+      const speedupFactor = aiPlan.optimizationHints?.estimatedSpeedupFactor || 1.0;
+
+      console.log('🎯 Export optimization analysis:', {
+        canUseIncremental: canUseIncrementalExport,
+        speedupFactor,
+        hasProcessedClips: aiPlan.optimizationHints?.hasProcessedClips,
+        hasSubtitles: aiPlan.optimizationHints?.hasSubtitles
+      });
+
+      if (canUseIncrementalExport) {
+        console.log('⚡ Using incremental export optimization');
+        return this.streamExportIncrementalAI(aiPlan, options);
+      }
+
+      // 回退到标准AI剪辑导出
       console.log('📝 Generating subtitles...');
       const timelineStore = useTimelineStore.getState();
       const ir = timelineStore.toIR();
       const assContent = ASSGenerator.generateASS(ir);
       console.log('✅ Subtitles generated, length:', assContent.length);
 
-      // 计算总时长
-      const totalDuration = ir.duration / 1000; // 转换为秒
-      console.log('⏱️ Total duration:', totalDuration, 'seconds');
+      // 🚀 修复：从AI剪辑计划直接计算总时长，而不是依赖可能不准确的IR时长
+      const totalDuration = aiPlan.timeline_clips.reduce((total: number, clip: any) => {
+        // 使用source_in_timecode和source_out_timecode计算精确时长
+        const startSeconds = this.timecodeToSeconds(clip.source_in_timecode);
+        const endSeconds = this.timecodeToSeconds(clip.source_out_timecode);
+        const clipDuration = endSeconds - startSeconds;
+        console.log(`Clip ${clip.sequence_clip_id}: ${clipDuration.toFixed(3)}s (${clip.source_in_timecode} -> ${clip.source_out_timecode})`);
+        return total + clipDuration;
+      }, 0);
+
+      console.log('⏱️ AI计划总时长:', totalDuration.toFixed(3), 'seconds');
+      console.log('⏱️ IR计算时长:', (ir.duration / 1000).toFixed(3), 'seconds');
+      console.log('⏱️ 时长差异:', Math.abs(totalDuration - ir.duration / 1000).toFixed(3), 'seconds');
 
       // 准备AI剪辑数据
       const requestData = {
@@ -639,5 +1180,48 @@ export class BackendExporter {
     }
 
     this.isExporting = false;
+  }
+
+  /**
+   * 时间码转换为秒数
+   */
+  private timecodeToSeconds(timecode: string): number {
+    if (!timecode || typeof timecode !== 'string') {
+      console.warn('⚠️ 无效的时间码:', timecode);
+      return 0;
+    }
+
+    try {
+      const parts = timecode.split(':');
+
+      if (parts.length === 3) {
+        // HH:MM:SS.mmm 格式
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        const seconds = parseFloat(parts[2]) || 0;
+
+        // 验证数值范围
+        if (hours < 0 || minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60) {
+          console.warn('⚠️ 时间码数值超出有效范围:', timecode);
+          return 0;
+        }
+
+        const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+        // 检测异常长的时间码（超过24小时）
+        if (totalSeconds > 86400) {
+          console.error('❌ 检测到异常长的时间码:', timecode, '转换结果:', totalSeconds, '秒');
+          return 0;
+        }
+
+        return totalSeconds;
+      } else {
+        console.warn('⚠️ 不支持的时间码格式:', timecode);
+        return 0;
+      }
+    } catch (error) {
+      console.error('❌ 时间码转换失败:', timecode, error);
+      return 0;
+    }
   }
 }

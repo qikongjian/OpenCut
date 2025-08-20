@@ -401,16 +401,37 @@ async function buildAIClipsFFmpegCommand(
 ): Promise<string[]> {
   const args: string[] = [];
 
-  // 创建concat文件列表
-  const concatList = processedClips.map(clip => `file '${clip.clipPath}'`).join('\n');
+  // 🚀 修复：创建精确的concat文件列表，包含duration信息
+  const concatEntries: string[] = [];
+  let totalCalculatedDuration = 0;
+
+  for (let i = 0; i < processedClips.length; i++) {
+    const clip = processedClips[i];
+    concatEntries.push(`file '${clip.clipPath}'`);
+    concatEntries.push(`duration ${clip.duration.toFixed(6)}`);
+    totalCalculatedDuration += clip.duration;
+
+    console.log(`AI Clip ${i}: ${clip.duration.toFixed(3)}s - ${clip.clipPath}`);
+  }
+
+  const concatContent = concatEntries.join('\n');
   const concatPath = join(workDir, 'concat_list.txt');
-  await fs.writeFile(concatPath, concatList);
+  await fs.writeFile(concatPath, concatContent);
+
+  console.log('=== AI剪辑Concat调试信息 ===');
+  console.log('Expected total duration:', totalDuration, 'seconds');
+  console.log('Calculated total duration:', totalCalculatedDuration, 'seconds');
+  console.log('Clips count:', processedClips.length);
+  console.log('Concat file content:');
+  console.log(concatContent);
+  console.log('============================');
 
   // 使用concat协议
   args.push('-f', 'concat', '-safe', '0', '-i', concatPath);
 
-  // 设置总时长
-  args.push('-t', totalDuration.toString());
+  // 🚀 修复：使用计算出的精确时长，而不是传入的可能不准确的总时长
+  const finalDuration = Math.min(totalDuration, totalCalculatedDuration);
+  args.push('-t', finalDuration.toFixed(6));
 
   // 基础设置 - 优化性能
   args.push('-c:v', 'libx264');

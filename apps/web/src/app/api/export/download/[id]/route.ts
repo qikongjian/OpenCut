@@ -27,6 +27,7 @@ export async function GET(
 
     // 构建文件路径 - 支持多种导出类型
     const possibleWorkDirs = [
+      join(tmpdir(), `incremental-export-${id}`), // 增量导出
       join(tmpdir(), `opencut-stream-export-${id}`),
       join(tmpdir(), `ai-clips-export-${id}`),
       join(tmpdir(), `opencut-export-${id}`), // 兼容旧版本

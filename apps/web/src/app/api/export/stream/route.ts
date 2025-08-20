@@ -371,27 +371,49 @@ function buildConcatFFmpegCommand(
 ): string[] {
   const args: string[] = [];
 
-  // 创建concat文件列表，每个文件包含时长信息
-  const concatList = ir.video.map((video, index) => {
-    const duration = (video.out - video.in) / 1000;
-    return `file '${inputFiles[index]}'
-duration ${duration}`;
-  }).join('\n');
+  // 🚀 修复：正确处理concat协议，避免时长不一致
+  // 按时间轴顺序排序视频片段
+  const sortedVideos = [...ir.video].sort((a, b) => a.start - b.start);
 
-  // 添加最后一个文件的引用（concat协议要求）
-  const finalConcatList = concatList + `\nfile '${inputFiles[inputFiles.length - 1]}'`;
+  // 创建concat文件列表，精确控制每个片段的时长
+  const concatEntries: string[] = [];
+  let totalCalculatedDuration = 0;
+
+  for (let i = 0; i < sortedVideos.length; i++) {
+    const video = sortedVideos[i];
+    const inputFile = inputFiles[i];
+
+    if (inputFile) {
+      // 计算实际播放时长（考虑trim）
+      const segmentDuration = (video.out - video.in) / 1000;
+      totalCalculatedDuration += segmentDuration;
+
+      concatEntries.push(`file '${inputFile}'`);
+      concatEntries.push(`duration ${segmentDuration.toFixed(6)}`);
+
+      console.log(`Video segment ${i}: ${segmentDuration.toFixed(3)}s (${video.in/1000}-${video.out/1000})`);
+    }
+  }
+
+  // 🚀 修复：不添加重复的最后文件引用，这是导致时长错误的主要原因
+  const concatContent = concatEntries.join('\n');
 
   const concatPath = join(workDir, 'concat_list.txt');
-  require('fs').writeFileSync(concatPath, finalConcatList);
+  require('fs').writeFileSync(concatPath, concatContent);
 
-  console.log('Concat list content:', finalConcatList);
+  console.log('=== Concat Debug Info ===');
+  console.log('IR total duration:', ir.duration / 1000, 'seconds');
+  console.log('Calculated total duration:', totalCalculatedDuration, 'seconds');
+  console.log('Video segments count:', sortedVideos.length);
+  console.log('Concat file content:');
+  console.log(concatContent);
+  console.log('========================');
 
   // 使用concat协议作为唯一输入
   args.push('-f', 'concat', '-safe', '0', '-i', concatPath);
 
-  // 设置总时长
-  const totalDuration = ir.duration / 1000; // 转换为秒
-  args.push('-t', totalDuration.toString());
+  // 🚀 修复：使用计算出的精确时长，而不是IR中可能不准确的总时长
+  args.push('-t', totalCalculatedDuration.toFixed(6));
 
   // 基础设置
   args.push('-c:v', options.codec || 'libx264');

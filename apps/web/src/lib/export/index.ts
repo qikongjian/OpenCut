@@ -21,6 +21,9 @@ export { ASSGenerator } from "./ass-generator";
 // FFmpeg工具
 export { ffmpegManager, FFmpegManager, FFmpegCommandBuilder } from "./ffmpeg-manager";
 
+// 性能分析和优化
+export { performanceAnalyzer, PerformanceAnalyzer, type PerformanceAnalysis } from "./performance-analyzer";
+
 // 类型定义
 export type {
   ExportOptions,

@@ -28,13 +28,14 @@ import {
 // import { ExportDialog } from "./export-dialog";
 // import { ExportProgressDialog } from "./export-progress-dialog";
 import { exportManager } from "@/lib/export/export-manager";
-import { 
-  ExportStrategy, 
-  ExportProgress, 
-  ExportResult, 
+import { performanceAnalyzer } from "@/lib/export/performance-analyzer";
+import {
+  ExportStrategy,
+  ExportProgress,
+  ExportResult,
   UserPreference,
   ExportQuality,
-  PrivacyLevel 
+  PrivacyLevel
 } from "@/types/export";
 import { toast } from "sonner";
 
@@ -75,7 +76,36 @@ export function ExportButton({
       // 显示进度对话框
       setShowProgress(true);
 
-      // 更新进度：初始化
+      // 🎯 新增：性能分析
+      setExportProgress({
+        overall: 0.02,
+        stage: 'preparing',
+        message: '分析导出性能...',
+        elapsedTime: 0,
+        startTime: Date.now(),
+      });
+
+      console.log('📊 Analyzing export performance...');
+      const performanceAnalysis = performanceAnalyzer.analyzeExportPerformance();
+      const performanceSummary = performanceAnalyzer.generatePerformanceSummary(performanceAnalysis);
+
+      console.log('Performance Analysis:', performanceAnalysis);
+      console.log('Performance Summary:', performanceSummary);
+
+      // 显示性能分析结果
+      if (performanceAnalysis.performanceScore < 60) {
+        toast.warning("检测到性能瓶颈", {
+          description: `性能评分: ${performanceAnalysis.performanceScore}/100`,
+          duration: 3000,
+        });
+      } else if (performanceAnalysis.optimizationPotential > 50) {
+        toast.info("发现优化机会", {
+          description: `可提升 ${performanceAnalysis.optimizations[0]?.estimatedSpeedup || 2}x 导出速度`,
+          duration: 3000,
+        });
+      }
+
+      // 更新进度：检查导出条件
       setExportProgress({
         overall: 0.05,
         stage: 'preparing',
@@ -91,8 +121,18 @@ export function ExportButton({
       const canExportCheck = AIVideoExporter.canExport();
 
       if (canExportCheck.canExport) {
-        // 使用AI视频导出器
-        toast.info('使用AI视频导出器');
+        // 🚀 优化：根据性能分析选择最佳策略
+        const useOptimizedExport = performanceAnalysis.optimizations.some(
+          opt => opt.type === 'incremental' && opt.priority === 'high'
+        );
+
+        if (useOptimizedExport) {
+          toast.info("使用增量导出优化", {
+            description: `预计提速 ${performanceAnalysis.optimizations[0]?.estimatedSpeedup || 4}x`,
+          });
+        } else {
+          toast.info('使用AI视频导出器');
+        }
 
         const result = await aiVideoExporter.exportAIVideo((progress) => {
           setExportProgress(progress);

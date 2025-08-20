@@ -1694,12 +1694,17 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
             const mediaItem = mediaStore.mediaItems.find(m => m.id === element.mediaId);
             if (mediaItem) {
               if (mediaItem.type === "video" || mediaItem.type === "image") {
+                // 🚀 修复：正确计算素材的in/out时间
+                // in: 素材内部开始时间（考虑trimStart）
+                // out: 素材内部结束时间（考虑trimStart + 实际使用时长 - trimEnd）
+                const actualDuration = element.duration - element.trimEnd;
+
                 ir.video.push({
                   id: element.id,
                   src: element.mediaUrl || mediaItem.url || "",
-                  in: element.trimStart * 1000, // 转换为毫秒
-                  out: (element.trimStart + element.duration) * 1000,
-                  start: element.startTime * 1000,
+                  in: element.trimStart * 1000, // 素材内部开始时间
+                  out: (element.trimStart + actualDuration) * 1000, // 素材内部结束时间
+                  start: element.startTime * 1000, // 在时间轴上的开始时间
                   trackId: track.id,
                   transform: {
                     x: 0,
@@ -1711,11 +1716,14 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
                   hidden: element.hidden,
                 });
               } else if (mediaItem.type === "audio") {
+                // 🚀 修复：音频也需要正确计算in/out时间
+                const actualDuration = element.duration - element.trimEnd;
+
                 ir.audio.push({
                   id: element.id,
                   src: element.mediaUrl || mediaItem.url || "",
                   in: element.trimStart * 1000,
-                  out: (element.trimStart + element.duration) * 1000,
+                  out: (element.trimStart + actualDuration) * 1000,
                   start: element.startTime * 1000,
                   trackId: track.id,
                   gain: 1.0,
