@@ -24,8 +24,12 @@ export const env = createEnv({
     R2_BUCKET_NAME: z.string(),
     // Modal transcription
     MODAL_TRANSCRIPTION_URL: z.string(),
+    // AI剪辑计划API
+    AI_EDITING_PLAN_API_URL: z.string().url().optional(),
   },
-  client: {},
+  client: {
+    NEXT_PUBLIC_AI_EDITING_PLAN_API_URL: z.string().url().optional(),
+  },
   runtimeEnv: {
     ANALYZE: process.env.ANALYZE,
     NEXT_RUNTIME: process.env.NEXT_RUNTIME,
@@ -41,5 +45,8 @@ export const env = createEnv({
     R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
     // Modal transcription
     MODAL_TRANSCRIPTION_URL: process.env.MODAL_TRANSCRIPTION_URL,
+    // AI剪辑计划API
+    AI_EDITING_PLAN_API_URL: process.env.AI_EDITING_PLAN_API_URL,
+    NEXT_PUBLIC_AI_EDITING_PLAN_API_URL: process.env.NEXT_PUBLIC_AI_EDITING_PLAN_API_URL,
   },
 });

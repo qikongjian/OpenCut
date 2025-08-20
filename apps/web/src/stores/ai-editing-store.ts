@@ -11,6 +11,7 @@ import { useMediaStore } from "./media-store";
 import { useProjectStore } from "./project-store";
 import { usePlaybackStore } from "./playback-store";
 import { generateAIEditingMockData } from "@/lib/ai-editing-mock-data";
+import { generateAIEditingPlan, validateProjectId, AIEditingApiError } from "@/lib/ai-editing-api";
 import {
   extractSubtitleDataFromAIEditing,
   createSubtitleTrackWithElements
@@ -74,6 +75,9 @@ interface AIEditingState {
 
   // Mock数据生成
   generateMockData: (projectId: string) => AIEditingData;
+
+  // 新增：真实API调用方法
+  generateAIEditingPlanFromAPI: (projectId: string) => Promise<void>;
 
   // 高性能视频元数据获取
   getVideoMetadataOptimized: (videoUrl: string, index: number) => Promise<{duration: number, thumbnail: string}>;
@@ -1768,6 +1772,84 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   // 生成Mock数据
   generateMockData: (projectId: string): AIEditingData => {
     return generateAIEditingMockData(projectId);
+  },
+
+  // 新增：从API生成AI剪辑计划
+  generateAIEditingPlanFromAPI: async (projectId: string) => {
+    // 验证项目ID
+    if (!validateProjectId(projectId)) {
+      toast.error("无效的项目ID格式");
+      return;
+    }
+
+    set({ isLoadingPlan: true });
+
+    try {
+      console.log('🚀 开始从API生成AI剪辑计划:', projectId);
+
+      // 调用API
+      const aiEditingData = await generateAIEditingPlan(projectId);
+
+      // 🎯 详细打印接收到的数据
+      console.log('🎉 AI剪辑计划API调用成功！');
+      console.log('📊 接收到的数据概览:');
+      console.log('- 项目ID:', aiEditingData.project_id);
+      console.log('- 导演意图:', aiEditingData.director_intent?.substring(0, 100) + '...');
+      console.log('- 处理成功:', aiEditingData.success);
+
+      if (aiEditingData.editing_plan) {
+        const plan = aiEditingData.editing_plan;
+        console.log('- 剪辑计划数量:', plan.editing_sequence_plans?.length || 0);
+
+        if (plan.editing_sequence_plans && plan.editing_sequence_plans.length > 0) {
+          const firstPlan = plan.editing_sequence_plans[0];
+          console.log('- 第一个计划名称:', firstPlan.version_name);
+          console.log('- 视频片段数量:', firstPlan.timeline_clips?.length || 0);
+
+          // 打印前3个片段的信息
+          if (firstPlan.timeline_clips && firstPlan.timeline_clips.length > 0) {
+            console.log('📹 前3个视频片段信息:');
+            firstPlan.timeline_clips.slice(0, 3).forEach((clip, index) => {
+              console.log(`  片段${index + 1}:`, {
+                id: clip.sequence_clip_id,
+                duration: clip.clip_duration_in_sequence,
+                type: clip.clip_type,
+                transition: clip.transition_from_previous?.transition_type
+              });
+            });
+          }
+        }
+
+        // 对话轨道信息
+        if (plan.finalized_dialogue_track?.final_dialogue_segments) {
+          console.log('- 对话片段数量:', plan.finalized_dialogue_track.final_dialogue_segments.length);
+        }
+      }
+
+      // 加载数据到store
+      set({
+        aiEditingData,
+        currentEditingPlan: aiEditingData.editing_plan.editing_sequence_plans[0] || null,
+        isLoadingPlan: false
+      });
+
+      toast.success("AI剪辑计划生成成功！");
+      console.log('✅ AI剪辑计划加载完成，数据已存储到store');
+
+    } catch (error) {
+      console.error('❌ AI剪辑计划生成失败:', error);
+
+      let errorMessage = "AI剪辑计划生成失败";
+
+      if (error instanceof AIEditingApiError) {
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = `生成失败: ${error.message}`;
+      }
+
+      toast.error(errorMessage);
+      set({ isLoadingPlan: false });
+    }
   },
 
   // 🚀 高性能视频元数据获取（优化版本 - 带重试和异常检测）
