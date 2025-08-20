@@ -1,3 +1,4 @@
+
 "use client";
 
 // 🎨 AI剪辑面板组件 - 现代化重新设计
@@ -193,7 +194,7 @@ export function AIEditingPanel() {
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto scrollbar-thin">
         {!aiEditingData ? (
           // 🎨 重新设计的空状态
           <div className="flex flex-col h-full">
@@ -397,7 +398,7 @@ export function AIEditingPanel() {
             </div>
 
             {/* 🎨 现代化的片段列表 */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden">
               <div className="p-4 border-b border-border/40">
                 <h5 className="text-sm font-semibold text-foreground mb-1">视频片段</h5>
                 <p className="text-xs text-muted-foreground">
@@ -405,7 +406,7 @@ export function AIEditingPanel() {
                 </p>
               </div>
 
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 h-full">
                 <div className="p-4 space-y-3">
                   {currentEditingPlan?.timeline_clips.map((clip, index) => (
                     <Card
