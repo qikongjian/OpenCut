@@ -374,9 +374,22 @@ async function executeTimelineDirectExport(
   const inputFiles: string[] = [];
   const videoElements = timeline.ir.video.sort((a: any, b: any) => a.start - b.start);
 
-  for (let i = 0; i < videoElements.length; i++) {
-    const element = videoElements[i];
-    const mediaData = processedMedia.find(m => m.elementId === element.id);
+  // 🚀 性能优化：并行处理视频文件
+  const concurrency = Math.min(3, videoElements.length); // 最多3个并发
+  console.log(`⚡ Processing ${videoElements.length} videos with ${concurrency} concurrency`);
+
+  // 分批处理
+  const batches = [];
+  for (let i = 0; i < videoElements.length; i += concurrency) {
+    batches.push(videoElements.slice(i, i + concurrency));
+  }
+
+  let processedCount = 0;
+  for (const batch of batches) {
+    // 并行处理当前批次
+    const batchPromises = batch.map(async (element, batchIndex) => {
+      const i = processedCount + batchIndex;
+      const mediaData = processedMedia.find(m => m.elementId === element.id);
 
     if (mediaData?.hasLocalFile) {
       // 🚀 关键修复：生成裁剪后的片段，而不是完整文件
@@ -540,7 +553,7 @@ async function executeTimelineDirectExport(
         const trimmedPath = join(workDir, `trimmed_${i}.mp4`);
         await createTrimmedSegment(inputPath, trimmedPath, element, options);
 
-        inputFiles.push(trimmedPath);
+        return trimmedPath;
       } catch (error) {
         console.error(`❌ Failed to process file data for element ${element.id}:`, error);
         console.error(`❌ Element details:`, {
@@ -555,23 +568,30 @@ async function executeTimelineDirectExport(
 
         // 只有在确实无法获取真实文件时才创建占位符
         console.warn(`⚠️ Creating placeholder video for element ${element.id} due to: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        await createPlaceholderVideo(inputPath, element.duration || 5000, options);
-        inputFiles.push(inputPath);
+        const placeholderPath = join(workDir, `placeholder_${i}.mp4`);
+        await createPlaceholderVideo(placeholderPath, element.duration || 5000, options);
+        return placeholderPath;
       }
     } else {
       // 如果没有本地文件，创建一个占位符视频
       console.warn(`⚠️ No local file for element ${element.id}, creating placeholder`);
       const inputPath = join(workDir, `input_${i}.mp4`);
       await createPlaceholderVideo(inputPath, element.duration || 5000, options);
-      inputFiles.push(inputPath);
+      return inputPath;
     }
-    
+    });
+
+    // 等待当前批次完成
+    const batchResults = await Promise.all(batchPromises);
+    inputFiles.push(...batchResults.filter(Boolean));
+    processedCount += batch.length;
+
     // 更新进度
-    const progress = 0.1 + (i / videoElements.length) * 0.3;
+    const progress = 0.1 + (processedCount / videoElements.length) * 0.3;
     controller.enqueue(encoder.encode(`data: ${JSON.stringify({
       type: 'progress',
       stage: 'processing',
-      message: `准备文件 ${i + 1}/${videoElements.length}...`,
+      message: `并行处理完成 ${processedCount}/${videoElements.length} 个文件...`,
       progress,
     })}\n\n`));
   }
@@ -701,7 +721,8 @@ function buildOptimizedFFmpegCommand(
     console.log(`⏱️ Setting precise output duration: ${totalDurationSeconds.toFixed(3)} seconds`);
   }
 
-  args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '23');
+  // 🚀 性能优化：使用最快的编码参数
+  args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28'); // 🚀 最快预设
   args.push('-c:a', 'aac', '-b:a', '128k');
   args.push('-movflags', '+faststart');
 
@@ -757,7 +778,8 @@ function buildConcatFFmpegCommand(
     console.log(`⏱️ Setting precise concat duration: ${totalDurationSeconds.toFixed(3)} seconds`);
   }
 
-  args.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '23');
+  // 🚀 性能优化：使用最快的编码参数
+  args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '28'); // 🚀 最快预设
   args.push('-c:a', 'aac', '-b:a', '128k');
   args.push('-movflags', '+faststart');
 
@@ -1126,15 +1148,15 @@ async function createTrimmedSegment(
 
   console.log(`   - FFmpeg: -ss ${startSeconds.toFixed(3)}s, -t ${durationSeconds.toFixed(3)}s`);
 
-  // 构建FFmpeg命令进行精确裁剪
+  // 🚀 性能优化：构建高速FFmpeg命令进行精确裁剪
   const ffmpegArgs = [
     'ffmpeg', '-y',
     '-ss', startSeconds.toFixed(3), // 开始时间
     '-i', inputPath,
     '-t', durationSeconds.toFixed(3), // 持续时间
     '-c:v', 'libx264',
-    '-preset', 'fast',
-    '-crf', '23',
+    '-preset', 'ultrafast', // 🚀 使用最快预设 (从fast改为ultrafast)
+    '-crf', '28', // 🚀 降低质量以提升速度 (从23改为28)
     '-c:a', 'aac',
     '-b:a', '128k',
     '-avoid_negative_ts', 'make_zero', // 避免负时间戳
