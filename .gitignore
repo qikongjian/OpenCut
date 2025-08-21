@@ -30,3 +30,28 @@ node_modules
 bun.lockb
 apps/transcription/__pycache__
 apps/transcription/env
+
+# build output
+dist/
+build/
+
+# deployment logs and artifacts
+deployment/logs/*.log
+deployment/logs/*.tar.gz
+*.log
+*.tar.gz
+
+# sensitive deployment configs (keep templates)
+deployment/config/.env.production
+
+# test artifacts and temporary files
+tests/*/temp/
+tests/*/*.tmp
+tests/*/coverage/
+tests/*/screenshots/
+tests/*/videos/
+*.test.log
+
+# documentation build artifacts
+docs/*/build/
+docs/*/.docusaurus/

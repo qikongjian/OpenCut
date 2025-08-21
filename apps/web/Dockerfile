@@ -31,6 +31,13 @@ ENV UPSTASH_REDIS_REST_URL="http://localhost:8079"
 ENV UPSTASH_REDIS_REST_TOKEN="example_token"
 ENV NEXT_PUBLIC_BETTER_AUTH_URL="http://localhost:3000"
 
+# Required environment variables for build
+ENV CLOUDFLARE_ACCOUNT_ID="dummy-account-id"
+ENV R2_ACCESS_KEY_ID="dummy-access-key"
+ENV R2_SECRET_ACCESS_KEY="dummy-secret-key"
+ENV R2_BUCKET_NAME="opencut-production"
+ENV MODAL_TRANSCRIPTION_URL="https://dummy.modal.run"
+
 ENV FREESOUND_CLIENT_ID=$FREESOUND_CLIENT_ID
 ENV FREESOUND_API_KEY=$FREESOUND_API_KEY
 

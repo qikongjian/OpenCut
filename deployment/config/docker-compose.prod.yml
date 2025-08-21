@@ -1,0 +1,135 @@
+version: '3.8'
+
+services:
+  # OpenCut 主应用
+  opencut-app:
+    image: opencut-app:latest
+    container_name: opencut-container
+    restart: unless-stopped
+    ports:
+      - '3001:3000'
+    env_file:
+      - .env.production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - opencut-network
+    volumes:
+      - opencut-uploads:/app/uploads
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: opencut-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: opencut
+      POSTGRES_USER: opencut
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opencutthegoat}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - opencut-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U opencut -d opencut']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    command: >
+      postgres
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+
+  # Redis 缓存 (如果不使用 Upstash)
+  redis:
+    image: redis:7-alpine
+    container_name: opencut-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - opencut-network
+    command: >
+      redis-server /usr/local/etc/redis/redis.conf
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: opencut-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - opencut-app
+    networks:
+      - opencut-network
+
+  # 数据库备份服务
+  db-backup:
+    image: postgres:15-alpine
+    container_name: opencut-backup
+    restart: 'no'
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-opencutthegoat}
+    volumes:
+      - ./backups:/backups
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - opencut-network
+    command: >
+      sh -c "
+        while true; do
+          pg_dump -h postgres -U opencut -d opencut > /backups/opencut_backup_$$(date +%Y%m%d_%H%M%S).sql
+          find /backups -name 'opencut_backup_*.sql' -mtime +7 -delete
+          sleep 86400
+        done
+      "
+
+networks:
+  opencut-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  opencut-uploads:
+    driver: local
