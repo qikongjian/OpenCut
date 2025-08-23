@@ -567,9 +567,11 @@ function FullscreenToolbar({
   toggle: () => void;
   getTotalDuration: () => number;
 }) {
-  const { isPlaying, seek } = usePlaybackStore();
+  const { isPlaying, seek, pause, play } = usePlaybackStore();
   const { activeProject } = useProjectStore();
   const [isDragging, setIsDragging] = useState(false);
+  // 🎯 新增：记录拖动前的播放状态，用于拖动结束后恢复
+  const [wasPlayingBeforeDrag, setWasPlayingBeforeDrag] = useState(false);
 
   const totalDuration = getTotalDuration();
   const progress = totalDuration > 0 ? (currentTime / totalDuration) * 100 : 0;
@@ -588,6 +590,13 @@ function FullscreenToolbar({
     e.preventDefault();
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
+
+    // 🎯 新增：记录当前播放状态并暂停播放
+    setWasPlayingBeforeDrag(isPlaying);
+    if (isPlaying) {
+      pause();
+    }
+
     setIsDragging(true);
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
@@ -600,6 +609,13 @@ function FullscreenToolbar({
 
     const handleMouseUp = () => {
       setIsDragging(false);
+
+      // 🎯 新增：拖动结束后恢复播放状态
+      if (wasPlayingBeforeDrag) {
+        play();
+      }
+      setWasPlayingBeforeDrag(false);
+
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
       document.body.style.userSelect = "";

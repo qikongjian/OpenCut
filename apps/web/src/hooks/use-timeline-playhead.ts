@@ -28,6 +28,9 @@ export function useTimelinePlayhead({
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubTime, setScrubTime] = useState<number | null>(null);
 
+  // 🎯 新增：记录拖动前的播放状态，用于拖动结束后恢复
+  const [wasPlayingBeforeScrub, setWasPlayingBeforeScrub] = useState(false);
+
   // Ruler drag detection state
   const [isDraggingRuler, setIsDraggingRuler] = useState(false);
   const [hasDraggedRuler, setHasDraggedRuler] = useState(false);
@@ -44,6 +47,14 @@ export function useTimelinePlayhead({
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation(); // Prevent ruler drag from triggering
+
+      // 🎯 新增：记录当前播放状态并暂停播放
+      const { isPlaying, pause } = usePlaybackStore.getState();
+      setWasPlayingBeforeScrub(isPlaying);
+      if (isPlaying) {
+        pause();
+      }
+
       setIsScrubbing(true);
       handleScrub(e);
     },
@@ -62,6 +73,13 @@ export function useTimelinePlayhead({
       e.preventDefault();
       setIsDraggingRuler(true);
       setHasDraggedRuler(false);
+
+      // 🎯 新增：记录当前播放状态并暂停播放
+      const { isPlaying, pause } = usePlaybackStore.getState();
+      setWasPlayingBeforeScrub(isPlaying);
+      if (isPlaying) {
+        pause();
+      }
 
       // Start scrubbing immediately
       setIsScrubbing(true);
@@ -220,6 +238,13 @@ export function useTimelinePlayhead({
       setIsScrubbing(false);
       if (scrubTime !== null) seek(scrubTime); // finalize seek
       setScrubTime(null);
+
+      // 🎯 新增：拖动结束后恢复播放状态
+      if (wasPlayingBeforeScrub) {
+        const { play } = usePlaybackStore.getState();
+        play();
+      }
+      setWasPlayingBeforeScrub(false);
 
       // 🎯 清理节流更新
       if (scrubThrottleRef.current) {
