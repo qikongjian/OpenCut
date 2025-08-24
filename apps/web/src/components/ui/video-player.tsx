@@ -34,7 +34,7 @@ export function VideoPlayer({
   const isInClipRange =
     currentTime >= clipStartTime && currentTime < clipEndTime;
 
-  // 🎯 关键优化：预测即将进入的片段范围（提前0.5秒开始预加载）
+  // 🎯 关键优化：预测即将进入的Clip范围（提前0.5秒开始预加载）
   const PRELOAD_BUFFER = 0.5; // 提前0.5秒预加载
   const isNearClipStart =
     currentTime >= (clipStartTime - PRELOAD_BUFFER) &&
@@ -112,7 +112,7 @@ export function VideoPlayer({
       isReadyRef.current = false;
       lastSrcRef.current = src;
 
-      // 设置视频就绪监听器
+      // Settings视频就绪监听器
       const handleCanPlay = () => {
         isReadyRef.current = true;
         console.log(`🎬 视频就绪: ${src.substring(src.lastIndexOf('/') + 1)}`);

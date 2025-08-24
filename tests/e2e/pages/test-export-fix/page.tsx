@@ -39,7 +39,7 @@ export default function TestExportFixPage() {
 
         if (data.status === 'healthy' && data.ffmpeg === 'available') {
           setBackendStatus('healthy');
-          toast.success('后端导出服务正常');
+          toast.success('后端Export服务正常');
         } else {
           setBackendStatus('unhealthy');
           toast.warning(`后端服务状态: ${data.status || 'unknown'}, FFmpeg: ${data.ffmpeg || 'unknown'}`);
@@ -81,19 +81,19 @@ export default function TestExportFixPage() {
 
 
 
-  // 测试导出功能
+  // 测试Export功能
   const testExport = async () => {
     setIsExporting(true);
     setExportProgress(0);
 
     try {
       setExportProgress(10);
-      toast.info('开始测试导出...');
+      toast.info('开始测试Export...');
 
-      // 创建一个简单的测试导出
+      // 创建一个简单的测试Export
       setExportProgress(30);
 
-      // 模拟导出过程
+      // 模拟Export过程
       for (let i = 30; i <= 90; i += 10) {
         setExportProgress(i);
         await new Promise(resolve => setTimeout(resolve, 200));
@@ -114,7 +114,7 @@ export default function TestExportFixPage() {
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 72px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('OpenCut 导出测试', canvas.width / 2, canvas.height / 2 - 100);
+        ctx.fillText('SmartCut Frontend Export测试', canvas.width / 2, canvas.height / 2 - 100);
 
         // 添加副标题
         ctx.font = '48px Arial';
@@ -153,8 +153,8 @@ export default function TestExportFixPage() {
 
       setExportProgress(100);
 
-      // 导出成功
-      toast.success('导出测试成功!', {
+      // Export成功
+      toast.success('Export测试成功!', {
         description: `文件大小: ${(blob.size / 1024 / 1024).toFixed(1)}MB`,
         action: {
           label: "下载",
@@ -175,7 +175,7 @@ export default function TestExportFixPage() {
 
     } catch (error) {
       console.error('Export test failed:', error);
-      toast.error('导出测试失败', {
+      toast.error('Export测试失败', {
         description: error instanceof Error ? error.message : '未知错误',
       });
     } finally {
@@ -184,34 +184,34 @@ export default function TestExportFixPage() {
     }
   };
 
-  // 测试简化导出
+  // 测试简化Export
   const testSimpleExport = async () => {
     setIsExporting(true);
     setExportProgress(0);
 
     try {
       setExportProgress(10);
-      toast.info('开始简化导出测试...');
+      toast.info('开始简化Export测试...');
 
-      // 动态导入简化导出器
+      // 动态导入简化Export器
       const { simpleExporter } = await import('@/lib/export/simple-exporter');
 
       setExportProgress(20);
 
-      // 执行简化导出
+      // 执行简化Export
       const result = await simpleExporter.exportAsImage((progress) => {
         setExportProgress(20 + progress.overall * 70);
       });
 
       setExportProgress(95);
 
-      // 同时导出项目信息
+      // 同时Export项目信息
       const projectResult = await simpleExporter.exportProjectInfo();
 
       setExportProgress(100);
 
-      // 导出成功
-      toast.success('简化导出测试成功!', {
+      // Export成功
+      toast.success('简化Export测试成功!', {
         description: `图片: ${(result.size! / 1024 / 1024).toFixed(1)}MB, 项目信息: ${(projectResult.size! / 1024).toFixed(1)}KB`,
         action: {
           label: "下载图片",
@@ -240,7 +240,7 @@ export default function TestExportFixPage() {
 
     } catch (error) {
       console.error('Simple export test failed:', error);
-      toast.error('简化导出测试失败', {
+      toast.error('简化Export测试失败', {
         description: error instanceof Error ? error.message : '未知错误',
       });
     } finally {
@@ -284,9 +284,9 @@ export default function TestExportFixPage() {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">🔧 导出系统修复测试</h1>
+        <h1 className="text-3xl font-bold mb-2">🔧 Export系统修复测试</h1>
         <p className="text-muted-foreground">
-          测试和修复OpenCut的视频导出功能，包括后端FFmpeg和前端FFmpeg.wasm
+          测试和修复SmartCut Frontend的视频Export功能，包括后端FFmpeg和前端FFmpeg.wasm
         </p>
       </div>
 
@@ -296,7 +296,7 @@ export default function TestExportFixPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5" />
-              后端导出服务
+              后端Export服务
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -340,7 +340,7 @@ export default function TestExportFixPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="w-5 h-5" />
-              前端导出引擎
+              前端Export引擎
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -351,19 +351,19 @@ export default function TestExportFixPage() {
 
       <Separator className="my-6" />
 
-      {/* 导出测试 */}
+      {/* Export测试 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />
-            导出功能测试
+            Export功能测试
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {isExporting && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>导出进度</span>
+                <span>Export进度</span>
                 <span>{Math.round(exportProgress)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -385,12 +385,12 @@ export default function TestExportFixPage() {
               {isExporting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  正在测试导出...
+                  正在测试Export...
                 </>
               ) : (
                 <>
                   <Download className="w-4 h-4 mr-2" />
-                  开始基础导出测试
+                  开始基础Export测试
                 </>
               )}
             </Button>
@@ -405,12 +405,12 @@ export default function TestExportFixPage() {
               {isExporting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  简化导出中...
+                  简化Export中...
                 </>
               ) : (
                 <>
                   <FileImage className="w-4 h-4 mr-2" />
-                  简化导出测试 (推荐)
+                  简化Export测试 (推荐)
                 </>
               )}
             </Button>
@@ -418,12 +418,12 @@ export default function TestExportFixPage() {
           
           <div className="text-sm text-muted-foreground space-y-2">
             <div>
-              <p className="font-medium mb-1">基础导出测试:</p>
+              <p className="font-medium mb-1">基础Export测试:</p>
               <p>• 生成测试项目数据</p>
-              <p>• 创建简单的画布导出</p>
+              <p>• 创建简单的画布Export</p>
             </div>
             <div>
-              <p className="font-medium mb-1">简化导出测试 (推荐):</p>
+              <p className="font-medium mb-1">简化Export测试 (推荐):</p>
               <p>• 集成AI剪辑数据</p>
               <p>• 生成项目信息JSON</p>
               <p>• 包含字幕和时间轴统计</p>

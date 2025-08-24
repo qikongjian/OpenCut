@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 服务器环境检查脚本
+# SmartCut Frontend 服务器环境检查脚本
 # 验证服务器环境是否满足部署要求
 
 set -e
@@ -220,7 +220,7 @@ check_env_config() {
 
 # 主函数
 main() {
-    log_info "🔍 OpenCut 服务器环境检查开始"
+    log_info "🔍 SmartCut Frontend 服务器环境检查开始"
     echo "服务器: $SERVER_HOST"
     echo "用户: $SERVER_USER"
     echo

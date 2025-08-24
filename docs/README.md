@@ -1,6 +1,6 @@
-# 📚 OpenCut 文档中心
+# 📚 SmartCut Frontend 文档中心
 
-本文件夹包含了 OpenCut 项目的所有文档和说明文件。
+本文件夹包含了 SmartCut Frontend 项目的所有文档和说明文件。
 
 ## 📁 文档结构
 
@@ -9,13 +9,13 @@ docs/
 ├── README.md                           # 本文件 - 文档索引
 ├── project/                            # 项目文档
 │   ├── README.md                       # 项目主文档
-│   ├── OpenCut导出流程深度分析报告.md   # 导出流程分析
+│   ├── SmartCut Frontend导出流程深度分析报告.md   # 导出流程分析
 │   ├── test-url-project-id.md          # 项目ID测试文档
 │   └── DEPLOYMENT_GUIDE.md             # 部署快速指南
 ├── development/                        # 开发文档
 │   ├── AI_EDITING_SETUP_README.md      # AI剪辑设置说明
-│   ├── OpenCut_代码库全局扫描报告.md    # 代码库扫描报告
-│   ├── OpenCut导出功能详细文档.md       # 导出功能文档
+│   ├── SmartCut Frontend_代码库全局扫描报告.md    # 代码库扫描报告
+│   ├── SmartCut Frontend导出功能详细文档.md       # 导出功能文档
 │   ├── 导出性能优化方案.md             # 性能优化方案
 │   └── 视频合成能力的开发.md           # 视频合成开发文档
 ├── api/                               # API文档
@@ -24,7 +24,7 @@ docs/
 │   └── jjAPI.txt                      # API接口文档
 ├── roles/                             # 角色定义文档
 │   ├── 资深全栈工程师.md
-│   └── 资深前端开发工程师-OpenCut.md
+│   └── 资深前端开发工程师-SmartCut Frontend.md
 ├── github/                            # GitHub相关文档
 │   ├── CODE_OF_CONDUCT.md             # 行为准则
 │   ├── CONTRIBUTING.md                # 贡献指南
@@ -73,7 +73,7 @@ docs/
 
 ### 开发者
 1. [AI剪辑设置](development/AI_EDITING_SETUP_README.md)
-2. [导出功能文档](development/OpenCut导出功能详细文档.md)
+2. [导出功能文档](development/SmartCut Frontend导出功能详细文档.md)
 3. [API文档](api/jjAPI.txt)
 
 ### 运维部署
@@ -81,8 +81,8 @@ docs/
 2. [性能优化](development/导出性能优化方案.md)
 
 ### 架构设计
-1. [代码库扫描报告](development/OpenCut_代码库全局扫描报告.md)
-2. [导出流程分析](project/OpenCut导出流程深度分析报告.md)
+1. [代码库扫描报告](development/SmartCut Frontend_代码库全局扫描报告.md)
+2. [导出流程分析](project/SmartCut Frontend导出流程深度分析报告.md)
 3. [视频合成开发](development/视频合成能力的开发.md)
 
 ## 📝 文档维护

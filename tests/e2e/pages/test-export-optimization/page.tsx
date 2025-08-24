@@ -1,5 +1,5 @@
-// test-export-optimization/page.tsx - 导出优化测试页面
-// 此页面演示导出性能优化功能
+// test-export-optimization/page.tsx - Export优化测试页面
+// 此页面演示Export性能优化功能
 // 文件路径: app/test-export-optimization/page.tsx
 
 "use client";
@@ -47,26 +47,26 @@ export default function TestExportOptimization() {
   };
 
   const simulateOptimization = () => {
-    toast.info("应用导出优化...");
+    toast.info("应用Export优化...");
     
     setTimeout(() => {
       setSimulationStep('optimized');
-      toast.success("优化已应用！预计导出速度提升4.5x");
+      toast.success("优化已应用！预计Export速度提升4.5x");
     }, 1000);
   };
 
   const simulateExport = (type: 'standard' | 'optimized') => {
-    const baseTime = 45; // 基础导出时间（秒）
+    const baseTime = 45; // 基础Export时间（秒）
     const optimizedTime = type === 'optimized' ? Math.round(baseTime / 4.5) : baseTime;
     
-    toast.info(`开始${type === 'optimized' ? '优化' : '标准'}导出...`);
+    toast.info(`开始${type === 'optimized' ? '优化' : '标准'}Export...`);
     
     setTimeout(() => {
       setExportTimes(prev => ({
         ...prev,
         [type]: optimizedTime
       }));
-      toast.success(`${type === 'optimized' ? '优化' : '标准'}导出完成！用时 ${optimizedTime}秒`);
+      toast.success(`${type === 'optimized' ? '优化' : '标准'}Export完成！用时 ${optimizedTime}秒`);
     }, 1000);
   };
 
@@ -101,9 +101,9 @@ export default function TestExportOptimization() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">导出性能优化演示</h1>
+        <h1 className="text-3xl font-bold">Export性能优化演示</h1>
         <p className="text-muted-foreground">
-          演示AI剪辑完成后如何利用时间轴数据优化导出性能
+          演示AI剪辑完成后如何利用时间轴数据优化Export性能
         </p>
       </div>
 
@@ -115,7 +115,7 @@ export default function TestExportOptimization() {
             优化流程演示
           </CardTitle>
           <CardDescription>
-            模拟从AI剪辑到优化导出的完整流程
+            模拟从AI剪辑到优化Export的完整流程
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -162,10 +162,10 @@ export default function TestExportOptimization() {
             <div className="flex flex-col items-center p-4 border rounded-lg">
               <div className="flex items-center gap-2 mb-3">
                 {getStatusIcon(getStepStatus('optimized'))}
-                <h3 className="font-semibold">3. 优化导出</h3>
+                <h3 className="font-semibold">3. 优化Export</h3>
               </div>
               <p className="text-sm text-center text-muted-foreground mb-4">
-                利用时间轴数据快速导出
+                利用时间轴数据快速Export
               </p>
               <Button 
                 variant="outline" 
@@ -197,18 +197,18 @@ export default function TestExportOptimization() {
         <TabsContent value="comparison" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>导出性能对比</CardTitle>
+              <CardTitle>Export性能对比</CardTitle>
               <CardDescription>
-                标准导出 vs 优化导出的性能差异
+                标准Export vs 优化Export的性能差异
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* 标准导出 */}
+                {/* 标准Export */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <FileVideo className="w-5 h-5" />
-                    <h3 className="font-semibold">标准导出</h3>
+                    <h3 className="font-semibold">标准Export</h3>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -234,15 +234,15 @@ export default function TestExportOptimization() {
                     disabled={exportTimes.standard !== null}
                     className="w-full"
                   >
-                    {exportTimes.standard ? '已完成' : '模拟标准导出'}
+                    {exportTimes.standard ? '已完成' : '模拟标准Export'}
                   </Button>
                 </div>
 
-                {/* 优化导出 */}
+                {/* 优化Export */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5 text-yellow-500" />
-                    <h3 className="font-semibold">优化导出</h3>
+                    <h3 className="font-semibold">优化Export</h3>
                     <Badge variant="secondary">4.5x 提速</Badge>
                   </div>
                   <div className="space-y-2">
@@ -272,7 +272,7 @@ export default function TestExportOptimization() {
                     className="w-full"
                     variant={simulationStep === 'optimized' ? 'default' : 'secondary'}
                   >
-                    {exportTimes.optimized ? '已完成' : '模拟优化导出'}
+                    {exportTimes.optimized ? '已完成' : '模拟优化Export'}
                   </Button>
                 </div>
               </div>
@@ -309,7 +309,7 @@ export default function TestExportOptimization() {
             <CardHeader>
               <CardTitle>技术实现细节</CardTitle>
               <CardDescription>
-                深入了解导出优化的技术原理
+                深入了解Export优化的技术原理
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -317,10 +317,10 @@ export default function TestExportOptimization() {
                 <div>
                   <h4 className="font-semibold mb-2">🎯 核心优化策略</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground ml-4">
-                    <li>• 增量导出：利用时间轴已处理的视频和字幕数据</li>
-                    <li>• 智能缓存：避免重复下载和处理相同的媒体文件</li>
-                    <li>• 并行处理：同时处理多个视频片段</li>
-                    <li>• 预处理优化：在AI剪辑阶段预先准备导出数据</li>
+                    <li>• 增量Export：利用时间轴已处理的视频和字幕数据</li>
+                    <li>• 智能缓存：避免重复下载和处理相同的Media Files</li>
+                    <li>• 并行处理：同时处理多个视频Clip</li>
+                    <li>• 预处理优化：在AI剪辑阶段预先准备Export数据</li>
                   </ul>
                 </div>
 
@@ -347,7 +347,7 @@ export default function TestExportOptimization() {
                         <li>• 重新下载所有视频</li>
                         <li>• 重复处理已剪辑内容</li>
                         <li>• 串行处理流程</li>
-                        <li>• 平均导出时间：45秒</li>
+                        <li>• 平均Export时间：45秒</li>
                       </ul>
                     </div>
                     <div className="p-3 bg-green-50 border border-green-200 rounded">
@@ -355,8 +355,8 @@ export default function TestExportOptimization() {
                       <ul className="text-xs text-green-700 space-y-1">
                         <li>• 利用本地已处理文件</li>
                         <li>• 增量处理变更内容</li>
-                        <li>• 并行处理多个片段</li>
-                        <li>• 平均导出时间：10秒</li>
+                        <li>• 并行处理多个Clip</li>
+                        <li>• 平均Export时间：10秒</li>
                       </ul>
                     </div>
                   </div>
@@ -367,12 +367,12 @@ export default function TestExportOptimization() {
         </TabsContent>
       </Tabs>
 
-      {/* 实际导出按钮 */}
+      {/* 实际Export按钮 */}
       <Card>
         <CardHeader>
-          <CardTitle>实际导出测试</CardTitle>
+          <CardTitle>实际Export测试</CardTitle>
           <CardDescription>
-            使用真实的导出功能测试优化效果
+            使用真实的Export功能测试优化效果
           </CardDescription>
         </CardHeader>
         <CardContent>

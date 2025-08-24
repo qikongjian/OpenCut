@@ -33,7 +33,7 @@ export default function TestExportFixV2Page() {
       const ffmpeg = new FFmpeg();
       
       setProgress(50);
-      setStatus("设置日志回调...");
+      setStatus("Settings日志回调...");
 
       ffmpeg.on('log', ({ message }: any) => {
         console.log('[FFmpeg Test]', message);
@@ -101,14 +101,14 @@ export default function TestExportFixV2Page() {
   const testExportSystem = async () => {
     setIsLoading(true);
     setProgress(0);
-    setStatus("开始测试导出系统...");
+    setStatus("开始测试Export系统...");
     setResult(null);
 
     try {
       setProgress(10);
-      setStatus("导入导出管理器...");
+      setStatus("导入Export管理器...");
 
-      // 测试导出管理器
+      // 测试Export管理器
       const { ffmpegManager } = await import('@/lib/export/ffmpeg-manager');
 
       setProgress(30);
@@ -128,11 +128,11 @@ export default function TestExportFixV2Page() {
         const content = new TextDecoder().decode(data);
 
         setProgress(100);
-        setStatus("导出系统测试完成！");
+        setStatus("Export系统测试完成！");
 
         setResult({
           success: true,
-          message: "导出系统测试成功！",
+          message: "Export系统测试成功！",
           details: {
             managerReady: true,
             fileOperations: true,
@@ -140,7 +140,7 @@ export default function TestExportFixV2Page() {
           }
         });
 
-        toast.success("导出系统测试成功！", {
+        toast.success("Export系统测试成功！", {
           description: "FFmpeg管理器工作正常"
         });
       } else {
@@ -152,7 +152,7 @@ export default function TestExportFixV2Page() {
       
       setResult({
         success: false,
-        message: "导出系统测试失败",
+        message: "Export系统测试失败",
         error: error instanceof Error ? error.message : '未知错误',
         details: {
           managerReady: false,
@@ -160,7 +160,7 @@ export default function TestExportFixV2Page() {
         }
       });
 
-      toast.error("导出系统测试失败", {
+      toast.error("Export系统测试失败", {
         description: error instanceof Error ? error.message : '未知错误'
       });
     } finally {
@@ -171,7 +171,7 @@ export default function TestExportFixV2Page() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold">导出修复测试 V2</h1>
+        <h1 className="text-3xl font-bold">Export修复测试 V2</h1>
         <p className="text-muted-foreground">
           测试FFmpeg动态导入修复是否解决了 "expression is too dynamic" 错误
         </p>
@@ -208,12 +208,12 @@ export default function TestExportFixV2Page() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5" />
-              导出系统测试
+              Export系统测试
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              测试修复后的导出系统是否能正常工作
+              测试修复后的Export系统是否能正常工作
             </p>
             <Button 
               onClick={testExportSystem} 
@@ -225,7 +225,7 @@ export default function TestExportFixV2Page() {
               ) : (
                 <CheckCircle className="w-4 h-4 mr-2" />
               )}
-              测试导出系统
+              测试Export系统
             </Button>
           </CardContent>
         </Card>

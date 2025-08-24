@@ -1,6 +1,6 @@
-# OpenCut 导出系统
+# SmartCut Frontend 导出系统
 
-OpenCut 的智能混合导出系统，支持前端和后端导出，自动选择最优策略。
+SmartCut Frontend 的智能混合导出系统，支持前端和后端导出，自动选择最优策略。
 
 ## 🎯 核心特性
 

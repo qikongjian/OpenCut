@@ -110,7 +110,7 @@ export default function Editor() {
           console.log(`项目 ${projectId} 不存在，使用该ID创建新项目`);
 
           try {
-            // 使用URL中的项目ID创建新项目，而不是生成新ID
+            // Using project ID from URL创建新项目，而不是生成新ID
             const createdProjectId = await createNewProject("Untitled Project", projectId);
 
             // Check again if component was unmounted
@@ -118,14 +118,14 @@ export default function Editor() {
               return;
             }
 
-            // 验证创建的项目ID是否与URL中的ID一致
+            // 验证创建的project ID是否与URL中的ID一致
             if (createdProjectId === projectId) {
               console.log(`成功创建项目: ${projectId}`);
               // 不需要重定向，因为URL已经是正确的
               // 重新尝试加载项目
               await loadProject(projectId);
             } else {
-              console.error("创建的项目ID与URL不匹配");
+              console.error("创建的project ID与URL不匹配");
               router.replace(`/editor/${createdProjectId}`);
             }
           } catch (createError) {

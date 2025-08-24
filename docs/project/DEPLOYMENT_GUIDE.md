@@ -1,4 +1,4 @@
-# 🚀 OpenCut 部署快速指南
+# 🚀 SmartCut Frontend 部署快速指南
 
 ## 📁 部署文件结构
 

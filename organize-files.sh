@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 文件整理脚本
+# SmartCut Frontend 文件整理脚本
 # 用于维护项目文件的组织结构
 
 set -e
@@ -157,7 +157,7 @@ cleanup_empty_dirs() {
 
 # 主函数
 main() {
-    echo "🗂️  OpenCut 文件整理工具"
+    echo "🗂️  SmartCut Frontend 文件整理工具"
     echo "========================"
     echo
     

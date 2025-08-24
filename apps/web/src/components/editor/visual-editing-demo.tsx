@@ -65,7 +65,7 @@ export function VisualEditingDemo() {
           {[
             { key: 'generate', label: '生成计划', icon: Sparkles },
             { key: 'show-original', label: '显示原视频', icon: Video },
-            { key: 'execute', label: '执行剪辑', icon: Scissors },
+            { key: 'execute', label: 'Execute editing', icon: Scissors },
             { key: 'completed', label: '完成', icon: CheckCircle }
           ].map((step, index) => {
             const Icon = step.icon;
@@ -101,7 +101,7 @@ export function VisualEditingDemo() {
         <div className="p-4 bg-gray-50 rounded-lg">
           {demoStep === 'generate' && (
             <div className="text-center">
-              <h3 className="font-medium mb-2">第一步：生成AI剪辑计划</h3>
+              <h3 className="font-medium mb-2">第一步：Generate AI Editing Plan</h3>
               <p className="text-sm text-gray-600 mb-4">
                 AI将分析视频内容，生成专业的剪辑方案
               </p>
@@ -114,13 +114,13 @@ export function VisualEditingDemo() {
 
           {demoStep === 'show-original' && (
             <div className="text-center">
-              <h3 className="font-medium mb-2">第二步：显示原始视频</h3>
+              <h3 className="font-medium mb-2">第二步：Show original video</h3>
               <p className="text-sm text-gray-600 mb-4">
                 在时间轴中显示完整的原始视频，为剪辑做准备
               </p>
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Badge variant="secondary">
-                  {currentEditingPlan?.timeline_clips.length || 0} 个片段待剪辑
+                  {currentEditingPlan?.timeline_clips.length || 0} 个Clip待剪辑
                 </Badge>
               </div>
               <Button 
@@ -136,7 +136,7 @@ export function VisualEditingDemo() {
                 ) : (
                   <>
                     <Video className="w-4 h-4 mr-2" />
-                    显示原始视频
+                    Show original video
                   </>
                 )}
               </Button>
@@ -147,7 +147,7 @@ export function VisualEditingDemo() {
             <div className="text-center">
               <h3 className="font-medium mb-2">第三步：执行可视化剪辑</h3>
               <p className="text-sm text-gray-600 mb-4">
-                观看AI自动执行剪辑操作，实时看到每个步骤
+                观看AI自动Execute editing操作，实时看到每个步骤
               </p>
               <Button 
                 onClick={handleExecuteDemo}
@@ -190,7 +190,7 @@ export function VisualEditingDemo() {
             <li>• 实时可视化剪辑过程，用户可以看到每个操作步骤</li>
             <li>• 智能分析视频内容，自动生成专业剪辑方案</li>
             <li>• 自动添加AI字幕，提升视频观看体验</li>
-            <li>• 支持原始视频预览，方便对比剪辑效果</li>
+            <li>• 支持原始视频Preview，方便对比剪辑效果</li>
           </ul>
         </div>
       </CardContent>

@@ -1,7 +1,7 @@
-# 🎬 OpenCut - 现代化Web视频编辑器
+# 🎬 SmartCut Frontend - 现代化Web视频编辑器
 
 <div align="center">
-  <img src="apps/web/public/logo.png" alt="OpenCut Logo" width="120" />
+  <img src="apps/web/public/logo.png" alt="SmartCut Frontend Logo" width="120" />
   
   ### 🎬 A free, open-source video editor for web, desktop, and mobile
 
@@ -10,7 +10,7 @@
   [![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
   [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 
-  [🚀 Live Demo](https://opencut.app) • [📖 Documentation](./docs) • [🐛 Report Bug](https://github.com/OpenCut-app/OpenCut/issues) • [💡 Request Feature](https://github.com/OpenCut-app/OpenCut/issues)
+  [🚀 Live Demo](https://opencut.app) • [📖 Documentation](./docs) • [🐛 Report Bug](https://github.com/SmartCut Frontend-app/SmartCut Frontend/issues) • [💡 Request Feature](https://github.com/SmartCut Frontend-app/SmartCut Frontend/issues)
 </div>
 
 ---
@@ -27,7 +27,7 @@
 - [⚡ 一键剪辑功能设置指南](./AI_EDITING_SETUP_README.md) - 一键剪辑功能设置和使用指南
 
 ### 👥 团队角色文档
-- [🚀 资深前端开发工程师](./roles/资深前端开发工程师-OpenCut.md) - 基于OpenCut项目的前端开发角色定义
+- [🚀 资深前端开发工程师](./roles/资深前端开发工程师-SmartCut Frontend.md) - 基于SmartCut Frontend项目的前端开发角色定义
 - [📋 高级产品经理](./roles/高级产品经理.md) - 产品管理角色定义
 - [🎨 高级UI&UX设计师](./roles/高级UI&UX设计师.md) - 设计角色定义
 - [🧪 高级测试工程师](./roles/高级测试工程师.md) - 测试角色定义
@@ -42,7 +42,7 @@
 
 ---
 
-## ✨ 为什么选择 OpenCut?
+## ✨ 为什么选择 SmartCut Frontend?
 
 - **🔒 Privacy First**: Your videos never leave your device - 100% client-side processing
 - **💰 Completely Free**: No subscriptions, watermarks, or feature paywalls
@@ -88,8 +88,8 @@
 
 ### 1. 克隆项目
 ```bash
-git clone https://github.com/OpenCut-app/OpenCut.git
-cd OpenCut
+git clone https://github.com/SmartCut Frontend-app/SmartCut Frontend.git
+cd SmartCut Frontend
 ```
 
 ### 2. 安装依赖
@@ -109,7 +109,7 @@ npm run dev
 ## 📁 项目结构
 
 ```
-OpenCut/
+SmartCut Frontend/
 ├── apps/web/                     # Web应用 (主要应用)
 │   ├── src/
 │   │   ├── app/                 # Next.js App Router
@@ -167,17 +167,17 @@ npm run start         # 启动生产服务器
 
 - [🌐 官方网站](https://opencut.app)
 - [📖 完整文档](./docs)
-- [🐛 问题反馈](https://github.com/OpenCut-app/OpenCut/issues)
-- [💬 讨论区](https://github.com/OpenCut-app/OpenCut/discussions)
+- [🐛 问题反馈](https://github.com/SmartCut Frontend-app/SmartCut Frontend/issues)
+- [💬 讨论区](https://github.com/SmartCut Frontend-app/SmartCut Frontend/discussions)
 - [📧 联系我们](mailto:hello@opencut.app)
 
 ## 🙏 致谢
 
-感谢所有为OpenCut项目做出贡献的开发者和设计师！
+感谢所有为SmartCut Frontend项目做出贡献的开发者和设计师！
 
 ---
 
 <div align="center">
-  <p>Made with ❤️ by the OpenCut Team</p>
+  <p>Made with ❤️ by the SmartCut Frontend Team</p>
   <p>Star ⭐ this repository if you find it helpful!</p>
 </div>

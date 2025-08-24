@@ -1,8 +1,8 @@
-# 🎬 OpenCut 升级方案：剪映 Web 级时间轴播放
+# 🎬 SmartCut Frontend 升级方案：剪映 Web 级时间轴播放
 
 ## 📋 升级目标
 
-将 OpenCut 的时间轴播放系统升级到剪映 Web 版的技术水准，实现：
+将 SmartCut Frontend 的时间轴播放系统升级到剪映 Web 版的技术水准，实现：
 
 - 🎯 **微秒级时间精度**: 从毫秒级提升到微秒级
 - 🚀 **主时钟驱动**: 统一的时间控制架构
@@ -11,7 +11,7 @@
 
 ## 🔍 现状分析
 
-### OpenCut 当前架构
+### SmartCut Frontend 当前架构
 
 ```typescript
 // 当前播放控制 (playback-store.ts)
@@ -627,7 +627,7 @@ class BrowserCapabilityDetector {
     if (caps.offscreenCanvas && caps.webWorkers) {
       return 'high-performance' // 剪映Web级别
     } else if (caps.performanceNow && caps.requestAnimationFrame) {
-      return 'enhanced' // 增强版OpenCut
+      return 'enhanced' // 增强版SmartCut Frontend
     } else {
       return 'legacy' // 保持现状
     }
@@ -866,7 +866,7 @@ export class TimelineMonitor {
 
 ## 💡 总结
 
-这个升级方案将 OpenCut 的时间轴播放系统提升到剪映 Web 版的技术水准，通过：
+这个升级方案将 SmartCut Frontend 的时间轴播放系统提升到剪映 Web 版的技术水准，通过：
 
 ### 🎯 核心技术升级
 
@@ -889,4 +889,4 @@ export class TimelineMonitor {
 - 💾 **内存效率提升 30%**
 - 🎨 **渲染性能提升 50%**
 
-在保持 OpenCut 现有架构优势的基础上，实现了质的飞跃，为用户提供更加专业和流畅的视频编辑体验，同时为未来的功能扩展奠定了坚实的技术基础。
+在保持 SmartCut Frontend 现有架构优势的基础上，实现了质的飞跃，为用户提供更加专业和流畅的视频编辑体验，同时为未来的功能扩展奠定了坚实的技术基础。

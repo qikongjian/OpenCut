@@ -1,7 +1,7 @@
 // subtitle-integration demo page
 // 此页面演示AI字幕集成功能
 // 文件路径: app/demo/subtitle-integration/page.tsx
-// 最后更新: 2025/1/8
+// Last updated: 2025/1/8
 
 "use client";
 
@@ -85,7 +85,7 @@ export default function SubtitleIntegrationDemo() {
     return `${minutes}:${seconds.padStart(4, '0')}`;
   };
 
-  // 渲染字幕预览项
+  // 渲染字幕Preview项
   const renderSubtitleItem = (segment: DialogueSegment, index: number) => (
     <div key={index} className="p-3 border rounded-lg bg-muted/50">
       <div className="flex items-center justify-between mb-2">
@@ -208,7 +208,7 @@ export default function SubtitleIntegrationDemo() {
                     <div className="text-2xl font-bold text-primary">
                       {subtitleData.final_dialogue_segments?.length || 0}
                     </div>
-                    <div className="text-sm text-muted-foreground">对话片段</div>
+                    <div className="text-sm text-muted-foreground">对话Clip</div>
                   </div>
                   
                   <div className="text-center p-3 bg-muted/50 rounded-lg">
@@ -219,10 +219,10 @@ export default function SubtitleIntegrationDemo() {
                   </div>
                 </div>
 
-                {/* 字幕预览 */}
+                {/* 字幕Preview */}
                 {subtitleData.final_dialogue_segments && subtitleData.final_dialogue_segments.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-medium">对话片段预览</h4>
+                    <h4 className="font-medium">对话ClipPreview</h4>
                     <ScrollArea className="h-64 w-full">
                       <div className="space-y-2 pr-4">
                         {subtitleData.final_dialogue_segments.slice(0, 5).map((segment, index) => 
@@ -230,7 +230,7 @@ export default function SubtitleIntegrationDemo() {
                         )}
                         {subtitleData.final_dialogue_segments.length > 5 && (
                           <div className="text-center text-sm text-muted-foreground py-2">
-                            ... 还有 {subtitleData.final_dialogue_segments.length - 5} 个片段
+                            ... 还有 {subtitleData.final_dialogue_segments.length - 5} 个Clip
                           </div>
                         )}
                       </div>
@@ -269,10 +269,10 @@ export default function SubtitleIntegrationDemo() {
                   </div>
                 </div>
 
-                {/* 文本元素预览 */}
+                {/* 文本元素Preview */}
                 {textElements.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-medium">文本元素预览</h4>
+                    <h4 className="font-medium">文本元素Preview</h4>
                     <ScrollArea className="h-64 w-full">
                       <div className="space-y-2 pr-4">
                         {textElements.slice(0, 5).map((element, index) => 
@@ -307,7 +307,7 @@ export default function SubtitleIntegrationDemo() {
                 <ol className="text-sm space-y-1 text-muted-foreground">
                   <li>1. 从AI剪辑计划中提取finalized_dialogue_track</li>
                   <li>2. 验证字幕数据的完整性和有效性</li>
-                  <li>3. 解析对话片段或SRT内容</li>
+                  <li>3. 解析对话Clip或SRT内容</li>
                   <li>4. 转换为TextElement对象</li>
                   <li>5. 应用默认样式和布局</li>
                 </ol>
@@ -317,7 +317,7 @@ export default function SubtitleIntegrationDemo() {
                 <h4 className="font-medium mb-2">支持的功能</h4>
                 <ul className="text-sm space-y-1 text-muted-foreground">
                   <li>• SRT格式时间码解析</li>
-                  <li>• 对话片段数据处理</li>
+                  <li>• 对话Clip数据处理</li>
                   <li>• 自动样式应用</li>
                   <li>• 时间轴重叠检测</li>
                   <li>• 批量字幕导入</li>

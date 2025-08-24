@@ -17,12 +17,12 @@ export default function TestAIApiPage() {
 
   const handleTestApi = async () => {
     if (!projectId.trim()) {
-      toast.error("请输入项目ID");
+      toast.error("请输入project ID");
       return;
     }
 
     if (!validateProjectId(projectId)) {
-      toast.error("项目ID格式无效，请输入有效的UUID格式");
+      toast.error("project ID格式无效，请输入有效的UUID格式");
       return;
     }
 
@@ -81,12 +81,12 @@ export default function TestAIApiPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="projectId">项目ID</Label>
+              <Label htmlFor="projectId">project ID</Label>
               <Input
                 id="projectId"
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
-                placeholder="输入项目ID (UUID格式)"
+                placeholder="输入project ID (UUID格式)"
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -143,7 +143,7 @@ export default function TestAIApiPage() {
               {/* 基本信息 */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <Label>项目ID</Label>
+                  <Label>project ID</Label>
                   <p className="font-mono text-xs bg-muted p-2 rounded">
                     {result.project_id}
                   </p>
@@ -166,7 +166,7 @@ export default function TestAIApiPage() {
                 </div>
 
                 <div>
-                  <Label>视频片段数量</Label>
+                  <Label>视频Clip数量</Label>
                   <p className="font-mono text-xs bg-muted p-2 rounded">
                     {result.editing_plan?.editing_sequence_plans?.[0]?.timeline_clips?.length || 0}
                   </p>
@@ -185,7 +185,7 @@ export default function TestAIApiPage() {
                       {result.editing_plan.editing_sequence_plans.map((plan: any, index: number) => (
                         <div key={index} className="text-xs space-y-1">
                           <p><strong>计划{index + 1}:</strong> {plan.version_name}</p>
-                          <p><strong>片段数量:</strong> {plan.timeline_clips?.length || 0}</p>
+                          <p><strong>Clip数量:</strong> {plan.timeline_clips?.length || 0}</p>
                           <p><strong>描述:</strong> {plan.version_summary?.substring(0, 100)}...</p>
                         </div>
                       ))}
@@ -197,7 +197,7 @@ export default function TestAIApiPage() {
                     <div className="bg-purple-50 p-3 rounded">
                       <h5 className="font-medium text-sm mb-2">🎙️ 对话轨道</h5>
                       <div className="text-xs space-y-1">
-                        <p><strong>对话片段数量:</strong> {result.editing_plan.finalized_dialogue_track.final_dialogue_segments?.length || 0}</p>
+                        <p><strong>对话Clip数量:</strong> {result.editing_plan.finalized_dialogue_track.final_dialogue_segments?.length || 0}</p>
                         <p><strong>SRT内容长度:</strong> {result.editing_plan.finalized_dialogue_track.final_srt_content?.length || 0} 字符</p>
                       </div>
                     </div>

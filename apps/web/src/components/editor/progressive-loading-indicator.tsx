@@ -43,14 +43,14 @@ export function ProgressiveLoadingIndicator({
         return {
           icon: <Video className="w-5 h-5 text-green-500" />,
           title: '✨ 正在添加到时间轴',
-          description: '逐个添加视频片段，创造流畅的视觉体验...',
+          description: '逐个添加视频Clip，创造流畅的视觉体验...',
           color: 'border-green-200 bg-green-50/50'
         };
       case 'completed':
         return {
           icon: <CheckCircle className="w-5 h-5 text-emerald-500" />,
           title: '🎉 加载完成',
-          description: '所有视频片段已成功添加到时间轴！',
+          description: '所有视频Clip已成功添加到时间轴！',
           color: 'border-emerald-200 bg-emerald-50/50'
         };
     }
@@ -165,7 +165,7 @@ export function ProgressiveLoadingIndicator({
                     视频加载完成！
                   </p>
                   <p className="text-xs text-emerald-600 mt-1">
-                    {totalItems} 个视频片段已添加到时间轴
+                    {totalItems} 个视频Clip已添加到时间轴
                   </p>
                 </motion.div>
               )}

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 主部署脚本
+# SmartCut Frontend 主部署脚本
 # 从项目根目录调用部署脚本的便捷入口
 
 set -e
@@ -37,7 +37,7 @@ fi
 # 显示菜单
 show_menu() {
     echo
-    echo "🚀 OpenCut 部署工具"
+    echo "🚀 SmartCut Frontend 部署工具"
     echo "===================="
     echo
     echo "请选择部署方式："
@@ -114,7 +114,7 @@ execute_deployment() {
 
 # 主函数
 main() {
-    log_info "OpenCut 部署工具启动"
+    log_info "SmartCut Frontend 部署工具启动"
     
     # 检查必要工具
     if ! command -v ssh &> /dev/null; then

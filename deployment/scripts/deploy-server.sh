@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 服务器端部署脚本
+# SmartCut Frontend 服务器端部署脚本
 # 在服务器上运行的部署脚本
 
 set -e
@@ -110,7 +110,7 @@ server {
     # 客户端最大请求体大小（用于文件上传）
     client_max_body_size 100M;
 
-    # 代理到 OpenCut 应用
+    # 代理到 SmartCut Frontend 应用
     location / {
         proxy_pass http://localhost:$DOCKER_PORT;
         proxy_http_version 1.1;
@@ -183,7 +183,7 @@ create_systemd_service() {
     
     sudo tee /etc/systemd/system/opencut.service > /dev/null << EOF
 [Unit]
-Description=OpenCut Application
+Description=SmartCut Frontend Application
 Requires=docker.service
 After=docker.service
 
@@ -236,7 +236,7 @@ create_backup_script() {
     sudo tee /usr/local/bin/opencut-backup.sh > /dev/null << 'EOF'
 #!/bin/bash
 
-# OpenCut 备份脚本
+# SmartCut Frontend 备份脚本
 BACKUP_DIR="/home/mf/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 CONTAINER_NAME="opencut-container"

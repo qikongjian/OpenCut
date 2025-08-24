@@ -74,7 +74,7 @@ export class SimpleExporter {
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 72px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText('OpenCut AI剪辑视频', canvas.width / 2, canvas.height / 2 - 200);
+      ctx.fillText('SmartCut Frontend AI剪辑视频', canvas.width / 2, canvas.height / 2 - 200);
 
       // 5. 添加AI剪辑信息
       this.updateProgress(onProgress, {
@@ -172,7 +172,7 @@ export class SimpleExporter {
       ctx.fillStyle = '#666666';
       ctx.textAlign = 'left';
       ctx.fillText(`导出时间: ${new Date().toLocaleString()}`, 50, 50);
-      ctx.fillText('OpenCut v1.0 - AI视频编辑器', 50, 80);
+      ctx.fillText('SmartCut Frontend v1.0 - AI视频编辑器', 50, 80);
       
       ctx.textAlign = 'right';
       ctx.fillText('简化导出模式', canvas.width - 50, 50);

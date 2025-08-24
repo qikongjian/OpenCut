@@ -1,4 +1,4 @@
-# OpenCut 视频导出功能详细文档
+# SmartCut Frontend 视频导出功能详细文档
 
 ## 📋 目录
 
@@ -13,7 +13,7 @@
 
 ## 🏗️ 系统架构概览
 
-OpenCut 的导出系统采用分层架构设计，支持前端和后端两种导出方式：
+SmartCut Frontend 的导出系统采用分层架构设计，支持前端和后端两种导出方式：
 
 ```
 导出系统架构
@@ -730,7 +730,7 @@ class ASSGenerator {
 
 ```ass
 [Script Info]
-Title: OpenCut Export
+Title: SmartCut Frontend Export
 ScriptType: v4.00+
 
 [V4+ Styles]
@@ -1195,7 +1195,7 @@ describe('Export System', () => {
 
 **文档版本**: v1.0.0
 **最后更新**: 2025-01-20
-**维护者**: OpenCut 开发团队
+**维护者**: SmartCut Frontend 开发团队
 
 ---
 
@@ -1211,7 +1211,7 @@ describe('Export System', () => {
 - [Next.js](https://nextjs.org/) - React 框架
 - [Zustand](https://github.com/pmndrs/zustand) - 状态管理
 - [Tailwind CSS](https://tailwindcss.com/) - CSS 框架
-- 所有为 OpenCut 项目贡献代码的开发者
+- 所有为 SmartCut Frontend 项目贡献代码的开发者
 
 ---
 

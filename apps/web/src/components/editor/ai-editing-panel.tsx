@@ -1,9 +1,9 @@
 "use client";
 
-// 🎨 AI剪辑面板组件 - 现代化重新设计
-// 高级UI设计师重新设计，完美融合到系统中
-// 文件路径: components/editor/ai-editing-panel.tsx
-// 最后更新: 2025/1/8
+// 🎨 AI Editing Panel Component - Modern Redesign
+// Redesigned by senior UI designer, perfectly integrated into the system
+// File path: components/editor/ai-editing-panel.tsx
+// Last updated: 2025/1/8
 
 import React, { useState } from "react";
 import { useParams } from "next/navigation";
@@ -37,7 +37,7 @@ import { extractSubtitleDataFromAIEditing } from "@/lib/ai-subtitle-integration"
 import { ProgressiveLoadingIndicator } from "./progressive-loading-indicator";
 
 export function AIEditingPanel() {
-  // 获取URL参数中的项目ID
+  // Get project ID from URL parameters
   const params = useParams();
   const urlProjectId = params?.project_id as string;
 
@@ -70,39 +70,39 @@ export function AIEditingPanel() {
 
   const [selectedClipIndex, setSelectedClipIndex] = useState<number | null>(null);
 
-  // 获取项目ID - 优先使用URL中的ID，然后是activeProject的ID
+  // Get project ID - prioritize URL ID, then activeProject ID
   const getProjectId = () => {
     if (urlProjectId) {
-      console.log('使用URL中的项目ID:', urlProjectId);
+      console.log('Using project ID from URL:', urlProjectId);
       return urlProjectId;
     }
     if (activeProject?.id) {
-      console.log('使用activeProject的ID:', activeProject.id);
+      console.log('Using activeProject ID:', activeProject.id);
       return activeProject.id;
     }
-    console.warn('没有找到有效的项目ID');
+    console.warn('No valid project ID found');
     return null;
   };
 
-  // 生成AI剪辑计划（真实API调用）
+  // Generate AI editing plan (real API call)
   const handleGenerateAIEditingPlan = async () => {
     const projectId = getProjectId();
-    
+
     if (!projectId) {
-      toast.error("请先创建或打开一个项目");
+      toast.error("Please create or open a project first");
       return;
     }
 
-    console.log('🚀 开始生成AI剪辑计划，项目ID:', projectId);
+    console.log('🚀 Starting AI editing plan generation, project ID:', projectId);
     await generateAIEditingPlanFromAPI(projectId);
   };
 
-  // 生成Mock数据（保留作为备用）
+  // Generate mock data (kept as backup)
   const handleGenerateMockData = () => {
     const projectId = getProjectId();
-    
+
     if (!projectId) {
-      toast.error("请先创建或打开一个项目");
+      toast.error("Please create or open a project first");
       return;
     }
 
@@ -110,32 +110,32 @@ export function AIEditingPanel() {
     loadAIEditingData(mockData);
   };
 
-  // 显示原始视频
+  // Show original video
   const handleShowOriginalVideo = async () => {
     try {
       await showOriginalVideoInTimeline();
     } catch (error) {
-      console.error("显示原视频失败:", error);
-      toast.error("显示原视频失败，请重试");
+      console.error("Failed to show original video:", error);
+      toast.error("Failed to show original video, please try again");
     }
   };
 
-  // 执行剪辑
+  // Execute editing
   const handleExecuteEditing = async () => {
     if (!currentEditingPlan) {
-      toast.error("请先生成AI剪辑计划");
+      toast.error("Please generate AI editing plan first");
       return;
     }
 
     try {
       await executeEditingPlan();
     } catch (error) {
-      console.error("执行剪辑失败:", error);
-      toast.error("执行剪辑失败，请重试");
+      console.error("Failed to execute editing:", error);
+      toast.error("Failed to execute editing, please try again");
     }
   };
 
-  // 预览片段
+  // Preview clip
   const handlePreviewClip = (clipIndex: number) => {
     if (isPreviewMode && previewClipIndex === clipIndex) {
       stopPreview();
@@ -146,7 +146,7 @@ export function AIEditingPanel() {
     }
   };
 
-  // 定位源视频
+  // Locate source video
   const handleLocateSourceVideo = (clip: any) => {
     const sourceVideo = mediaItems.find((item) =>
       item.name.includes(clip.source_clip_id)
@@ -154,23 +154,23 @@ export function AIEditingPanel() {
 
     if (sourceVideo) {
       setVideoPreview(sourceVideo.url, 0);
-      toast.success(`已定位到源视频: ${sourceVideo.name}`);
+      toast.success(`Located source video: ${sourceVideo.name}`);
     } else {
-      toast.warning(`未找到源视频文件: ${clip.source_clip_id}`);
+      toast.warning(`Source video file not found: ${clip.source_clip_id}`);
     }
   };
 
-  // 视频预览
+  // Video preview
   const handleVideoPreview = (url: string, time: number) => {
     setVideoPreview(url, time);
   };
 
-  // 格式化时间码
+  // Format timecode
   const formatTimecode = (timecode: string) => {
     return timecode || "00:00:00";
   };
 
-  // 时间码转秒数
+  // Convert timecode to seconds
   const timecodeToSeconds = (timecode: string): number => {
     if (!timecode) return 0;
     
@@ -186,25 +186,25 @@ export function AIEditingPanel() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* 🎨 现代化头部设计 */}
+      {/* 🎨 Modern header design */}
       <div className="flex items-center justify-between p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
             <Bot className="w-4 h-4 text-white" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">AI剪辑助手</h3>
+          <h3 className="font-semibold text-lg text-foreground">AI Editing Assistant</h3>
         </div>
 
         {aiEditingData && (
           <Badge variant="secondary" className="text-xs font-medium">
-            {currentEditingPlan?.timeline_clips.length || 0} 个片段
+            {currentEditingPlan?.timeline_clips.length || 0} clips
           </Badge>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {!aiEditingData ? (
-          // 🎨 重新设计的空状态
+          // 🎨 Redesigned empty state
           <div className="flex flex-col h-full">
             {/* 主要内容区域 */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
@@ -219,42 +219,42 @@ export function AIEditingPanel() {
               </div>
 
               <h2 className="text-xl font-bold text-foreground mb-2">
-                AI智能剪辑计划
+                AI Smart Editing Plan
               </h2>
               <p className="text-muted-foreground text-sm mb-6 max-w-md leading-relaxed">
-                让AI分析您的视频素材，自动生成专业的剪辑方案，包含精确的时间轴、转场效果和音效建议
+                Let AI analyze your video materials and automatically generate professional editing plans, including precise timelines, transition effects, and sound effect suggestions
               </p>
 
-              {/* 功能特性 */}
+              {/* Feature highlights */}
               <div className="grid grid-cols-1 gap-3 w-full max-w-sm mb-6">
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
                   <Scissors className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm text-foreground">智能片段识别</span>
+                  <span className="text-sm text-foreground">Smart Clip Detection</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
                   <Clock className="w-4 h-4 text-green-600" />
-                  <span className="text-sm text-foreground">精确时间轴</span>
+                  <span className="text-sm text-foreground">Precise Timeline</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
                   <Film className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm text-foreground">转场建议</span>
+                  <span className="text-sm text-foreground">Transition Suggestions</span>
                 </div>
               </div>
 
-              {/* 媒体库状态 */}
+              {/* Media library status */}
               <div className="w-full max-w-sm mb-6">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-foreground">媒体文件</span>
+                    <span className="text-sm text-foreground">Media Files</span>
                   </div>
                   <Badge variant={mediaItems.length > 0 ? "default" : "secondary"} className="text-xs">
-                    {mediaItems.length} 个文件
+                    {mediaItems.length} files
                   </Badge>
                 </div>
                 {mediaItems.length === 0 && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 text-center">
-                    请先上传视频文件到媒体库
+                    Please upload video files to media library first
                   </p>
                 )}
               </div>
@@ -269,17 +269,17 @@ export function AIEditingPanel() {
                 {isLoadingPlan ? (
                   <>
                     <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    正在生成...
+                    Generating...
                   </>
                 ) : (
                   <>
                     <Bot className="w-4 h-4 mr-2" />
-                    生成AI剪辑计划
+                    Generate AI Editing Plan
                   </>
                 )}
               </Button>
               
-              {/* 开发模式：Mock数据按钮 */}
+              {/* Development mode: Mock data button */}
               {process.env.NODE_ENV === 'development' && (
                 <Button
                   onClick={handleGenerateMockData}
@@ -288,20 +288,20 @@ export function AIEditingPanel() {
                   className="mt-2 text-xs"
                 >
                   <Bot className="w-3 h-3 mr-1" />
-                  生成Mock数据（开发）
+                  Generate Mock Data (Dev)
                 </Button>
               )}
             </div>
           </div>
         ) : (
-          // 有数据状态的简化版本
+          // Simplified version with data
           <div className="p-4">
             <div className="mb-4">
               <h4 className="font-semibold text-base text-foreground mb-2">
-                {currentEditingPlan?.version_name || "AI剪辑计划"}
+                {currentEditingPlan?.version_name || "AI Editing Plan"}
               </h4>
               <p className="text-sm text-muted-foreground">
-                {currentEditingPlan?.timeline_clips.length || 0} 个视频片段
+                {currentEditingPlan?.timeline_clips.length || 0} video clips
               </p>
             </div>
 
@@ -313,7 +313,7 @@ export function AIEditingPanel() {
                 size="sm"
                 className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
               >
-                {isExecutingPlan ? "执行中..." : "一键剪辑"}
+                {isExecutingPlan ? "Executing..." : "One-Click Edit"}
               </Button>
               
               <Button
@@ -321,28 +321,28 @@ export function AIEditingPanel() {
                 variant="outline"
                 size="sm"
               >
-                重新生成
+                Regenerate
               </Button>
             </div>
 
-            {/* 进度显示 */}
+            {/* Progress display */}
             {isExecutingPlan && (
               <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">执行进度</span>
+                  <span className="text-sm font-medium">Execution Progress</span>
                   <span className="text-sm">{Math.round(executionProgress)}%</span>
                 </div>
                 <Progress value={executionProgress} className="h-2" />
               </div>
             )}
 
-            {/* 片段列表 */}
+            {/* Clip list */}
             <div className="space-y-2">
               {currentEditingPlan?.timeline_clips.map((clip, index) => (
                 <Card key={clip.sequence_clip_id} className="p-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium text-sm">片段 {index + 1}</div>
+                      <div className="font-medium text-sm">Clip {index + 1}</div>
                       <div className="text-xs text-muted-foreground">
                         {clip.clip_duration_in_sequence}
                       </div>
@@ -352,7 +352,7 @@ export function AIEditingPanel() {
                       variant="outline"
                       onClick={() => handlePreviewClip(index)}
                     >
-                      {isPreviewMode && previewClipIndex === index ? "停止" : "预览"}
+                      {isPreviewMode && previewClipIndex === index ? "Stop" : "Preview"}
                     </Button>
                   </div>
                 </Card>
@@ -362,7 +362,7 @@ export function AIEditingPanel() {
         )}
       </div>
 
-      {/* 渐进式加载指示器 */}
+      {/* Progressive loading indicator */}
       <ProgressiveLoadingIndicator
         isVisible={progressiveLoadingState.isVisible}
         currentItem={progressiveLoadingState.currentItem}

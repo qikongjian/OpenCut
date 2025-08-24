@@ -1,6 +1,6 @@
-# 🧪 OpenCut 测试中心
+# 🧪 SmartCut Frontend 测试中心
 
-本文件夹包含了 OpenCut 项目的所有测试文件、调试脚本和测试页面。
+本文件夹包含了 SmartCut Frontend 项目的所有测试文件、调试脚本和测试页面。
 
 ## 📁 测试结构
 

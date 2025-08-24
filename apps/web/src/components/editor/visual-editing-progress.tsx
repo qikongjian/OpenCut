@@ -106,7 +106,7 @@ export function VisualEditingProgress() {
               >
                 <Scissors className="w-5 h-5 text-primary" />
               </motion.div>
-              <h3 className="font-semibold text-sm">AI一键剪辑</h3>
+              <h3 className="font-semibold text-sm">AIOne-Click Edit</h3>
             </div>
             <div className="flex items-center gap-2">
               {/* 状态指示器 */}

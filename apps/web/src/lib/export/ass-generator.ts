@@ -35,7 +35,7 @@ export class ASSGenerator {
    */
   private static createScriptInfo(ir: TimelineIR): Record<string, string> {
     return {
-      Title: "OpenCut Generated Subtitles",
+      Title: "SmartCut Frontend Generated Subtitles",
       ScriptType: "v4.00+",
       WrapStyle: "0",
       ScaledBorderAndShadow: "yes",

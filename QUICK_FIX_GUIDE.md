@@ -1,4 +1,4 @@
-# 🚀 OpenCut 视频显示问题快速修复指南
+# 🚀 SmartCut Frontend 视频显示问题快速修复指南
 
 ## 🎯 问题概述
 

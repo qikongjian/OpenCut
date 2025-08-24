@@ -1,9 +1,9 @@
 "use client";
 
-// video-thumbnail.tsx - 视频预览组件（改为直接显示视频）
-// 此文件包含 视频预览和播放功能 的相关代码
+// video-thumbnail.tsx - 视频Preview组件（改为直接显示视频）
+// 此文件包含 视频Preview和播放功能 的相关代码
 // 文件路径: components/editor/video-thumbnail.tsx
-// 最后更新: 2025/1/8
+// Last updated: 2025/1/8
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export function VideoThumbnail({
     const video = videoRef.current;
     if (!video) return;
 
-    // 设置开始时间
+    // Settings开始时间
     video.currentTime = startTime;
     setIsLoading(false);
     setHasError(false);
@@ -104,11 +104,11 @@ export function VideoThumbnail({
     setIsMuted(!isMuted);
   };
 
-  // 处理预览点击
+  // 处理Preview点击
   const handlePreviewClick = () => {
     if (onPreview && !hasError) {
       onPreview(videoUrl, startTime);
-      toast.success("正在中央预览区播放视频");
+      toast.success("正在中央Preview区播放视频");
     }
   };
 
@@ -247,10 +247,10 @@ export function VideoThumbnail({
         */}
       </div>
 
-      {/* 预览提示 */}
+      {/* Preview提示 */}
       {isHovered && !hasError && (
         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-          点击在中央区域预览
+          点击在中央区域Preview
         </div>
       )}
     </div>

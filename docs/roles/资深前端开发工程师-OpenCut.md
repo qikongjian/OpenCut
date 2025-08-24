@@ -1,8 +1,8 @@
-# 🚀 资深前端开发工程师 - OpenCut项目
+# 🚀 资深前端开发工程师 - SmartCut Frontend项目
 
 ## 📋 角色概述
 
-作为OpenCut项目的资深前端开发工程师，您将负责这个现代化视频编辑器的前端架构设计、核心功能开发和性能优化。OpenCut是一个基于Next.js 15的Web视频编辑器，采用TypeScript + React + Tailwind CSS技术栈，支持AI剪辑、多轨道编辑、实时预览等高级功能。
+作为SmartCut Frontend项目的资深前端开发工程师，您将负责这个现代化视频编辑器的前端架构设计、核心功能开发和性能优化。SmartCut Frontend是一个基于Next.js 15的Web视频编辑器，采用TypeScript + React + Tailwind CSS技术栈，支持AI剪辑、多轨道编辑、实时预览等高级功能。
 
 ## 🎯 核心职责
 
@@ -208,5 +208,5 @@ npm run check-types   # TypeScript类型检查
 
 ---
 
-*本文档定义了OpenCut项目中资深前端开发工程师的角色、职责和技术要求，为团队成员提供清晰的职业发展指导。*
+*本文档定义了SmartCut Frontend项目中资深前端开发工程师的角色、职责和技术要求，为团队成员提供清晰的职业发展指导。*
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 数据库初始化脚本
+# SmartCut Frontend 数据库初始化脚本
 # 用于生产环境的数据库设置和迁移
 
 set -e
@@ -149,7 +149,7 @@ setup_backup() {
 
 # 主函数
 main() {
-    log_info "🗄️ OpenCut 数据库初始化开始"
+    log_info "🗄️ SmartCut Frontend 数据库初始化开始"
     
     # 检查Docker
     check_docker

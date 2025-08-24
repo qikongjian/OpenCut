@@ -1,53 +1,53 @@
-# 🎬 OpenCut
+# 🎬 SmartCut Frontend
 
-一个现代化的视频编辑和剪辑平台，支持AI智能剪辑、实时预览和高效导出。
+A modern video editing and cutting platform with AI smart editing, real-time preview, and efficient export capabilities.
 
-## ✨ 主要功能
+## ✨ Key Features
 
-- 🎥 **视频编辑**: 直观的时间轴编辑器
-- 🤖 **AI智能剪辑**: 基于AI的自动剪辑和优化
-- 🎵 **音频处理**: 音频编辑和同步
-- 📝 **字幕支持**: 自动字幕生成和编辑
-- ⚡ **实时预览**: 流畅的实时视频预览
-- 🚀 **快速导出**: 高效的视频导出和压缩
+- 🎥 **Video Editing**: Intuitive timeline editor
+- 🤖 **AI Smart Editing**: AI-based automatic editing and optimization
+- 🎵 **Audio Processing**: Audio editing and synchronization
+- 📝 **Subtitle Support**: Automatic subtitle generation and editing
+- ⚡ **Real-time Preview**: Smooth real-time video preview
+- 🚀 **Quick Export**: Efficient video export and compression
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 开发环境
+### Development Environment
 
 ```bash
-# 克隆项目
+# Clone the project
 git clone <repository-url>
-cd OpenCut
+cd SmartCut-Frontend
 
-# 安装依赖
+# Install dependencies
 bun install
 
-# 启动开发服务器
+# Start development server
 bun dev
 ```
 
-### 生产部署
+### Production Deployment
 
 ```bash
-# 一键部署
-./deploy-opencut.sh
+# One-click deployment
+./deploy-smartcut.sh
 ```
 
-详细部署说明请查看 [部署指南](docs/project/DEPLOYMENT_GUIDE.md)。
+For detailed deployment instructions, see [Deployment Guide](docs/project/DEPLOYMENT_GUIDE.md).
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
-OpenCut/
-├── 📚 docs/                    # 文档中心
-│   ├── project/                # 项目文档
-│   ├── development/            # 开发文档
-│   ├── api/                    # API文档
+SmartCut-Frontend/
+├── 📚 docs/                    # Documentation center
+│   ├── project/                # Project documentation
+│   ├── development/            # Development documentation
+│   ├── api/                    # API documentation
 │   └── ...
-├── 🧪 tests/                   # 测试中心
-│   ├── unit/                   # 单元测试
-│   ├── integration/            # 集成测试
+├── 🧪 tests/                   # Testing center
+│   ├── unit/                   # Unit tests
+│   ├── integration/            # Integration tests
 │   ├── e2e/                    # 端到端测试
 │   └── ...
 ├── 🚀 deployment/              # 部署配置
@@ -65,7 +65,7 @@ OpenCut/
 ## 📖 文档
 
 - 📋 [项目文档](docs/project/) - 项目概述和基本信息
-- 🛠️ [开发文档](docs/development/) - 开发指南和API文档
+- 🛠️ [开发文档](docs/development/) - 开发指南和 API 文档
 - 🧪 [测试文档](tests/) - 测试指南和测试用例
 - 🚀 [部署文档](deployment/) - 部署配置和脚本
 
@@ -88,7 +88,7 @@ bun test:all
 
 - **前端**: Next.js, React, TypeScript
 - **后端**: Node.js, PostgreSQL, Redis
-- **AI服务**: 自定义AI剪辑API
+- **AI 服务**: 自定义 AI 剪辑 API
 - **部署**: Docker, Nginx
 - **测试**: Jest, Playwright
 
@@ -103,10 +103,11 @@ bun test:all
 ## 🆘 支持
 
 如需帮助，请查看：
+
 - [支持文档](docs/github/SUPPORT.md)
 - [常见问题](docs/project/)
 - [GitHub Issues](../../issues)
 
 ---
 
-**快速链接**: [部署指南](docs/project/DEPLOYMENT_GUIDE.md) | [开发文档](docs/development/) | [API文档](docs/api/) | [测试指南](tests/README.md)
+**快速链接**: [部署指南](docs/project/DEPLOYMENT_GUIDE.md) | [开发文档](docs/development/) | [API 文档](docs/api/) | [测试指南](tests/README.md)

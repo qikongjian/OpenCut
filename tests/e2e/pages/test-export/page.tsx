@@ -152,7 +152,7 @@ export default function TestExportPage() {
     );
   };
 
-  // 删除字幕
+  // Delete字幕
   const deleteSubtitle = (id: number) => {
     setSubtitles((prev) => prev.filter((sub) => sub.id !== id));
   };
@@ -216,10 +216,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
     return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`;
   };
 
-  // 导出视频
+  // Export视频
   const exportVideo = async () => {
     if (!videoFile || subtitles.length === 0) {
-      toast.error("请先上传视频并添加字幕");
+      toast.error("请先Upload视频并添加字幕");
       return;
     }
 
@@ -274,7 +274,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
       ]);
 
       // 读取输出文件
-      setExportStatus("正在生成下载文件...");
+      setExportStatus("Generating下载文件...");
       const data = await ffmpeg.readFile("output.mp4");
 
       // 创建下载链接
@@ -291,17 +291,17 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
       await ffmpeg.deleteFile("output.mp4");
 
       setExportProgress(100);
-      setExportStatus("✅ 导出成功！");
-      toast.success("视频导出成功！");
+      setExportStatus("✅ Export成功！");
+      toast.success("视频Export成功！");
 
       setTimeout(() => {
         setIsExporting(false);
         URL.revokeObjectURL(url);
       }, 2000);
     } catch (error) {
-      console.error("导出失败:", error);
+      console.error("Export失败:", error);
       toast.error(
-        `导出失败: ${error instanceof Error ? error.message : "未知错误"}`
+        `Export失败: ${error instanceof Error ? error.message : "未知错误"}`
       );
       setIsExporting(false);
     }
@@ -334,10 +334,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
         {/* 页面标题 */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-2">
-            🎬 视频字幕编辑器 - 硬字幕版
+            🎬 视频字幕Edit器 - 硬字幕版
           </h1>
           <p className="text-slate-300">
-            测试导出功能，支持ASS字幕格式和FFmpeg处理
+            测试Export功能，支持ASS字幕格式和FFmpeg处理
           </p>
         </div>
 
@@ -355,13 +355,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
           </Card>
         )}
 
-        {/* 文件上传区域 */}
+        {/* 文件Upload区域 */}
         {ffmpegLoaded && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5" />
-                上传视频文件
+                Upload视频文件
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -389,15 +389,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
           </Card>
         )}
 
-        {/* 编辑器区域 */}
+        {/* Edit器区域 */}
         {videoFile && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* 视频预览 */}
+            {/* 视频Preview */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileVideo className="h-5 w-5" />
-                  视频预览
+                  视频Preview
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -431,11 +431,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
               </CardContent>
             </Card>
 
-            {/* 字幕编辑 */}
+            {/* 字幕Edit */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  字幕编辑
+                  字幕Edit
                   <Badge variant="secondary">{subtitles.length}</Badge>
                 </CardTitle>
               </CardHeader>
@@ -510,7 +510,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
                           onClick={() => deleteSubtitle(subtitle.id)}
                         >
                           <Trash2 className="h-4 w-4" />
-                          删除
+                          Delete
                         </Button>
                         <Button
                           variant="outline"
@@ -542,7 +542,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
         {videoFile && subtitles.length > 0 && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>时间轴预览</CardTitle>
+              <CardTitle>时间轴Preview</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="relative h-16 bg-slate-800 rounded-lg overflow-hidden">
@@ -585,13 +585,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
           </Card>
         )}
 
-        {/* 导出控制 */}
+        {/* Export控制 */}
         {videoFile && subtitles.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="h-5 w-5" />
-                导出设置
+                ExportSettings
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -621,11 +621,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
                   {isExporting ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      正在导出...
+                      正在Export...
                     </>
                   ) : (
                     <>
-                      <Download className="h-5 w-5" />🎥 导出带字幕的视频
+                      <Download className="h-5 w-5" />🎥 Export带字幕的视频
                     </>
                   )}
                 </Button>
@@ -634,7 +634,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
           </Card>
         )}
 
-        {/* 导出进度 */}
+        {/* Export进度 */}
         {isExporting && (
           <Card className="mt-6 border-cyan-200/20 bg-cyan-950/20">
             <CardContent className="p-6">
@@ -655,7 +655,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
                 {exportProgress === 100 && (
                   <div className="flex items-center gap-2 text-green-400 text-center justify-center">
                     <CheckCircle className="h-5 w-5" />
-                    <span>导出完成！文件已开始下载</span>
+                    <span>Export完成！文件已开始下载</span>
                   </div>
                 )}
               </div>
@@ -671,19 +671,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\
           <CardContent className="space-y-3 text-sm text-slate-300">
             <div className="flex items-start gap-2">
               <span className="text-cyan-400">1.</span>
-              <span>上传视频文件，支持常见视频格式</span>
+              <span>Upload视频文件，支持常见视频格式</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-cyan-400">2.</span>
-              <span>添加和编辑字幕，设置开始和结束时间</span>
+              <span>添加和Edit字幕，Settings开始和结束时间</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-cyan-400">3.</span>
-              <span>在时间轴上预览字幕位置，点击可跳转</span>
+              <span>在时间轴上Preview字幕位置，点击可跳转</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-cyan-400">4.</span>
-              <span>点击导出按钮，系统将使用FFmpeg处理视频并添加硬字幕</span>
+              <span>点击Export按钮，系统将使用FFmpeg处理视频并添加硬字幕</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-cyan-400">5.</span>

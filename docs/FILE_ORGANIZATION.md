@@ -1,4 +1,4 @@
-# 📁 OpenCut 文件整理报告
+# 📁 SmartCut Frontend 文件整理报告
 
 ## 🎯 整理目标
 
@@ -21,18 +21,18 @@
 ## 📁 新的文件结构
 
 ```
-OpenCut/
+SmartCut Frontend/
 ├── 📚 docs/                           # 📖 文档中心
 │   ├── README.md                      # 文档索引
 │   ├── project/                       # 项目文档
 │   │   ├── README.md                  # 项目主文档
 │   │   ├── DEPLOYMENT_GUIDE.md        # 部署指南
-│   │   ├── OpenCut导出流程深度分析报告.md
+│   │   ├── SmartCut Frontend导出流程深度分析报告.md
 │   │   └── test-url-project-id.md
 │   ├── development/                   # 开发文档
 │   │   ├── AI_EDITING_SETUP_README.md
-│   │   ├── OpenCut_代码库全局扫描报告.md
-│   │   ├── OpenCut导出功能详细文档.md
+│   │   ├── SmartCut Frontend_代码库全局扫描报告.md
+│   │   ├── SmartCut Frontend导出功能详细文档.md
 │   │   ├── 导出性能优化方案.md
 │   │   └── 视频合成能力的开发.md
 │   ├── api/                          # API文档
@@ -40,7 +40,7 @@ OpenCut/
 │   │   └── jjAPI.txt
 │   ├── roles/                        # 角色文档
 │   │   ├── 资深全栈工程师.md
-│   │   └── 资深前端开发工程师-OpenCut.md
+│   │   └── 资深前端开发工程师-SmartCut Frontend.md
 │   ├── github/                       # GitHub文档
 │   │   ├── CODE_OF_CONDUCT.md
 │   │   ├── CONTRIBUTING.md
@@ -206,4 +206,4 @@ docs/*/.docusaurus/
 
 ---
 
-**总结**: 通过系统性的文件整理，OpenCut项目现在拥有了清晰的文件组织结构，大大提高了开发效率和项目可维护性。
+**总结**: 通过系统性的文件整理，SmartCut Frontend项目现在拥有了清晰的文件组织结构，大大提高了开发效率和项目可维护性。

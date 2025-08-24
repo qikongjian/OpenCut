@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 视频显示问题修复脚本
+# SmartCut Frontend 视频显示问题修复脚本
 # 解决部署后时间轴显示字幕但不显示视频的问题
 
 set -e
@@ -208,7 +208,7 @@ generate_diagnostic_report() {
     local report_file="video_display_diagnostic_$(date +%Y%m%d_%H%M%S).log"
     
     {
-        echo "=== OpenCut 视频显示问题诊断报告 ==="
+        echo "=== SmartCut Frontend 视频显示问题诊断报告 ==="
         echo "生成时间: $(date)"
         echo "服务器: $SERVER_HOST"
         echo ""
@@ -240,7 +240,7 @@ generate_diagnostic_report() {
 
 # 主修复流程
 main() {
-    echo "🔧 OpenCut 视频显示问题修复工具"
+    echo "🔧 SmartCut Frontend 视频显示问题修复工具"
     echo "=================================="
     echo
     

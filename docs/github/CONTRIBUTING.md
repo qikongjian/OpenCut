@@ -1,6 +1,6 @@
-# Contributing to OpenCut
+# Contributing to SmartCut Frontend
 
-Thank you for your interest in contributing to OpenCut! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to SmartCut Frontend! This document provides guidelines and instructions for contributing.
 
 ## Getting Started
 

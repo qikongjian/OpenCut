@@ -7,13 +7,13 @@ import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - OpenCut",
+  title: "Privacy Policy - SmartCut Frontend",
   description:
-    "Learn how OpenCut handles your data and privacy. Our commitment to protecting your information while you edit videos.",
+    "Learn how SmartCut Frontend handles your data and privacy. Our commitment to protecting your information while you edit videos.",
   openGraph: {
-    title: "Privacy Policy - OpenCut",
+    title: "Privacy Policy - SmartCut Frontend",
     description:
-      "Learn how OpenCut handles your data and privacy. Our commitment to protecting your information while you edit videos.",
+      "Learn how SmartCut Frontend handles your data and privacy. Our commitment to protecting your information while you edit videos.",
     type: "website",
   },
 };
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
               <Link
-                href="https://github.com/OpenCut-app/OpenCut"
+                href="https://github.com/SmartCut Frontend-app/SmartCut Frontend"
                 target="_blank"
               >
                 <Badge variant="secondary" className="gap-2 mb-6">
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
                   </h2>
                   <p className="mb-4">
                     <strong>
-                      OpenCut processes all videos locally on your device.
+                      SmartCut Frontend processes all videos locally on your device.
                     </strong>{" "}
                     We never upload, store, or have access to your video files.
                     Your content remains completely private and under your
@@ -117,7 +117,7 @@ export default function PrivacyPage() {
                       Databuddy
                     </a>{" "}
                     for completely anonymized and non-invasive analytics to
-                    understand how people use OpenCut.
+                    understand how people use SmartCut Frontend.
                   </p>
                   <p>
                     This helps us improve the editor, but we never collect
@@ -149,7 +149,7 @@ export default function PrivacyPage() {
                     Third-Party Services
                   </h2>
                   <p className="mb-4">
-                    OpenCut integrates with these services:
+                    SmartCut Frontend integrates with these services:
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
                     <li>
@@ -185,14 +185,14 @@ export default function PrivacyPage() {
                     Open Source Transparency
                   </h2>
                   <p className="mb-4">
-                    OpenCut is completely open source. You can review our code,
+                    SmartCut Frontend is completely open source. You can review our code,
                     see exactly how we handle data, and even self-host the
                     application if you prefer.
                   </p>
                   <p>
                     View our source code on{" "}
                     <a
-                      href="https://github.com/OpenCut-app/OpenCut"
+                      href="https://github.com/SmartCut Frontend-app/SmartCut Frontend"
                       target="_blank"
                       rel="noopener"
                       className="text-primary hover:underline"
@@ -212,7 +212,7 @@ export default function PrivacyPage() {
                   <p>
                     Open an issue on our{" "}
                     <a
-                      href="https://github.com/OpenCut-app/OpenCut/issues"
+                      href="https://github.com/SmartCut Frontend-app/SmartCut Frontend/issues"
                       target="_blank"
                       rel="noopener"
                       className="text-primary hover:underline"

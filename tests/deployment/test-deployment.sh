@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 部署测试脚本
+# SmartCut Frontend 部署测试脚本
 # 验证部署是否成功，应用是否正常运行
 
 set -e
@@ -217,7 +217,7 @@ check_logs() {
         fi
         
         # 显示各服务的日志
-        echo "OpenCut应用日志:"
+        echo "SmartCut Frontend应用日志:"
         $COMPOSE_CMD -f docker-compose.prod.yml logs --tail 10 opencut-app 2>/dev/null || echo "无法获取应用日志"
         
         echo
@@ -237,7 +237,7 @@ generate_report() {
     local report_file="deployment-test-report-$(date +%Y%m%d_%H%M%S).txt"
     
     cat > "$report_file" << EOF
-OpenCut 部署测试报告
+SmartCut Frontend 部署测试报告
 ==================
 
 测试时间: $(date)
@@ -262,7 +262,7 @@ EOF
 
 # 主函数
 main() {
-    log_info "🧪 OpenCut 部署测试开始"
+    log_info "🧪 SmartCut Frontend 部署测试开始"
     echo "服务器: $SERVER_HOST"
     echo "应用URL: $APP_URL"
     echo

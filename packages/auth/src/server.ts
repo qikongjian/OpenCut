@@ -43,7 +43,7 @@ export const auth = betterAuth({
     },
   },
   baseURL: NEXT_PUBLIC_BETTER_AUTH_URL,
-  appName: "OpenCut",
+  appName: "SmartCut Frontend",
   trustedOrigins: ["http://localhost:3000"],
 });
 

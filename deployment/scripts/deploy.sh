@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# OpenCut 项目部署脚本
+# SmartCut Frontend 项目部署脚本
 # 作者: AI Assistant
 # 日期: 2025-01-08
-# 用途: 构建并部署 OpenCut 项目到服务器
+# 用途: 构建并部署 SmartCut Frontend 项目到服务器
 
 set -e  # 遇到错误立即退出
 
@@ -45,7 +45,7 @@ log_error() {
 }
 
 # 记录开始时间
-log_info "OpenCut 部署开始于 $TIMESTAMP"
+log_info "SmartCut Frontend 部署开始于 $TIMESTAMP"
 
 # 检查必要的工具
 check_dependencies() {
@@ -226,7 +226,7 @@ verify_deployment() {
 
 # 主函数
 main() {
-    log_info "开始 OpenCut 项目部署流程"
+    log_info "开始 SmartCut Frontend 项目部署流程"
     
     # 检查依赖
     check_dependencies

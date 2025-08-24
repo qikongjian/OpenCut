@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 前端部署脚本
+# SmartCut Frontend 前端部署脚本
 # 基于 compile_test.sh 优化，专注于前端构建和部署
 
 set -e
@@ -39,7 +39,7 @@ log_error() {
 LOGFILE="frontend-build-$(date +%Y%m%d_%H%M%S).log"
 
 # 记录开始时间
-log_info "🚀 OpenCut 前端构建开始 $(date)" | tee $LOGFILE
+log_info "🚀 SmartCut Frontend 前端构建开始 $(date)" | tee $LOGFILE
 
 # 检查本地环境
 check_local_env() {
@@ -331,7 +331,7 @@ cleanup() {
 
 # 主函数
 main() {
-    log_info "🚀 OpenCut 前端部署开始"
+    log_info "🚀 SmartCut Frontend 前端部署开始"
     echo "项目: $PROJECT_NAME"
     echo "服务器: $SERVER_HOST"
     echo "用户: $SERVER_USER"

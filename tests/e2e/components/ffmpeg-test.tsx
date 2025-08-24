@@ -55,12 +55,12 @@ export function FFmpegTest({ onStatusChange }: FFmpegTestProps) {
 
       const ffmpeg = new FFmpeg();
 
-      // 设置日志回调
+      // Settings日志回调
       ffmpeg.on('log', ({ message }: any) => {
         console.log('FFmpeg log:', message);
       });
 
-      // 设置进度回调
+      // Settings进度回调
       ffmpeg.on('progress', ({ progress: ffmpegProgress }: any) => {
         console.log('FFmpeg progress:', ffmpegProgress);
         setProgress(50 + ffmpegProgress * 40);

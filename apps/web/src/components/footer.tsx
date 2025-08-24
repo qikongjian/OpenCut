@@ -36,8 +36,8 @@ export function Footer() {
           {/* Brand Section */}
           <div className="md:col-span-1 max-w-sm">
             <div className="flex justify-start items-center gap-2 mb-4">
-              <Image src="/logo.svg" alt="OpenCut" width={24} height={24} />
-              <span className="font-bold text-lg">OpenCut</span>
+              <Image src="/logo.svg" alt="SmartCut Frontend" width={24} height={24} />
+              <span className="font-bold text-lg">SmartCut Frontend</span>
             </div>
             <p className="text-sm md:text-left text-muted-foreground mb-5">
               The open source video editor that gets the job done. Simple,
@@ -45,7 +45,7 @@ export function Footer() {
             </p>
             <div className="flex justify-start gap-3">
               <Link
-                href="https://github.com/OpenCut-app/OpenCut"
+                href="https://github.com/SmartCut Frontend-app/SmartCut Frontend"
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -53,7 +53,7 @@ export function Footer() {
                 <FaGithub className="h-5 w-5" />
               </Link>
               <Link
-                href="https://x.com/OpenCutApp"
+                href="https://x.com/SmartCut FrontendApp"
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -116,7 +116,7 @@ export function Footer() {
                 </li>
                 <li>
                   <Link
-                    href="https://github.com/OpenCut-app/OpenCut/blob/main/README.md"
+                    href="https://github.com/SmartCut Frontend-app/SmartCut Frontend/blob/main/README.md"
                     className="text-muted-foreground hover:text-foreground transition-colors"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -132,7 +132,7 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="pt-2 flex flex-col md:flex-row justify-between items-start gap-4">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>© 2025 OpenCut, All Rights Reserved</span>
+            <span>© 2025 SmartCut Frontend, All Rights Reserved</span>
           </div>
         </div>
       </div>

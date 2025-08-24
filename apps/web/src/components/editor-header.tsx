@@ -178,15 +178,15 @@ function ExportButton() {
 
     setIsExporting(true);
     setExportProgress(0);
-    setExportMessage("初始化导出系统...");
+    setExportMessage("初始化Export系统...");
 
     try {
-      // 动态导入导出系统
+      // 动态导入Export系统
       const { exportManager } = await import("@/lib/export");
 
-      // 初始化导出管理器
+      // 初始化Export管理器
       await exportManager.initialize();
-      console.log("导出管理器初始化完成");
+      console.log("Export管理器初始化完成");
 
       setExportMessage("分析项目...");
       setExportProgress(0.1);
@@ -202,7 +202,7 @@ function ExportButton() {
 
       console.log(`项目信息: ${ir.video.length}个视频, ${ir.audio.length}个音频, ${ir.texts.length}个文本, 总时长${(ir.duration/1000).toFixed(1)}秒`);
 
-      // 智能导出
+      // 智能Export
       const result = await exportManager.smartExport(
         {
           privacy: 'balanced',
@@ -215,8 +215,8 @@ function ExportButton() {
         }
       );
 
-      // 导出成功
-      setExportMessage("导出完成!");
+      // Export成功
+      setExportMessage("Export完成!");
       setExportProgress(1);
 
       // 自动下载
@@ -229,7 +229,7 @@ function ExportButton() {
         document.body.removeChild(a);
 
         // 显示成功消息
-        console.log("导出成功:", {
+        console.log("Export成功:", {
           size: `${(result.size! / 1024 / 1024).toFixed(1)}MB`,
           duration: `${result.duration?.toFixed(1)}秒`,
           method: result.method,
@@ -239,11 +239,11 @@ function ExportButton() {
 
     } catch (error) {
       // 更详细的错误日志
-      console.error('导出失败:', error);
+      console.error('Export失败:', error);
       const msg = (error && typeof error === 'object' && 'message' in (error as any))
         ? String((error as any).message)
         : (error instanceof Error ? error.message : '未知错误');
-      setExportMessage('导出失败: ' + msg);
+      setExportMessage('Export失败: ' + msg);
 
       // 3秒后重置状态
       setTimeout(() => {

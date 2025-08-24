@@ -83,34 +83,34 @@ export default function TestDynamicImportPage() {
   const testFrontendExporter = async () => {
     setIsLoading(true);
     try {
-      toast.info("测试前端导出器...");
+      toast.info("测试前端Export器...");
       
-      // 导入前端导出器
+      // 导入前端Export器
       const { FrontendExporter } = await import('@/lib/export/frontend-exporter');
       
       addResult({
-        test: "前端导出器导入",
+        test: "前端Export器导入",
         success: true,
-        message: "前端导出器导入成功"
+        message: "前端Export器导入成功"
       });
       
       const exporter = new FrontendExporter();
       
       addResult({
-        test: "前端导出器实例化",
+        test: "前端Export器实例化",
         success: true,
-        message: "前端导出器实例化成功"
+        message: "前端Export器实例化成功"
       });
       
-      toast.success("前端导出器测试成功！");
+      toast.success("前端Export器测试成功！");
     } catch (error) {
       addResult({
-        test: "前端导出器",
+        test: "前端Export器",
         success: false,
         error: error instanceof Error ? error.message : '未知错误'
       });
       
-      toast.error("前端导出器测试失败");
+      toast.error("前端Export器测试失败");
     } finally {
       setIsLoading(false);
     }
@@ -119,35 +119,35 @@ export default function TestDynamicImportPage() {
   const testAIVideoExporter = async () => {
     setIsLoading(true);
     try {
-      toast.info("测试AI视频导出器...");
+      toast.info("测试AI视频Export器...");
       
-      // 导入AI视频导出器
+      // 导入AI视频Export器
       const { AIVideoExporter, aiVideoExporter } = await import('@/lib/export/ai-video-exporter');
       
       addResult({
-        test: "AI视频导出器导入",
+        test: "AI视频Export器导入",
         success: true,
-        message: "AI视频导出器导入成功"
+        message: "AI视频Export器导入成功"
       });
       
       // 测试canExport方法
       const canExport = AIVideoExporter.canExport();
       
       addResult({
-        test: "AI视频导出器检查",
+        test: "AI视频Export器检查",
         success: true,
         message: `canExport: ${canExport.canExport}, reason: ${canExport.reason || 'N/A'}`
       });
       
-      toast.success("AI视频导出器测试成功！");
+      toast.success("AI视频Export器测试成功！");
     } catch (error) {
       addResult({
-        test: "AI视频导出器",
+        test: "AI视频Export器",
         success: false,
         error: error instanceof Error ? error.message : '未知错误'
       });
       
-      toast.error("AI视频导出器测试失败");
+      toast.error("AI视频Export器测试失败");
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +191,7 @@ export default function TestDynamicImportPage() {
           variant="outline"
         >
           {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-          测试前端导出器
+          测试前端Export器
         </Button>
 
         <Button 
@@ -200,7 +200,7 @@ export default function TestDynamicImportPage() {
           variant="outline"
         >
           {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-          测试AI导出器
+          测试AIExport器
         </Button>
       </div>
 

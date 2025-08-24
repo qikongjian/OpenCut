@@ -1,6 +1,6 @@
-# OpenCut 部署文件夹
+# SmartCut Frontend 部署文件夹
 
-本文件夹包含了 OpenCut 项目的所有部署相关文件和脚本。
+本文件夹包含了 SmartCut Frontend 项目的所有部署相关文件和脚本。
 
 ## 📁 文件夹结构
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 部署脚本 - 使用 tar 打包上传
+# SmartCut Frontend 部署脚本 - 使用 tar 打包上传
 # 简单可靠的部署方案
 
 set -e
@@ -318,7 +318,7 @@ verify_deployment() {
 
 # 主函数
 main() {
-    log_info "🚀 OpenCut 部署开始"
+    log_info "🚀 SmartCut Frontend 部署开始"
     echo "服务器: $SERVER_HOST"
     echo "用户: $SERVER_USER"
     echo

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 快速部署脚本
+# SmartCut Frontend 快速部署脚本
 # 一键部署到服务器
 
 set -e
@@ -8,7 +8,7 @@ set -e
 # 配置
 SERVER_USER="mf"
 SERVER_HOST="39.105.24.90"
-PROJECT_NAME="opencut"
+PROJECT_NAME="smartcut"
 
 # 颜色输出
 RED='\033[0;31m'
@@ -121,7 +121,7 @@ verify_deployment() {
 show_post_deploy_info() {
     log_info "部署完成！"
     echo
-    log_success "🎉 OpenCut 已成功部署到服务器！"
+    log_success "🎉 SmartCut Frontend 已成功部署到服务器！"
     echo
     log_info "📋 部署信息："
     log_info "   服务器: $SERVER_HOST"
@@ -146,7 +146,7 @@ show_post_deploy_info() {
 
 # 主函数
 main() {
-    echo "🚀 OpenCut 快速部署工具"
+    echo "🚀 SmartCut Frontend 快速部署工具"
     echo "=========================="
     echo
     

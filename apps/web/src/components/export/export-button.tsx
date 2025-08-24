@@ -1,6 +1,6 @@
-// export-button.tsx - 导出按钮组件
-// 此文件提供智能导出按钮，支持策略选择和进度显示
-// 文件路径: components/export/export-button.tsx
+// export-button.tsx - Export Button Component
+// This file provides smart export button with strategy selection and progress display
+// File path: components/export/export-button.tsx
 
 "use client";
 
@@ -59,7 +59,7 @@ export function ExportButton({
     alternatives: ExportStrategy[];
   } | null>(null);
 
-  // 默认用户偏好
+  // Default user preferences
   const defaultPreference: UserPreference = {
     privacy: 'balanced',
     quality: 'standard',
@@ -67,7 +67,7 @@ export function ExportButton({
   };
 
   /**
-   * 快速导出 - 使用AI视频导出器
+   * Quick export - using AI video exporter
    */
   const handleQuickExport = useCallback(async () => {
     setIsLoading(true);
@@ -80,7 +80,7 @@ export function ExportButton({
       setExportProgress({
         overall: 0.02,
         stage: 'preparing',
-        message: '分析导出性能...',
+        message: '分析Export性能...',
         elapsedTime: 0,
         startTime: Date.now(),
       });
@@ -100,24 +100,24 @@ export function ExportButton({
         });
       } else if (performanceAnalysis.optimizationPotential > 50) {
         toast.info("发现优化机会", {
-          description: `可提升 ${performanceAnalysis.optimizations[0]?.estimatedSpeedup || 2}x 导出速度`,
+          description: `可提升 ${performanceAnalysis.optimizations[0]?.estimatedSpeedup || 2}x Export速度`,
           duration: 3000,
         });
       }
 
-      // 更新进度：检查导出条件
+      // 更新进度：检查Export条件
       setExportProgress({
         overall: 0.05,
         stage: 'preparing',
-        message: '检查导出条件...',
+        message: '检查Export条件...',
         elapsedTime: 0,
         startTime: Date.now(),
       });
 
-      // 首先尝试使用AI视频导出器
+      // 首先尝试使用AI视频Export器
       const { aiVideoExporter, AIVideoExporter } = await import('@/lib/export/ai-video-exporter');
 
-      // 检查是否可以使用AI视频导出
+      // 检查是否可以使用AI视频Export
       const canExportCheck = AIVideoExporter.canExport();
 
       if (canExportCheck.canExport) {
@@ -127,19 +127,19 @@ export function ExportButton({
         );
 
         if (useOptimizedExport) {
-          toast.info("使用增量导出优化", {
+          toast.info("使用增量Export优化", {
             description: `预计提速 ${performanceAnalysis.optimizations[0]?.estimatedSpeedup || 4}x`,
           });
         } else {
-          toast.info('使用AI视频导出器');
+          toast.info('使用AI视频Export器');
         }
 
         const result = await aiVideoExporter.exportAIVideo((progress) => {
           setExportProgress(progress);
         });
 
-        // 导出成功
-        toast.success("AI视频导出完成!", {
+        // Export成功
+        toast.success("AI视频Export完成!", {
           description: `文件大小: ${(result.size! / 1024 / 1024).toFixed(1)}MB`,
           action: {
             label: "下载",
@@ -161,10 +161,10 @@ export function ExportButton({
         }
 
       } else {
-        // 回退到通用导出系统
-        toast.info(`回退到通用导出: ${canExportCheck.reason}`);
+        // 回退到通用Export系统
+        toast.info(`回退到通用Export: ${canExportCheck.reason}`);
 
-        // 强制使用前端导出，因为后端FFmpeg可能不可用
+        // 强制使用前端Export，因为后端FFmpeg可能不可用
         const frontendPreference: UserPreference = {
           ...defaultPreference,
           method: 'frontend',
@@ -180,21 +180,21 @@ export function ExportButton({
 
         console.log('Export result received:', result);
 
-        // 检查导出是否成功
+        // 检查Export是否成功
         if (!result.success) {
-          throw new Error('导出失败：' + (result.error || '未知错误'));
+          throw new Error('Export失败：' + (result.error || '未知错误'));
         }
 
         // 验证结果对象
         if (!result.url) {
-          throw new Error('导出结果缺少下载URL');
+          throw new Error('Export结果缺少下载URL');
         }
         if (!result.size) {
-          throw new Error('导出结果缺少文件大小信息');
+          throw new Error('Export结果缺少文件大小信息');
         }
 
-        // 导出成功
-        toast.success("导出完成!", {
+        // Export成功
+        toast.success("Export完成!", {
           description: `文件大小: ${(result.size / 1024 / 1024).toFixed(1)}MB`,
           action: {
             label: "下载",
@@ -207,7 +207,7 @@ export function ExportButton({
               } catch (downloadError) {
                 console.error('Manual download failed:', downloadError);
                 toast.error('手动下载失败', {
-                  description: '请尝试重新导出'
+                  description: '请尝试重新Export'
                 });
               }
             },
@@ -234,7 +234,7 @@ export function ExportButton({
       console.error('Error constructor:', error?.constructor?.name);
 
       // 提供更详细的错误信息和解决建议
-      let errorMessage = "导出失败";
+      let errorMessage = "Export失败";
       let errorDescription = "未知错误";
 
       if (error instanceof Error) {
@@ -243,17 +243,17 @@ export function ExportButton({
 
         // 根据错误类型提供建议
         if (error.message.includes('FFmpeg')) {
-          errorDescription += "\n建议：请确保浏览器支持WebAssembly";
+          errorDescription += "\nSuggestion: Please ensure your browser supports WebAssembly";
         } else if (error.message.includes('memory') || error.message.includes('内存')) {
-          errorDescription += "\n建议：请尝试关闭其他标签页或降低导出质量";
+          errorDescription += "\nSuggestion: Try closing other tabs or reducing export quality";
         } else if (error.message.includes('项目为空') || error.message.includes('时间轴为空')) {
-          errorDescription += "\n建议：请先执行AI剪辑或添加视频内容到时间轴";
+          errorDescription += "\nSuggestion: Please execute AI editing first or add video content to timeline";
         } else if (error.message.includes('AI剪辑')) {
-          errorDescription += "\n建议：请先点击'生成AI剪辑计划'并执行'一键剪辑'";
+          errorDescription += "\nSuggestion: Please click 'Generate AI Editing Plan' and execute 'One-Click Edit' first";
         } else if (error.message.includes('download') || error.message.includes('下载') || error.message.includes('File not found')) {
-          errorDescription += "\n建议：导出文件可能已过期，请重新尝试导出";
+          errorDescription += "\nSuggestion: Export file may have expired, please try exporting again";
         } else if (error.message.includes('Failed to download result file')) {
-          errorDescription += "\n建议：网络连接问题或文件已清理，请重新尝试导出";
+          errorDescription += "\nSuggestion: Network connection issue or file has been cleaned up, please try exporting again";
         }
       }
 
@@ -268,19 +268,19 @@ export function ExportButton({
   }, []);
 
   /**
-   * 高级导出 - 显示选项对话框
+   * 高级Export - 显示选项对话框
    */
   const handleAdvancedExport = useCallback(async () => {
     setIsLoading(true);
     
     try {
-      // 获取导出策略
+      // 获取Export策略
       const strategyData = await exportManager.getExportStrategy(defaultPreference);
       setStrategies(strategyData);
       setShowDialog(true);
     } catch (error) {
       console.error('Failed to get export strategies:', error);
-      toast.error("无法获取导出选项", {
+      toast.error("无法获取Export选项", {
         description: error instanceof Error ? error.message : "未知错误",
       });
     } finally {
@@ -334,7 +334,7 @@ export function ExportButton({
           {getMethodLabel()}
         </Badge>
         <Badge className={getQualityColor()}>
-          {strategy.quality === 'preview' && '预览质量'}
+          {strategy.quality === 'preview' && 'Preview质量'}
           {strategy.quality === 'standard' && '标准质量'}
           {strategy.quality === 'professional' && '专业质量'}
         </Badge>
@@ -360,7 +360,7 @@ export function ExportButton({
             ) : (
               <Download className="w-4 h-4 mr-2" />
             )}
-            导出视频
+            Export视频
             <ChevronDown className="w-4 h-4 ml-2" />
           </Button>
         </DropdownMenuTrigger>
@@ -369,9 +369,9 @@ export function ExportButton({
           <DropdownMenuItem onClick={handleQuickExport} disabled={isLoading}>
             <Zap className="w-4 h-4 mr-2" />
             <div className="flex flex-col">
-              <span>快速导出</span>
+              <span>快速Export</span>
               <span className="text-xs text-muted-foreground">
-                使用推荐设置
+                使用推荐Settings
               </span>
             </div>
           </DropdownMenuItem>
@@ -381,9 +381,9 @@ export function ExportButton({
           <DropdownMenuItem onClick={handleAdvancedExport} disabled={isLoading}>
             <Settings className="w-4 h-4 mr-2" />
             <div className="flex flex-col">
-              <span>高级导出</span>
+              <span>高级Export</span>
               <span className="text-xs text-muted-foreground">
-                自定义导出选项
+                自定义Export选项
               </span>
             </div>
           </DropdownMenuItem>
@@ -393,7 +393,7 @@ export function ExportButton({
           <DropdownMenuItem onClick={() => handleQuickExport()} disabled={isLoading}>
             <Monitor className="w-4 h-4 mr-2" />
             <div className="flex flex-col">
-              <span>本地导出</span>
+              <span>本地Export</span>
               <span className="text-xs text-muted-foreground">
                 隐私优先，本地处理
               </span>
@@ -403,7 +403,7 @@ export function ExportButton({
           <DropdownMenuItem onClick={() => handleQuickExport()} disabled={isLoading}>
             <Cloud className="w-4 h-4 mr-2" />
             <div className="flex flex-col">
-              <span>云端导出</span>
+              <span>云端Export</span>
               <span className="text-xs text-muted-foreground">
                 性能优先，服务器处理
               </span>
@@ -412,13 +412,13 @@ export function ExportButton({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* TODO: 实现高级导出对话框和进度对话框 */}
+      {/* TODO: 实现高级Export对话框和进度对话框 */}
       {showDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">高级导出选项</h3>
+            <h3 className="text-lg font-semibold mb-4">高级Export选项</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              导出对话框组件正在开发中...
+              Export对话框组件正在开发中...
             </p>
             <Button onClick={() => setShowDialog(false)}>关闭</Button>
           </div>
@@ -428,7 +428,7 @@ export function ExportButton({
       {showProgress && exportProgress && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">导出进度</h3>
+            <h3 className="text-lg font-semibold mb-4">Export进度</h3>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
@@ -455,7 +455,7 @@ export function ExportButton({
                 onClick={async () => {
                   try {
                     await exportManager.cancelExport();
-                    toast.info("导出已取消");
+                    toast.info("Export已Cancel");
                   } catch (error) {
                     console.error('Failed to cancel export:', error);
                   } finally {
@@ -464,7 +464,7 @@ export function ExportButton({
                   }
                 }}
               >
-                取消
+                Cancel
               </Button>
             </div>
           </div>

@@ -1,7 +1,7 @@
-// ai-subtitle-panel.tsx - AI字幕面板组件
-// 此组件提供AI字幕数据的导入、预览和应用功能
-// 文件路径: components/editor/ai-subtitle-panel.tsx
-// 最后更新: 2025/1/8
+// ai-subtitle-panel.tsx - AI Subtitle Panel Component
+// This component provides AI subtitle data import, preview and application functionality
+// File path: components/editor/ai-subtitle-panel.tsx
+// Last updated: 2025/1/8
 
 "use client";
 
@@ -44,76 +44,76 @@ export function AISubtitlePanel({ projectId, onSubtitlesApplied }: AISubtitlePan
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
 
-  // 加载AI剪辑数据
+  // Load AI editing data
   const loadAIData = useCallback(() => {
     setIsLoading(true);
     try {
-      // 使用mock数据，实际项目中这里应该从API获取
+      // Use mock data, in actual project this should be fetched from API
       const mockData = generateAIEditingMockData(projectId || 'default');
       setAiData(mockData);
-      
+
       const subtitles = extractSubtitleDataFromAIEditing(mockData);
       setSubtitleData(subtitles);
-      
+
       if (subtitles) {
-        toast.success('AI字幕数据加载成功');
+        toast.success('AI subtitle data loaded successfully');
       } else {
-        toast.warning('未找到AI字幕数据');
+        toast.warning('AI subtitle data not found');
       }
     } catch (error) {
       console.error('Failed to load AI data:', error);
-      toast.error('加载AI数据失败');
+      toast.error('Failed to load AI data');
     } finally {
       setIsLoading(false);
     }
   }, [projectId]);
 
-  // 应用字幕到时间线
+  // Apply subtitles to timeline
   const applySubtitles = useCallback(async () => {
     if (!aiData || !subtitleData) {
-      toast.error('没有可用的字幕数据');
+      toast.error('No available subtitle data');
       return;
     }
 
     setIsApplying(true);
     try {
-      // 验证字幕数据
+      // Validate subtitle data
       const validation = validateSubtitleData(subtitleData);
       if (!validation.isValid) {
-        toast.error(`字幕数据验证失败: ${validation.errors.join(', ')}`);
+        toast.error(`Subtitle data validation failed: ${validation.errors.join(', ')}`);
         return;
       }
 
-      // 解析字幕数据
+      // Parse subtitle data
       const textElements = parseDialogueTrackToTextElements(subtitleData);
       if (textElements.length === 0) {
-        toast.error('没有可用的字幕内容');
+        toast.error('No available subtitle content');
         return;
       }
 
-      // 创建字幕轨道并添加字幕
-      const trackId = createSubtitleTrackWithElements(textElements, 'AI字幕');
-      
+      // Create subtitle track and add subtitles
+      const trackId = createSubtitleTrackWithElements(textElements, 'AI Subtitles');
+
       if (trackId) {
-        toast.success(`成功添加 ${textElements.length} 个字幕到时间线`);
+        toast.success(`Successfully added ${textElements.length} subtitles to timeline`);
         onSubtitlesApplied?.(textElements.length);
       } else {
-        toast.error('添加字幕到时间线失败');
+        toast.error('Failed to add subtitles to timeline');
       }
     } catch (error) {
       console.error('Failed to apply subtitles:', error);
-      toast.error('应用字幕时发生错误');
+      toast.error('Error occurred while applying subtitles');
     } finally {
       setIsApplying(false);
     }
   }, [aiData, subtitleData, onSubtitlesApplied]);
 
-  // 格式化时间显示
+  // Format time display
   const formatTime = (timeCode: string) => {
     return timeCode.replace(',', '.');
   };
 
-  // 渲染字幕预览项
+  // Render subtitle preview item
   const renderSubtitleItem = (segment: DialogueSegment, index: number) => (
     <div key={index} className="p-3 border rounded-lg bg-muted/50">
       <div className="flex items-center justify-between mb-2">
@@ -147,15 +147,15 @@ export function AISubtitlePanel({ projectId, onSubtitlesApplied }: AISubtitlePan
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="w-5 h-5" />
-          AI字幕集成
+          AI Subtitle Integration
         </CardTitle>
         <CardDescription>
-          从AI剪辑计划中导入和应用字幕数据到时间线
+          Import and apply subtitle data from AI editing plan to timeline
         </CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* 加载AI数据按钮 */}
+        {/* Load AI data button */}
         <div className="flex gap-2">
           <Button 
             onClick={loadAIData} 
@@ -165,45 +165,45 @@ export function AISubtitlePanel({ projectId, onSubtitlesApplied }: AISubtitlePan
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                加载中...
+                Loading...
               </>
             ) : (
               <>
                 <Download className="w-4 h-4 mr-2" />
-                加载AI字幕数据
+                Load AI Subtitle Data
               </>
             )}
           </Button>
         </div>
 
-        {/* 字幕数据状态 */}
+        {/* Subtitle data status */}
         {subtitleData && (
           <div className="space-y-4">
             <Separator />
             
-            {/* 字幕统计信息 */}
+            {/* Subtitle statistics */}
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold text-primary">
                   {subtitleData.final_dialogue_segments?.length || 0}
                 </div>
-                <div className="text-sm text-muted-foreground">字幕片段</div>
+                <div className="text-sm text-muted-foreground">Subtitle Clips</div>
               </div>
               
               <div className="text-center p-3 bg-muted/50 rounded-lg">
                 <div className="text-2xl font-bold text-primary">
                   {subtitleData.final_srt_content ? '✓' : '✗'}
                 </div>
-                <div className="text-sm text-muted-foreground">SRT格式</div>
+                <div className="text-sm text-muted-foreground">SRT Format</div>
               </div>
             </div>
 
-            {/* 字幕预览 */}
+            {/* Subtitle preview */}
             {subtitleData.final_dialogue_segments && subtitleData.final_dialogue_segments.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center gap-2">
                   <Play className="w-4 h-4" />
-                  字幕预览
+                  Subtitle Preview
                 </h4>
                 
                 <ScrollArea className="h-64 w-full">
@@ -216,9 +216,9 @@ export function AISubtitlePanel({ projectId, onSubtitlesApplied }: AISubtitlePan
               </div>
             )}
 
-            {/* 应用字幕按钮 */}
+            {/* Apply subtitles button */}
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={applySubtitles}
                 disabled={isApplying}
                 className="flex-1"
@@ -227,37 +227,37 @@ export function AISubtitlePanel({ projectId, onSubtitlesApplied }: AISubtitlePan
                 {isApplying ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    应用中...
+                    Applying...
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    应用字幕到时间线
+                    Apply Subtitles to Timeline
                   </>
                 )}
               </Button>
             </div>
 
-            {/* 提示信息 */}
+            {/* Usage instructions */}
             <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
               <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
               <div className="text-sm text-blue-800 dark:text-blue-200">
-                <p className="font-medium mb-1">使用说明：</p>
+                <p className="font-medium mb-1">Usage Instructions:</p>
                 <ul className="space-y-1 text-xs">
-                  <li>• 字幕将自动添加到新的文本轨道</li>
-                  <li>• 时间码将根据AI剪辑计划自动对齐</li>
-                  <li>• 可以在时间线中进一步编辑字幕样式和位置</li>
+                  <li>• Subtitles will be automatically added to a new text track</li>
+                  <li>• Timecodes will be automatically aligned according to AI editing plan</li>
+                  <li>• You can further edit subtitle styles and positions in the timeline</li>
                 </ul>
               </div>
             </div>
           </div>
         )}
 
-        {/* 空状态 */}
+        {/* Empty state */}
         {!subtitleData && !isLoading && (
           <div className="text-center py-8 text-muted-foreground">
             <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>点击上方按钮加载AI字幕数据</p>
+            <p>Click the button above to load AI subtitle data</p>
           </div>
         )}
       </CardContent>

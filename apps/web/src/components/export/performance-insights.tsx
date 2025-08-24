@@ -1,5 +1,5 @@
-// performance-insights.tsx - 导出性能洞察组件
-// 此组件显示导出性能分析和优化建议
+// performance-insights.tsx - Export性能洞察组件
+// 此组件显示Export性能分析和优化建议
 // 文件路径: components/export/performance-insights.tsx
 
 "use client";
@@ -117,7 +117,7 @@ export function PerformanceInsights({ className, onOptimizationApplied }: Perfor
         <CardContent>
           <div className="space-y-4">
             <Progress value={75} className="w-full" />
-            <p className="text-sm text-muted-foreground">正在分析导出性能和瓶颈...</p>
+            <p className="text-sm text-muted-foreground">正在分析Export性能和瓶颈...</p>
           </div>
         </CardContent>
       </Card>
@@ -129,7 +129,7 @@ export function PerformanceInsights({ className, onOptimizationApplied }: Perfor
       <Card className={className}>
         <CardHeader>
           <CardTitle>性能分析</CardTitle>
-          <CardDescription>分析导出性能失败</CardDescription>
+          <CardDescription>分析Export性能失败</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={analyzePerformance} variant="outline">
@@ -145,7 +145,7 @@ export function PerformanceInsights({ className, onOptimizationApplied }: Perfor
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="w-5 h-5" />
-          导出性能洞察
+          Export性能洞察
         </CardTitle>
         <CardDescription>
           基于当前项目状态的性能分析和优化建议
@@ -184,7 +184,7 @@ export function PerformanceInsights({ className, onOptimizationApplied }: Perfor
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm">导出方法:</span>
+              <span className="text-sm">Export方法:</span>
               <Badge variant="outline">{analysis.recommendedStrategy.method}</Badge>
             </div>
             <div className="flex items-center justify-between">

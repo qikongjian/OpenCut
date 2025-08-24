@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 部署环境设置脚本
+# SmartCut Frontend 部署环境设置脚本
 # 用于初始化和配置部署环境
 
 set -e
@@ -178,7 +178,7 @@ show_deployment_info() {
 
 # 主函数
 main() {
-    echo "🔧 OpenCut 部署环境设置"
+    echo "🔧 SmartCut Frontend 部署环境设置"
     echo "========================"
     echo
     

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# OpenCut 简化部署脚本
+# SmartCut Frontend 简化部署脚本
 # 不依赖本地 Docker，直接在服务器上构建
 
 set -e
@@ -275,7 +275,7 @@ verify_deployment() {
 
 # 主函数
 main() {
-    log_info "🚀 OpenCut 简化部署开始"
+    log_info "🚀 SmartCut Frontend 简化部署开始"
     
     # 检查依赖
     check_dependencies
