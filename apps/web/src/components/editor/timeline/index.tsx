@@ -699,6 +699,9 @@ export function Timeline() {
           zoomLevel={zoomLevel}
           isVisible={isScissorsAnimating}
           position={animationPosition}
+          tracks={tracks}
+          trackLabelsRef={trackLabelsRef}
+          tracksScrollRef={tracksScrollRef}
         />
         <SnapIndicator
           snapPoint={currentSnapPoint}
@@ -1374,7 +1377,6 @@ function TimelineToolbar({
                 variant="text"
                 size="icon"
                 onClick={() => flipSelectedElements('horizontal')}
-                className={selectedElements.length > 0 ? "text-primary" : ""}
               >
                 <CustomFlipHorizontal className="h-4 w-4" />
               </Button>

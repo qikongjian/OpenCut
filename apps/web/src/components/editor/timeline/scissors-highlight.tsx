@@ -11,22 +11,40 @@ interface ScissorsHighlightProps {
   zoomLevel: number;
   isVisible: boolean;
   position?: number; // 可选的自定义位置
+  tracks: any[]; // 轨道数组，用于计算轨道标签宽度
+  trackLabelsRef?: React.RefObject<HTMLDivElement>; // 轨道标签引用
+  tracksScrollRef?: React.RefObject<HTMLDivElement>; // 轨道滚动引用
 }
 
-export function ScissorsHighlight({ 
-  zoomLevel, 
-  isVisible, 
-  position 
+export function ScissorsHighlight({
+  zoomLevel,
+  isVisible,
+  position,
+  tracks: propTracks,
+  trackLabelsRef,
+  tracksScrollRef
 }: ScissorsHighlightProps) {
   const { currentTime } = usePlaybackStore();
-  const { tracks } = useTimelineStore();
-  
+  const { tracks: storeTracks } = useTimelineStore();
+
+  // 使用传入的轨道数组或store中的轨道数组
+  const tracks = propTracks || storeTracks;
+
   // 使用自定义位置或当前播放时间
   const displayPosition = position !== undefined ? position : currentTime;
-  
-  // 计算剪刀位置
-  const leftPosition = displayPosition * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel;
-  
+
+  // 获取滚动位置
+  const scrollLeft = tracksScrollRef?.current?.scrollLeft || 0;
+
+  // 获取轨道标签宽度，与播放头保持一致
+  const trackLabelsWidth = tracks.length > 0 && trackLabelsRef?.current
+    ? trackLabelsRef.current.offsetWidth
+    : 0;
+
+  // 计算剪刀位置，与播放头定位逻辑保持一致
+  const timelinePosition = displayPosition * TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel;
+  const leftPosition = trackLabelsWidth + timelinePosition - scrollLeft;
+
   // 计算总高度（所有轨道的高度）
   const totalHeight = tracks.reduce((height, track) => {
     return height + TIMELINE_CONSTANTS.TRACK_HEIGHT + TIMELINE_CONSTANTS.TRACK_GAP;
@@ -60,9 +78,10 @@ export function ScissorsHighlight({
           }}
           className="absolute pointer-events-none z-[300]"
           style={{
-            left: `${leftPosition - 12}px`, // 居中对齐（图标宽度的一半）
+            left: `${leftPosition}px`, // 与播放头对齐
             top: "10px", // 调整到时间轴标尺区域
             height: `${totalHeight + 60}px`, // 覆盖整个时间轴高度
+            transform: "translateX(-50%)", // 居中对齐
           }}
         >
           {/* 发光背景 */}
