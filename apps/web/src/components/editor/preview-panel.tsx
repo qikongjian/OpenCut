@@ -377,7 +377,7 @@ export function PreviewPanel() {
                 canvasSize.height) *
                 100
             }%`,
-            transform: `translate(-50%, -50%) rotate(${element.rotation}deg)`,
+            transform: `translate(-50%, -50%) rotate(${element.rotation}deg) scaleX(${element.horizontalFlip ? -1 : 1}) scaleY(${element.verticalFlip ? -1 : 1})`,
             opacity: element.opacity,
             zIndex: 100 + index, // Text elements on top
           }}
@@ -428,6 +428,9 @@ export function PreviewPanel() {
           <div
             key={element.id}
             className="absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `scaleX(${element.horizontalFlip ? -1 : 1}) scaleY(${element.verticalFlip ? -1 : 1})`,
+            }}
           >
             <VideoPlayer
               src={mediaItem.url!}
@@ -448,6 +451,9 @@ export function PreviewPanel() {
           <div
             key={element.id}
             className="absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `scaleX(${element.horizontalFlip ? -1 : 1}) scaleY(${element.verticalFlip ? -1 : 1})`,
+            }}
           >
             <img
               src={mediaItem.url!}

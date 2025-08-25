@@ -41,6 +41,7 @@ import { useTimelineStore } from "@/stores/timeline-store";
 import { useMediaStore } from "@/stores/media-store";
 import { usePlaybackStore } from "@/stores/playback-store";
 import { useProjectStore } from "@/stores/project-store";
+import { CustomFlipHorizontal } from "@/components/ui/icons";
 import { useTimelineZoom } from "@/hooks/use-timeline-zoom";
 import { processMediaFiles } from "@/lib/media-processing";
 import { toast } from "sonner";
@@ -78,6 +79,8 @@ export function Timeline() {
     setSelectedElements,
     toggleTrackMute,
     dragState,
+    flipSelectedElements,
+    selectedElements,
   } = useTimelineStore();
   const { mediaItems, addMediaItem } = useMediaStore();
   const { activeProject } = useProjectStore();
@@ -416,6 +419,39 @@ export function Timeline() {
     const totalDuration = getTotalDuration();
     setDuration(Math.max(totalDuration, 10)); // Minimum 10 seconds for empty timeline
   }, [tracks, setDuration, getTotalDuration]);
+
+  // 键盘快捷键处理
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 只在时间轴获得焦点时处理快捷键
+      if (!timelineRef.current?.contains(document.activeElement)) {
+        return;
+      }
+
+      // 防止在输入框中触发快捷键
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case 'h':
+          e.preventDefault();
+          if (selectedElements.length > 0) {
+            flipSelectedElements('horizontal');
+          }
+          break;
+        case 'v':
+          e.preventDefault();
+          if (selectedElements.length > 0) {
+            flipSelectedElements('vertical');
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElements, flipSelectedElements]);
 
   // Old marquee system removed - using new SelectionBox component instead
 
@@ -988,6 +1024,7 @@ function TimelineToolbar({
     toggleSnapping,
     rippleEditingEnabled,
     toggleRippleEditing,
+    flipSelectedElements,
   } = useTimelineStore();
   const { currentTime, duration, isPlaying, toggle } = usePlaybackStore();
   const { toggleBookmark, isBookmarked } = useProjectStore();
@@ -1326,6 +1363,19 @@ function TimelineToolbar({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Delete element (Delete)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="text"
+                size="icon"
+                onClick={() => flipSelectedElements('horizontal')}
+                className={selectedElements.length > 0 ? "text-primary" : ""}
+              >
+                <CustomFlipHorizontal className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>水平翻转 (H)</TooltipContent>
           </Tooltip>
           <div className="w-px h-6 bg-border mx-1" />
           <Tooltip>

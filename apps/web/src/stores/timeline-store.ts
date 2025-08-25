@@ -225,6 +225,9 @@ interface TimelineStore {
   addTextAtTime: (item: TextElement, currentTime?: number) => boolean;
   addMediaToNewTrack: (item: MediaItem) => boolean;
   addTextToNewTrack: (item: TextElement | DragData) => boolean;
+
+  // 镜像翻转功能
+  flipSelectedElements: (direction?: 'horizontal' | 'vertical') => void;
 }
 
 export const useTimelineStore = create<TimelineStore>((set, get) => {
@@ -1827,6 +1830,64 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       }
 
       return segments;
+    },
+
+    // 镜像翻转选中的元素
+    flipSelectedElements: (direction: 'horizontal' | 'vertical' = 'horizontal') => {
+      const selectedElements = get().selectedElements;
+      if (selectedElements.length === 0) {
+        console.warn("No elements selected to flip.");
+        return;
+      }
+
+      get().pushHistory();
+
+      const selectedElementIds = selectedElements.map(
+        (item) => `${item.trackId}-${item.elementId}`
+      );
+
+      updateTracksAndSave(
+        get()._tracks.map((track) => ({
+          ...track,
+          elements: track.elements.map((element) => {
+            if (selectedElementIds.includes(`${track.id}-${element.id}`)) {
+              if (element.type === "text") {
+                if (direction === 'horizontal') {
+                  return {
+                    ...element,
+                    horizontalFlip: !(element as TextElement).horizontalFlip,
+                  };
+                } else {
+                  return {
+                    ...element,
+                    verticalFlip: !(element as any).verticalFlip,
+                  };
+                }
+              } else if (element.type === "media") {
+                if (direction === 'horizontal') {
+                  return {
+                    ...element,
+                    horizontalFlip: !(element as any).horizontalFlip,
+                  };
+                } else {
+                  return {
+                    ...element,
+                    verticalFlip: !(element as any).verticalFlip,
+                  };
+                }
+              }
+            }
+            return element;
+          }),
+        }))
+      );
+
+      const flipType = direction === 'horizontal' ? '水平' : '垂直';
+      console.log(`已${flipType}翻转 ${selectedElements.length} 个元素`);
+
+      window.dispatchEvent(new CustomEvent("elements-flipped", {
+        detail: { elementIds: selectedElementIds, direction }
+      }));
     },
   };
 });
