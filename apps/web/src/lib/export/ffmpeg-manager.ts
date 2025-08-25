@@ -439,6 +439,112 @@ export class FFmpegCommandBuilder {
   }
 
   /**
+   * 添加镜像滤镜
+   */
+  mirror(horizontalFlip: boolean = false, verticalFlip: boolean = false): this {
+    const filters: string[] = [];
+
+    if (horizontalFlip) {
+      filters.push('hflip'); // 水平翻转
+    }
+
+    if (verticalFlip) {
+      filters.push('vflip'); // 垂直翻转
+    }
+
+    if (filters.length > 0) {
+      return this.filter(filters.join(','));
+    }
+
+    return this;
+  }
+
+  /**
+   * 添加复合变换滤镜（包含镜像、旋转、缩放等）
+   */
+  videoTransform(transform: {
+    horizontalFlip?: boolean;
+    verticalFlip?: boolean;
+    rotate?: number;
+    scale?: number;
+    x?: number;
+    y?: number;
+  }): this {
+    const filters: string[] = [];
+
+    // 🪞 镜像变换
+    if (transform.horizontalFlip) {
+      filters.push('hflip');
+    }
+    if (transform.verticalFlip) {
+      filters.push('vflip');
+    }
+
+    // 🔄 旋转变换
+    if (transform.rotate && transform.rotate !== 0) {
+      // 将角度转换为弧度
+      const radians = (transform.rotate * Math.PI) / 180;
+      filters.push(`rotate=${radians}`);
+    }
+
+    // 📏 缩放变换
+    if (transform.scale && transform.scale !== 1) {
+      filters.push(`scale=iw*${transform.scale}:ih*${transform.scale}`);
+    }
+
+    // 📍 位置变换（如果需要的话）
+    if ((transform.x && transform.x !== 0) || (transform.y && transform.y !== 0)) {
+      const x = transform.x || 0;
+      const y = transform.y || 0;
+      filters.push(`pad=iw+${Math.abs(x)}:ih+${Math.abs(y)}:${x > 0 ? x : 0}:${y > 0 ? y : 0}`);
+    }
+
+    if (filters.length > 0) {
+      return this.filter(filters.join(','));
+    }
+
+    return this;
+  }
+
+  /**
+   * 添加转场滤镜
+   */
+  transition(fromInput: number, toInput: number, type: string, duration: number, direction?: string): this {
+    let filterString = '';
+
+    switch (type) {
+      case 'flash':
+        // 闪黑/闪白转场
+        const flashColor = direction === 'out' ? 'white' : 'black';
+        filterString = `[${fromInput}:v][${toInput}:v]xfade=transition=fade:duration=${duration}:offset=0:color=${flashColor}[v]`;
+        break;
+      case 'dissolve':
+        // 叠化转场
+        filterString = `[${fromInput}:v][${toInput}:v]xfade=transition=dissolve:duration=${duration}:offset=0[v]`;
+        break;
+      case 'fade':
+        // 淡入淡出转场
+        filterString = `[${fromInput}:v][${toInput}:v]xfade=transition=fade:duration=${duration}:offset=0[v]`;
+        break;
+      case 'slide':
+        // 滑动转场
+        const slideDirection = direction || 'left';
+        filterString = `[${fromInput}:v][${toInput}:v]xfade=transition=slide${slideDirection}:duration=${duration}:offset=0[v]`;
+        break;
+      case 'wipe':
+        // 擦除转场
+        const wipeDirection = direction || 'left';
+        filterString = `[${fromInput}:v][${toInput}:v]xfade=transition=wipe${wipeDirection}:duration=${duration}:offset=0[v]`;
+        break;
+      default:
+        // 默认交叉淡化
+        filterString = `[${fromInput}:v][${toInput}:v]xfade=transition=fade:duration=${duration}:offset=0[v]`;
+    }
+
+    return this.complexFilter(filterString);
+  }
+
+  /**
    * 添加自定义参数
    */
   custom(...args: string[]): this {

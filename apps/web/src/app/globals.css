@@ -45,6 +45,12 @@
   --panel-background: hsl(216 13% 92%);
   --panel-accent: hsl(216, 8%, 86%);
 
+  /* AI Gradient Colors */
+  --ai-gradient: linear-gradient(97deg, #6b57ffb3, #3f62ffb3 50%, #00cae0b3);
+  --ai-gradient-hover: linear-gradient(97deg, #6b57ffd9, #3f62ffd9 50%, #00cae0d9);
+  --ai-gradient-disabled: linear-gradient(97deg, #6b57ff66, #3f62ff66 50%, #00cae066);
+  --ai-gradient-disabled: linear-gradient(97deg, #6b57ff66, #3f62ff66 50%, #00cae066);
+
   /* Radius base */
   --radius: 1rem;
 }
@@ -84,6 +90,12 @@
   --sidebar-ring: hsl(0 0% 83.1%);
   --panel-background: hsl(0 0% 11%);
   --panel-accent: hsl(0 0% 15%);
+
+  /* AI Gradient Colors - Dark Mode */
+  --ai-gradient: linear-gradient(97deg, #6b57ffcc, #3f62ffcc 50%, #00cae0cc);
+  --ai-gradient-hover: linear-gradient(97deg, #6b57ffe6, #3f62ffe6 50%, #00cae0e6);
+  --ai-gradient-disabled: linear-gradient(97deg, #6b57ff80, #3f62ff80 50%, #00cae080);
+  --ai-gradient-disabled: linear-gradient(97deg, #6b57ff66, #3f62ff66 50%, #00cae066);
 }
 
 @layer base {
@@ -243,4 +255,28 @@
   &::-webkit-scrollbar-thumb:hover {
     background: var(--muted-foreground);
   }
+}
+
+/* AI Gradient Utilities */
+@utility ai-gradient-bg {
+  background: var(--ai-gradient);
+}
+
+@utility ai-gradient-hover {
+  &:hover {
+    background: var(--ai-gradient-hover);
+  }
+}
+
+@utility ai-gradient-disabled {
+  &:disabled {
+    background: var(--ai-gradient-disabled);
+  }
+}
+
+@utility ai-gradient-text {
+  background: var(--ai-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

@@ -228,6 +228,35 @@ interface TimelineStore {
 
   // 镜像翻转功能
   flipSelectedElements: (direction?: 'horizontal' | 'vertical') => void;
+
+  // 转场相关功能
+  addTransitionBetweenElements: (
+    fromTrackId: string,
+    fromElementId: string,
+    toTrackId: string,
+    toElementId: string,
+    transitionType: import("@/types/timeline").TransitionType,
+    transitionParams: {
+      direction: import("@/types/timeline").TransitionDirection;
+      duration: number;
+      easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+      intensity?: number;
+      blur?: number;
+    }
+  ) => string | null;
+
+  updateTransitionElement: (
+    trackId: string,
+    elementId: string,
+    updates: Partial<{
+      transitionType: import("@/types/timeline").TransitionType;
+      direction: import("@/types/timeline").TransitionDirection;
+      easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+      intensity: number;
+      blur: number;
+      duration: number;
+    }>
+  ) => void;
 }
 
 export const useTimelineStore = create<TimelineStore>((set, get) => {
@@ -1661,6 +1690,8 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         rotation: ("rotation" in item ? item.rotation : 0) || 0,
         opacity:
           "opacity" in item && item.opacity !== undefined ? item.opacity : 1,
+        horizontalFlip: false, // 文本元素默认不翻转
+        verticalFlip: false,   // 文本元素默认不翻转
       });
       return true;
     },
@@ -1714,6 +1745,9 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
                     y: 0,
                     scale: 1,
                     rotate: 0,
+                    // 🪞 包含镜像翻转信息
+                    horizontalFlip: element.horizontalFlip || false,
+                    verticalFlip: element.verticalFlip || false,
                   },
                   muted: element.muted,
                   hidden: element.hidden,
@@ -1753,6 +1787,17 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
                 opacity: element.opacity,
                 rotation: element.rotation,
               },
+            });
+          } else if (element.type === "transition") {
+            // 🎯 处理转场元素
+            const transitionElement = element as import("@/types/timeline").TransitionElement;
+            ir.transitions.push({
+              id: transitionElement.id,
+              between: [transitionElement.fromElementId, transitionElement.toElementId],
+              kind: transitionElement.transitionType as any, // 转换类型映射
+              duration: transitionElement.duration * 1000, // 转换为毫秒
+              direction: transitionElement.direction,
+              intensity: transitionElement.intensity,
             });
           }
         }
@@ -1888,6 +1933,131 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       window.dispatchEvent(new CustomEvent("elements-flipped", {
         detail: { elementIds: selectedElementIds, direction }
       }));
+    },
+
+    // 转场相关功能
+    addTransitionBetweenElements: (
+      fromTrackId: string,
+      fromElementId: string,
+      toTrackId: string,
+      toElementId: string,
+      transitionType: import("@/types/timeline").TransitionType,
+      transitionParams: {
+        direction: import("@/types/timeline").TransitionDirection;
+        duration: number;
+        easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+        intensity?: number;
+        blur?: number;
+      }
+    ) => {
+      get().pushHistory();
+
+      // 获取要添加转场的元素信息
+      const fromTrack = get()._tracks.find(t => t.id === fromTrackId);
+      const fromElement = fromTrack?.elements.find(e => e.id === fromElementId);
+      const toTrack = get()._tracks.find(t => t.id === toTrackId);
+      const toElement = toTrack?.elements.find(e => e.id === toElementId);
+
+      if (!fromElement || !toElement) return null;
+
+      // 检查是否已经存在转场
+      const existingTransition = get()._tracks.some(track =>
+        track.elements.some(element => {
+          if (element.type === "transition") {
+            const transitionElement = element as import("@/types/timeline").TransitionElement;
+            return transitionElement.fromElementId === fromElementId &&
+                   transitionElement.toElementId === toElementId;
+          }
+          return false;
+        })
+      );
+
+      if (existingTransition) {
+        console.error("这两个元素之间已经存在转场");
+        return null;
+      }
+
+      // 创建转场元素
+      const transitionId = generateUUID();
+
+      // 🎯 转场图标定位在第一个视频元素的右上角 - 一比一复刻图片效果
+      // 计算第一个元素的结束时间
+      const fromElementEnd = fromElement.startTime + (fromElement.duration - fromElement.trimStart - fromElement.trimEnd);
+
+      // 转场图标定位在第一个元素的结束位置（右上角）
+      const transitionStartTime = fromElementEnd - 0.05; // 稍微向左偏移，确保在元素内部
+
+      // 转场持续时间设为很短，因为它只是一个装饰图标
+      transitionParams.duration = 0.1;
+
+      const transitionElement: import("@/types/timeline").CreateTransitionElement & { id: string } = {
+        id: transitionId,
+        name: `${transitionType} 转场`,
+        type: "transition",
+        transitionType,
+        direction: transitionParams.direction,
+        easing: transitionParams.easing,
+        duration: transitionParams.duration,
+        startTime: Math.max(0, transitionStartTime), // 确保不为负数
+        trimStart: 0,
+        trimEnd: 0,
+        fromElementId,
+        toElementId,
+        fromTrackId,
+        toTrackId,
+        intensity: transitionParams.intensity || 1.0,
+        blur: transitionParams.blur || 0.0,
+      };
+
+      // 将转场添加到起始元素的轨道上
+      const newTracks = get()._tracks.map(track =>
+        track.id === fromTrackId
+          ? {
+              ...track,
+              elements: [...track.elements, transitionElement]
+            }
+          : track
+      );
+
+      updateTracksAndSave(newTracks);
+
+      console.log(`✅ 转场添加成功: ${transitionType} (${transitionId})`);
+      console.log(`   转场时间: ${transitionStartTime.toFixed(2)}s - ${(transitionStartTime + transitionParams.duration).toFixed(2)}s`);
+      console.log(`   从元素: ${fromElement.name} (${fromElement.startTime.toFixed(2)}s - ${fromElementEnd.toFixed(2)}s)`);
+      console.log(`   到元素: ${toElement.name} (${toElement.startTime.toFixed(2)}s - ${(toElement.startTime + toElement.duration).toFixed(2)}s)`);
+
+      return transitionId;
+    },
+
+    updateTransitionElement: (
+      trackId: string,
+      elementId: string,
+      updates: Partial<{
+        transitionType: import("@/types/timeline").TransitionType;
+        direction: import("@/types/timeline").TransitionDirection;
+        easing: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+        intensity: number;
+        blur: number;
+        duration: number;
+      }>
+    ) => {
+      updateTracksAndSave(
+        get()._tracks.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                elements: track.elements.map((element) =>
+                  element.id === elementId && element.type === "transition"
+                    ? {
+                        ...element,
+                        ...updates,
+                      }
+                    : element
+                ),
+              }
+            : track
+        )
+      );
     },
   };
 });

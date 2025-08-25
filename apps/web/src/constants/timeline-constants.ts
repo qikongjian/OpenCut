@@ -20,6 +20,11 @@ export const TRACK_COLORS: Record<
     background: "bg-[#915DBE]",
     border: "",
   },
+  transition: {
+    solid: "bg-purple-500",
+    background: "bg-purple-500/20",
+    border: "border-purple-400",
+  },
 } as const;
 
 // Utility functions
@@ -37,6 +42,7 @@ export const TRACK_HEIGHTS: Record<TrackType, number> = {
   media: 60,
   text: 25,
   audio: 50,
+  transition: 40,
 } as const;
 
 // Utility function for track heights
@@ -75,6 +81,9 @@ export const TIMELINE_CONSTANTS = {
   TRACK_HEIGHT: 60, // Default fallback
   DEFAULT_TEXT_DURATION: 5,
   DEFAULT_IMAGE_DURATION: 5,
+  MIN_TRANSITION_DURATION: 0.1, // 最小转场时长（秒）
+  MAX_TRANSITION_DURATION: 10.0, // 最大转场时长（秒）
+  DEFAULT_TRANSITION_DURATION: 1.0, // 默认转场时长（秒）
   ZOOM_LEVELS: [0.05, 0.1, 0.25, 0.5, 1, 1.5, 2, 3, 4],
 } as const;
 

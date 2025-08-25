@@ -252,6 +252,7 @@ export function PreviewPanel() {
                 : mediaItems.find((item) => item.id === element.mediaId) ||
                   null;
           }
+          // 转场元素不需要mediaItem，但需要被包含在activeElements中用于渲染
           activeElements.push({ element, track, mediaItem });
         }
       });
@@ -342,9 +343,100 @@ export function PreviewPanel() {
     return null;
   };
 
+  // Render transition effect
+  const renderTransitionEffect = (transitionElement: import("@/types/timeline").TransitionElement, index: number) => {
+    // 计算转场进度 (0-1)
+    const transitionStart = transitionElement.startTime;
+    const transitionEnd = transitionElement.startTime + transitionElement.duration;
+    const progress = Math.max(0, Math.min(1, (currentTime - transitionStart) / transitionElement.duration));
+
+    // 根据转场类型渲染不同效果
+    switch (transitionElement.transitionType) {
+      case "flash":
+        // 闪黑/闪白效果 - 优化实现
+        const isFlashWhite = transitionElement.direction === "out";
+        // 使用更自然的闪光曲线：快速上升到峰值，然后快速下降
+        const flashIntensity = progress < 0.3
+          ? progress / 0.3 // 前30%快速上升
+          : progress < 0.7
+          ? 1.0 // 中间40%保持峰值
+          : (1.0 - progress) / 0.3; // 后30%快速下降
+
+        return (
+          <div
+            key={`transition-${transitionElement.id}`}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundColor: isFlashWhite ? "#ffffff" : "#000000",
+              opacity: Math.max(0, Math.min(1, flashIntensity * (transitionElement.intensity || 1.0))),
+              zIndex: 1000, // 确保在最上层
+            }}
+          />
+        );
+
+      case "fade":
+        // 淡入淡出效果 - 通过调整整个画面的透明度
+        return (
+          <div
+            key={`transition-${transitionElement.id}`}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundColor: "#000000",
+              opacity: transitionElement.direction === "in" ? (1 - progress) : progress,
+              zIndex: 999,
+            }}
+          />
+        );
+
+      case "dissolve":
+        // 叠化效果 - 真正的溶解效果
+        // 注意：这里只是视觉提示，真正的叠化需要两个视频源
+        const dissolveOpacity = Math.sin(progress * Math.PI) * 0.8;
+        return (
+          <div
+            key={`transition-${transitionElement.id}`}
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(circle at 50% 50%,
+                rgba(255,255,255,${dissolveOpacity * 0.1}) 0%,
+                rgba(255,255,255,${dissolveOpacity * 0.3}) 30%,
+                rgba(255,255,255,${dissolveOpacity * 0.1}) 70%,
+                transparent 100%)`,
+              opacity: dissolveOpacity,
+              zIndex: 998,
+              mixBlendMode: 'overlay',
+            }}
+          />
+        );
+
+      default:
+        // 其他转场类型的占位符效果
+        return (
+          <div
+            key={`transition-${transitionElement.id}`}
+            className="absolute inset-0 pointer-events-none flex items-center justify-center"
+            style={{
+              backgroundColor: `rgba(138, 43, 226, ${progress * 0.2})`, // 紫色半透明
+              zIndex: 997,
+            }}
+          >
+            <div className="text-white text-xs opacity-60">
+              {transitionElement.transitionType} ({Math.round(progress * 100)}%)
+            </div>
+          </div>
+        );
+    }
+  };
+
   // Render an element
   const renderElement = (elementData: ActiveElement, index: number) => {
     const { element, mediaItem } = elementData;
+
+    // Transition elements - render transition effects
+    if (element.type === "transition") {
+      const transitionElement = element as import("@/types/timeline").TransitionElement;
+      return renderTransitionEffect(transitionElement, index);
+    }
 
     // Text elements
     if (element.type === "text") {

@@ -162,10 +162,26 @@ export class FrontendExporter {
       }
     }
 
-    // 查找转场
+    // 🎯 查找转场 - 精确匹配转场时间范围
     for (const transition of ir.transitions) {
-      // 简化处理：如果转场在分段时间范围内
-      segment.transitions.push(transition.id);
+      // 找到转场涉及的元素
+      const fromElement = ir.video.find(v => v.id === transition.between[0]);
+      const toElement = ir.video.find(v => v.id === transition.between[1]);
+
+      if (fromElement && toElement) {
+        const fromEnd = fromElement.start + (fromElement.out - fromElement.in);
+        const toStart = toElement.start;
+
+        // 转场的实际时间范围
+        const transitionStart = Math.max(fromEnd - transition.duration, toStart);
+        const transitionEnd = Math.min(fromEnd, toStart + transition.duration);
+
+        // 检查转场是否在当前分段内
+        if (transitionStart < segment.endTime && transitionEnd > segment.startTime) {
+          segment.transitions.push(transition.id);
+          segment.hasComplexEffects = true; // 转场需要特殊处理
+        }
+      }
     }
 
     // 估算内存使用
@@ -315,7 +331,7 @@ export class FrontendExporter {
   }
 
   /**
-   * 构建分段命令
+   * 构建分段命令 - 支持转场
    */
   private buildSegmentCommand(
     ir: TimelineIR,
@@ -324,6 +340,19 @@ export class FrontendExporter {
     outputFile: string
   ): string[] {
     const builder = new FFmpegCommandBuilder();
+
+    // 🎯 添加输入文件
+    const inputFiles: string[] = [];
+
+    // 添加视频输入
+    for (const videoId of segment.videoElements) {
+      const video = ir.video.find(v => v.id === videoId);
+      if (video) {
+        const filename = `video_${videoId}.mp4`; // 假设文件已准备好
+        builder.input(filename);
+        inputFiles.push(filename);
+      }
+    }
 
     // 基础设置
     builder
@@ -348,6 +377,17 @@ export class FrontendExporter {
         break;
     }
 
+    // 🎯 处理视频变换（镜像、旋转等）
+    this.buildVideoTransforms(ir, segment, builder);
+
+    // 🎯 处理转场
+    if (segment.transitions.length > 0) {
+      this.buildTransitionFilters(ir, segment, builder);
+    } else if (segment.videoElements.length > 1) {
+      // 多个视频但无转场，使用简单拼接
+      this.buildConcatenationFilters(ir, segment, builder);
+    }
+
     // 如果有字幕，添加字幕滤镜
     if (segment.textElements.length > 0) {
       builder.filter('subtitles=segment.ass');
@@ -356,6 +396,88 @@ export class FrontendExporter {
     builder.output(outputFile);
 
     return builder.build();
+  }
+
+  /**
+   * 构建视频变换滤镜（镜像、旋转等）
+   */
+  private buildVideoTransforms(ir: TimelineIR, segment: TimelineSegment, builder: FFmpegCommandBuilder): void {
+    // 🪞 处理每个视频元素的变换
+    for (let i = 0; i < segment.videoElements.length; i++) {
+      const videoId = segment.videoElements[i];
+      const video = ir.video.find(v => v.id === videoId);
+
+      if (video && video.transform) {
+        const { horizontalFlip, verticalFlip, rotate, scale } = video.transform;
+
+        // 检查是否需要应用变换
+        const needsTransform = horizontalFlip || verticalFlip ||
+                              (rotate && rotate !== 0) ||
+                              (scale && scale !== 1);
+
+        if (needsTransform) {
+          // 为单个输入应用变换
+          builder.videoTransform({
+            horizontalFlip: horizontalFlip || false,
+            verticalFlip: verticalFlip || false,
+            rotate: rotate || 0,
+            scale: scale || 1,
+          });
+
+          console.log(`🪞 应用视频变换到 ${videoId}:`, {
+            horizontalFlip: horizontalFlip || false,
+            verticalFlip: verticalFlip || false,
+            rotate: rotate || 0,
+            scale: scale || 1,
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * 构建转场滤镜
+   */
+  private buildTransitionFilters(ir: TimelineIR, segment: TimelineSegment, builder: FFmpegCommandBuilder): void {
+    // 🎯 处理转场的核心逻辑
+    for (const transitionId of segment.transitions) {
+      const transition = ir.transitions.find(t => t.id === transitionId);
+      if (!transition) continue;
+
+      const fromElement = ir.video.find(v => v.id === transition.between[0]);
+      const toElement = ir.video.find(v => v.id === transition.between[1]);
+
+      if (!fromElement || !toElement) continue;
+
+      // 找到输入索引
+      const fromIndex = segment.videoElements.indexOf(fromElement.id);
+      const toIndex = segment.videoElements.indexOf(toElement.id);
+
+      if (fromIndex >= 0 && toIndex >= 0) {
+        // 添加转场滤镜
+        builder.transition(
+          fromIndex,
+          toIndex,
+          transition.kind,
+          transition.duration / 1000, // 转换为秒
+          transition.direction
+        );
+      }
+    }
+  }
+
+  /**
+   * 构建拼接滤镜
+   */
+  private buildConcatenationFilters(_ir: TimelineIR, segment: TimelineSegment, builder: FFmpegCommandBuilder): void {
+    // 简单的视频拼接，无转场效果
+    if (segment.videoElements.length > 1) {
+      const concatFilter = segment.videoElements
+        .map((_: string, index: number) => `[${index}:v]`)
+        .join('') + `concat=n=${segment.videoElements.length}:v=1:a=0[v]`;
+
+      builder.complexFilter(concatFilter);
+    }
   }
 
   /**

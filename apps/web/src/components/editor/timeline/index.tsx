@@ -24,6 +24,7 @@ import {
   Eye,
   MicOff,
   Mic,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   Tooltip,
@@ -992,6 +993,9 @@ function TrackIcon({ track }: { track: TimelineTrack }) {
       )}
       {track.type === "audio" && (
         <Music className="w-4 h-4 shrink-0 text-muted-foreground" />
+      )}
+      {track.type === "transition" && (
+        <ArrowRightLeft className="w-4 h-4 shrink-0 text-muted-foreground" />
       )}
     </>
   );

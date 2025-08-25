@@ -29,6 +29,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "../../ui/context-menu";
+import { TransitionElementComponent } from "./transition-element";
 
 export function TimelineElement({
   element,
@@ -38,6 +39,19 @@ export function TimelineElement({
   onElementMouseDown,
   onElementClick,
 }: TimelineElementProps) {
+  // 如果是转场元素，使用专门的转场组件
+  if (element.type === "transition") {
+    return (
+      <TransitionElementComponent
+        element={element as import("@/types/timeline").TransitionElement}
+        track={track}
+        isSelected={isSelected}
+        zoomLevel={zoomLevel}
+        onMouseDown={onElementMouseDown ? (e) => onElementMouseDown(e, element) : () => {}}
+        onClick={onElementClick ? (e) => onElementClick(e, element) : () => {}}
+      />
+    );
+  }
   const { mediaItems } = useMediaStore();
   const {
     updateElementTrim,

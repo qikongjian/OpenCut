@@ -183,8 +183,8 @@ export function AIEditingPanelNew() {
       {/* 🎨 Modern header design */}
       <div className="flex items-center justify-between p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-sm">
-            <Bot className="w-4 h-4 text-white" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm">
+            <Bot className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
             <h3 className="font-semibold text-sm text-foreground">AI Smart Editing</h3>
@@ -222,8 +222,8 @@ export function AIEditingPanelNew() {
               {/* Feature highlights */}
               <div className="grid grid-cols-1 gap-3 w-full max-w-sm mb-6">
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Scissors className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Scissors className="w-4 h-4 text-primary" />
                   </div>
                   <div className="text-left">
                     <p className="text-xs font-medium text-foreground">Smart Editing</p>
@@ -232,8 +232,8 @@ export function AIEditingPanelNew() {
                 </div>
                 
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <div className="w-8 h-8 rounded-lg bg-chart-4/20 flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-chart-4" />
                   </div>
                   <div className="text-left">
                     <p className="text-xs font-medium text-foreground">Auto Subtitles</p>
@@ -265,7 +265,8 @@ export function AIEditingPanelNew() {
                 onClick={handleGenerateAIEditingPlan}
                 disabled={isLoadingPlan}
                 size="default"
-                className="w-full max-w-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="ai-gradient"
+                className="w-full max-w-sm ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm"
               >
                 {isLoadingPlan ? (
                   <>
@@ -298,7 +299,7 @@ export function AIEditingPanelNew() {
           // 🎨 Redesigned data state
           <div className="flex flex-col h-full">
             {/* 🎨 Modern editing plan info area */}
-            <div className="p-4 border-b border-border/40 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
+            <div className="p-4 border-b border-border/40 bg-gradient-to-r from-primary/5 to-chart-4/5">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h4 className="font-semibold text-base text-foreground mb-1">
@@ -308,7 +309,7 @@ export function AIEditingPanelNew() {
                     {currentEditingPlan?.timeline_clips.length || 0} video clips • Smart analysis complete
                   </p>
                 </div>
-                <Badge variant="outline" className="text-xs font-medium bg-white/50 dark:bg-black/20">
+                <Badge variant="outline" className="text-xs font-medium bg-primary/10 text-primary border-primary/20">
                   Generated
                 </Badge>
               </div>
@@ -344,7 +345,8 @@ export function AIEditingPanelNew() {
                   onClick={handleExecuteEditing}
                   disabled={isExecutingPlan}
                   size="sm"
-                  className="w-full justify-start text-xs bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-md"
+                  variant="ai-gradient"
+                  className="w-full justify-start text-xs ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm"
                 >
                   {isExecutingPlan ? (
                     <>
@@ -442,7 +444,7 @@ export function AIEditingPanelNew() {
                       key={clip.sequence_clip_id}
                       className={`group cursor-pointer transition-all duration-200 border-border/40 hover:shadow-md ${
                         selectedClipIndex === index
-                          ? 'ring-2 ring-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800'
+                          ? 'ring-2 ring-primary/50 bg-primary/5 border-primary/30'
                           : 'hover:bg-muted/30 hover:border-border/60'
                       }`}
                       onClick={() => setSelectedClipIndex(index)}
@@ -451,7 +453,7 @@ export function AIEditingPanelNew() {
                         {/* Clip header */}
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
                               {index + 1}
                             </div>
                             <span className="text-sm font-medium text-foreground">

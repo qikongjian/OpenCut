@@ -264,7 +264,8 @@ export function AIEditingPanel() {
                 onClick={handleGenerateAIEditingPlan}
                 disabled={isLoadingPlan}
                 size="default"
-                className="w-full max-w-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="ai-gradient"
+                className="w-full max-w-sm ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoadingPlan ? (
                   <>
@@ -311,7 +312,8 @@ export function AIEditingPanel() {
                 onClick={handleExecuteEditing}
                 disabled={isExecutingPlan}
                 size="sm"
-                className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+                variant="ai-gradient"
+                className="ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm"
               >
                 {isExecutingPlan ? "Executing..." : "One-Click Edit"}
               </Button>

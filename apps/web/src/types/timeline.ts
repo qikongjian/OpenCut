@@ -432,6 +432,9 @@ export interface TimelineIR {
       y?: number;
       scale?: number;
       rotate?: number;
+      // 🪞 镜像变换支持
+      horizontalFlip?: boolean;
+      verticalFlip?: boolean;
     };
     muted?: boolean;
     hidden?: boolean;
