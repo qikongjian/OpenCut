@@ -129,29 +129,59 @@ class StorageService {
     const { mediaMetadataAdapter, mediaFilesAdapter } =
       this.getProjectMediaAdapters(projectId);
 
-    // Save metadata to project-specific IndexedDB (always save metadata)
-    const metadata: MediaFileData = {
-      id: mediaItem.id,
-      name: mediaItem.name,
-      type: mediaItem.type,
-      size: mediaItem.file?.size,
-      lastModified: mediaItem.file?.lastModified,
-      width: mediaItem.width,
-      height: mediaItem.height,
-      duration: mediaItem.duration,
-      url: mediaItem.url,
-      thumbnailUrl: mediaItem.thumbnailUrl,
-      fps: (mediaItem as any).fps,
-      isRemote: !mediaItem.file, // 标识是否为远程视频
-    };
+    try {
+      // Save metadata to project-specific IndexedDB (always save metadata)
+      const metadata: MediaFileData = {
+        id: mediaItem.id,
+        name: mediaItem.name,
+        type: mediaItem.type,
+        size: mediaItem.file?.size,
+        lastModified: mediaItem.file?.lastModified,
+        width: mediaItem.width,
+        height: mediaItem.height,
+        duration: mediaItem.duration,
+        url: mediaItem.url,
+        thumbnailUrl: mediaItem.thumbnailUrl,
+        fps: (mediaItem as any).fps,
+        isRemote: !mediaItem.file, // 标识是否为远程视频
+      };
 
-    await mediaMetadataAdapter.set(mediaItem.id, metadata);
+      await mediaMetadataAdapter.set(mediaItem.id, metadata);
+      console.log(`✅ 元数据保存成功: ${mediaItem.id}`);
 
-    // Save file to project-specific OPFS (only if file exists)
-    if (mediaItem.file) {
-      await mediaFilesAdapter.set(mediaItem.id, mediaItem.file);
-    } else {
-      console.log(`Saving remote media item ${mediaItem.id} - no file to store in OPFS`);
+      // Save file to project-specific OPFS (only if file exists and OPFS is supported)
+      if (mediaItem.file) {
+        if (this.isOPFSSupported()) {
+          try {
+            await mediaFilesAdapter.set(mediaItem.id, mediaItem.file);
+            console.log(`✅ 文件保存成功 (OPFS): ${mediaItem.id}`);
+          } catch (opfsError) {
+            console.warn(`⚠️ OPFS保存失败，回退到URL方案: ${mediaItem.id}`, opfsError);
+            // OPFS失败时，确保URL可用
+            if (!mediaItem.url && mediaItem.file) {
+              const objectUrl = URL.createObjectURL(mediaItem.file);
+              // 更新元数据中的URL
+              metadata.url = objectUrl;
+              await mediaMetadataAdapter.set(mediaItem.id, metadata);
+              console.log(`✅ 回退到ObjectURL: ${objectUrl}`);
+            }
+          }
+        } else {
+          console.log(`⚠️ OPFS不支持，使用ObjectURL: ${mediaItem.id}`);
+          // OPFS不支持时，创建ObjectURL
+          if (!mediaItem.url && mediaItem.file) {
+            const objectUrl = URL.createObjectURL(mediaItem.file);
+            metadata.url = objectUrl;
+            await mediaMetadataAdapter.set(mediaItem.id, metadata);
+            console.log(`✅ ObjectURL创建成功: ${objectUrl}`);
+          }
+        }
+      } else {
+        console.log(`📡 远程媒体项，无需文件存储: ${mediaItem.id}`);
+      }
+    } catch (error) {
+      console.error(`❌ 保存媒体项失败: ${mediaItem.id}`, error);
+      throw new Error(`保存媒体项失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 
@@ -376,15 +406,46 @@ class StorageService {
 
   // Check browser support
   isOPFSSupported(): boolean {
-    return OPFSAdapter.isSupported();
+    try {
+      return OPFSAdapter.isSupported();
+    } catch (error) {
+      console.warn('OPFS支持检测失败:', error);
+      return false;
+    }
   }
 
   isIndexedDBSupported(): boolean {
-    return "indexedDB" in window;
+    try {
+      return "indexedDB" in window && typeof indexedDB !== 'undefined';
+    } catch (error) {
+      console.warn('IndexedDB支持检测失败:', error);
+      return false;
+    }
   }
 
   isFullySupported(): boolean {
-    return this.isIndexedDBSupported() && this.isOPFSSupported();
+    const indexedDBSupported = this.isIndexedDBSupported();
+    const opfsSupported = this.isOPFSSupported();
+
+    console.log(`存储支持检测: IndexedDB=${indexedDBSupported}, OPFS=${opfsSupported}`);
+
+    // 至少需要IndexedDB支持
+    return indexedDBSupported;
+  }
+
+  // 新增：获取存储能力报告
+  getStorageCapabilities(): {
+    indexedDB: boolean;
+    opfs: boolean;
+    webWorkers: boolean;
+    serviceWorkers: boolean;
+  } {
+    return {
+      indexedDB: this.isIndexedDBSupported(),
+      opfs: this.isOPFSSupported(),
+      webWorkers: typeof Worker !== 'undefined',
+      serviceWorkers: 'serviceWorker' in navigator,
+    };
   }
 }
 

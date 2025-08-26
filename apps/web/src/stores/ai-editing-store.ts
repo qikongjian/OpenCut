@@ -647,7 +647,19 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
           console.log(`   - 文件类型: ${actualMediaItem.file?.type || 'remote'}`);
         } catch (error) {
           console.error(`❌ 添加媒体项失败:`, error);
-          // 不抛出错误，继续处理
+
+          // 🚀 修复：即使存储失败，也要创建一个临时的媒体项用于时间轴
+          const fallbackMediaItem = {
+            ...mediaItem,
+            id: mediaItem.id, // 保持原ID
+            url: mediaItem.url || (mediaItem.file ? URL.createObjectURL(mediaItem.file) : ''),
+          };
+
+          // 直接添加到内存状态，跳过持久化存储
+          mediaStore.addMediaItemDirect(fallbackMediaItem);
+          addedMediaItems.push(fallbackMediaItem);
+
+          console.log(`🔄 已创建临时媒体项: ${fallbackMediaItem.name} (仅内存)`);
         }
 
         set({

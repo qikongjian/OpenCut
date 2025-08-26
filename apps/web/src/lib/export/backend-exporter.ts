@@ -660,14 +660,17 @@ export class BackendExporter {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
+              console.log('📡 Received stream event:', data);
+
               this.handleStreamEvent(data);
 
               if (data.type === 'complete') {
                 downloadUrl = data.downloadUrl;
                 fileSize = data.fileSize;
+                console.log('✅ Received complete event with download URL:', downloadUrl);
               }
             } catch (error) {
-              console.warn('Failed to parse stream data:', line);
+              console.warn('❌ Failed to parse stream data:', line, error);
             }
           }
         }
@@ -1029,7 +1032,7 @@ export class BackendExporter {
         break;
 
       case 'error':
-        throw new Error(data.message);
+        throw new Error(data.message || 'Unknown export error');
 
       default:
         console.log('Unknown stream event:', data);

@@ -258,38 +258,67 @@ export async function POST(req: NextRequest) {
           await executeSimplifiedExport(timeline, options, workDir, controller, encoder);
         }
 
-        // 发送完成事件
+        // 🔍 验证输出文件是否存在
         const outputPath = join(workDir, 'output.mp4');
-        const stats = await fs.stat(outputPath);
-        const exportId = workDir.split('/').pop()?.replace('incremental-export-', '') || '';
 
-        console.log('🎉 增量导出完成:', {
-          outputPath,
-          fileSize: stats.size,
-          exportId,
-          strategy: exportStrategy.type,
-          speedup: exportStrategy.estimatedSpeedup
-        });
+        try {
+          const stats = await fs.stat(outputPath);
+          const exportId = workDir.split('/').pop()?.replace('incremental-export-', '') || '';
 
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-          type: 'complete',
-          downloadUrl: `/api/export/download/${exportId}`,
-          fileSize: stats.size,
-          strategy: exportStrategy.type,
-          speedup: exportStrategy.estimatedSpeedup
-        })}\n\n`));
+          console.log('🎉 增量导出完成:', {
+            outputPath,
+            fileSize: stats.size,
+            exportId,
+            strategy: exportStrategy.type,
+            speedup: exportStrategy.estimatedSpeedup,
+            workDir
+          });
+
+          // 🔍 验证文件大小
+          if (stats.size < 1000) {
+            throw new Error(`输出文件太小: ${stats.size} bytes，可能导出失败`);
+          }
+
+          // 发送完成事件
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'complete',
+            downloadUrl: `/api/export/download/${exportId}`,
+            fileSize: stats.size,
+            strategy: exportStrategy.type,
+            speedup: exportStrategy.estimatedSpeedup,
+            message: '增量导出完成'
+          })}\n\n`));
+
+          console.log('✅ 完成事件已发送，下载URL:', `/api/export/download/${exportId}`);
+
+        } catch (statError) {
+          console.error('❌ 输出文件验证失败:', statError);
+          throw new Error(`输出文件不存在或无法访问: ${outputPath}`);
+        }
 
         controller.close();
 
       } catch (error) {
         console.error('❌ Incremental export failed:', error);
-        
+
+        // 发送详细的错误信息
+        const errorMessage = error instanceof Error ? error.message : '增量导出失败';
+        const errorDetails = error instanceof Error ? error.stack : String(error);
+
+        console.error('❌ Error details:', {
+          message: errorMessage,
+          stack: errorDetails,
+          workDir,
+          hasWorkDir: !!workDir
+        });
+
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'error',
-          message: error instanceof Error ? error.message : '增量导出失败',
-          details: error instanceof Error ? error.stack : undefined
+          message: errorMessage,
+          details: errorDetails,
+          stage: 'export_execution'
         })}\n\n`));
-        
+
         controller.close();
       } finally {
         // 注意：不要在这里清理工作目录，下载完成后再清理
