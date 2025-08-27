@@ -1245,7 +1245,8 @@ export class BackendExporter {
       // 方法1: 从URL中获取项目ID
       if (typeof window !== 'undefined') {
         const pathname = window.location.pathname;
-        const projectIdMatch = pathname.match(/\/editor\/([^\/]+)/);
+        // 修复：同时支持 /editor/ 和 /ai-editor/ 路径
+        const projectIdMatch = pathname.match(/\/(?:editor|ai-editor)\/([^\/]+)/);
         if (projectIdMatch) {
           const projectId = projectIdMatch[1];
           console.log('🔍 从URL获取项目ID:', projectId);
