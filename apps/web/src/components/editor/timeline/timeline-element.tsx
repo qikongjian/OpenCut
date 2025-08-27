@@ -287,7 +287,7 @@ export function TimelineElement({
           <div
             className={`relative h-full rounded-[0.15rem] cursor-pointer overflow-hidden ${getTrackElementClasses(
               track.type
-            )} ${isSelected ? "" : ""} ${
+            )} ${isSelected ? "timeline-element-selected" : ""} ${
               isBeingDragged ? "z-50" : "z-10"
             } ${element.hidden ? "opacity-50" : ""}`}
             onClick={(e) => onElementClick && onElementClick(e, element)}
@@ -313,11 +313,13 @@ export function TimelineElement({
             {isSelected && (
               <>
                 <div
-                  className="absolute left-0 top-0 bottom-0 w-[0.2rem] cursor-w-resize bg-primary z-50"
+                  className="absolute left-0 top-0 bottom-0 w-[0.2rem] cursor-w-resize z-50"
+                  style={{ background: 'var(--movieflow-primary)' }}
                   onMouseDown={(e) => handleResizeStart(e, element.id, "left")}
                 />
                 <div
-                  className="absolute right-0 top-0 bottom-0 w-[0.2rem] cursor-e-resize bg-primary z-50"
+                  className="absolute right-0 top-0 bottom-0 w-[0.2rem] cursor-e-resize z-50"
+                  style={{ background: 'var(--movieflow-primary)' }}
                   onMouseDown={(e) => handleResizeStart(e, element.id, "right")}
                 />
               </>

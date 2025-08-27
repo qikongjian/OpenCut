@@ -210,8 +210,8 @@ export function AIEditingPanel() {
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
               {/* 图标和标题 */}
               <div className="relative mb-6">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 flex items-center justify-center mb-4">
-                  <Bot className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+                <div className="w-20 h-20 rounded-full movieflow-gradient-bg flex items-center justify-center mb-4">
+                  <Bot className="w-10 h-10 text-white movieflow-icon-highlight" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
                   <Zap className="w-3 h-3 text-white" />
@@ -228,15 +228,15 @@ export function AIEditingPanel() {
               {/* Feature highlights */}
               <div className="grid grid-cols-1 gap-3 w-full max-w-sm mb-6">
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
-                  <Scissors className="w-4 h-4 text-blue-600" />
+                  <Scissors className="w-4 h-4 movieflow-icon-highlight" />
                   <span className="text-sm text-foreground">Smart Clip Detection</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
-                  <Clock className="w-4 h-4 text-green-600" />
+                  <Clock className="w-4 h-4 movieflow-icon-highlight" />
                   <span className="text-sm text-foreground">Precise Timeline</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/40">
-                  <Film className="w-4 h-4 text-purple-600" />
+                  <Film className="w-4 h-4 movieflow-icon-highlight" />
                   <span className="text-sm text-foreground">Transition Suggestions</span>
                 </div>
               </div>
@@ -264,8 +264,7 @@ export function AIEditingPanel() {
                 onClick={handleGenerateAIEditingPlan}
                 disabled={isLoadingPlan}
                 size="default"
-                variant="ai-gradient"
-                className="w-full max-w-sm ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full max-w-sm movieflow-button movieflow-gradient-bg movieflow-gradient-hover movieflow-gradient-disabled backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoadingPlan ? (
                   <>
@@ -312,8 +311,7 @@ export function AIEditingPanel() {
                 onClick={handleExecuteEditing}
                 disabled={isExecutingPlan}
                 size="sm"
-                variant="ai-gradient"
-                className="ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm"
+                className="movieflow-button movieflow-gradient-bg movieflow-gradient-hover movieflow-gradient-disabled backdrop-blur-sm"
               >
                 {isExecutingPlan ? "Executing..." : "One-Click Edit"}
               </Button>

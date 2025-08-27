@@ -17,7 +17,7 @@ import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/onboarding";
-import { AutoAIEditingProgress } from "@/components/ai-editor/auto-ai-editing-progress";
+
 import { useAutoAIEditingStore } from "@/stores/auto-ai-editing-store";
 
 
@@ -195,7 +195,7 @@ export default function AIEditor() {
 
   return (
     <EditorProvider>
-      <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">
+      <div className="ai-editor-page h-screen w-screen flex flex-col bg-background overflow-hidden">
         <EditorHeader />
         <div className="flex-1 min-h-0 min-w-0">
           {activePreset === "media" ? (

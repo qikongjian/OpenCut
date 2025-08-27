@@ -49,7 +49,14 @@
   --ai-gradient: linear-gradient(97deg, #6b57ffb3, #3f62ffb3 50%, #00cae0b3);
   --ai-gradient-hover: linear-gradient(97deg, #6b57ffd9, #3f62ffd9 50%, #00cae0d9);
   --ai-gradient-disabled: linear-gradient(97deg, #6b57ff66, #3f62ff66 50%, #00cae066);
-  --ai-gradient-disabled: linear-gradient(97deg, #6b57ff66, #3f62ff66 50%, #00cae066);
+
+  /* MovieFlow AI Editor Theme Colors */
+  --movieflow-gradient: linear-gradient(to right, rgb(106, 244, 249) 30%, rgb(199, 59, 255) 70%);
+  --movieflow-gradient-hover: linear-gradient(to right, rgba(106, 244, 249, 0.9) 30%, rgba(199, 59, 255, 0.9) 70%);
+  --movieflow-gradient-disabled: linear-gradient(to right, rgba(106, 244, 249, 0.4) 30%, rgba(199, 59, 255, 0.4) 70%);
+  --movieflow-primary: rgb(106, 244, 249);
+  --movieflow-secondary: rgb(199, 59, 255);
+  --movieflow-accent: rgba(106, 244, 249, 0.1);
 
   /* Radius base */
   --radius: 1rem;
@@ -95,7 +102,14 @@
   --ai-gradient: linear-gradient(97deg, #6b57ffcc, #3f62ffcc 50%, #00cae0cc);
   --ai-gradient-hover: linear-gradient(97deg, #6b57ffe6, #3f62ffe6 50%, #00cae0e6);
   --ai-gradient-disabled: linear-gradient(97deg, #6b57ff80, #3f62ff80 50%, #00cae080);
-  --ai-gradient-disabled: linear-gradient(97deg, #6b57ff66, #3f62ff66 50%, #00cae066);
+
+  /* MovieFlow AI Editor Theme Colors - Dark Mode */
+  --movieflow-gradient: linear-gradient(to right, rgba(106, 244, 249, 0.8) 30%, rgba(199, 59, 255, 0.8) 70%);
+  --movieflow-gradient-hover: linear-gradient(to right, rgba(106, 244, 249, 0.9) 30%, rgba(199, 59, 255, 0.9) 70%);
+  --movieflow-gradient-disabled: linear-gradient(to right, rgba(106, 244, 249, 0.3) 30%, rgba(199, 59, 255, 0.3) 70%);
+  --movieflow-primary: rgba(106, 244, 249, 0.8);
+  --movieflow-secondary: rgba(199, 59, 255, 0.8);
+  --movieflow-accent: rgba(106, 244, 249, 0.15);
 }
 
 @layer base {
@@ -279,4 +293,76 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* AI Editor MovieFlow Theme Styles */
+@utility movieflow-gradient-bg {
+  background: var(--movieflow-gradient);
+}
+
+@utility movieflow-gradient-hover {
+  &:hover {
+    background: var(--movieflow-gradient-hover);
+  }
+}
+
+@utility movieflow-gradient-disabled {
+  &:disabled {
+    background: var(--movieflow-gradient-disabled);
+  }
+}
+
+@utility movieflow-gradient-text {
+  background: var(--movieflow-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* AI Editor specific styles */
+.ai-editor-page {
+  /* Button styles with MovieFlow theme */
+  .movieflow-button {
+    background: var(--movieflow-gradient);
+    border: none;
+    color: white;
+    transition: all 0.3s ease;
+  }
+
+  .movieflow-button:hover {
+    background: var(--movieflow-gradient-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(106, 244, 249, 0.3);
+  }
+
+  .movieflow-button:disabled {
+    background: var(--movieflow-gradient-disabled);
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Icon highlight styles */
+  .movieflow-icon-highlight {
+    color: var(--movieflow-primary);
+    filter: drop-shadow(0 0 4px rgba(106, 244, 249, 0.5));
+  }
+
+  /* Timeline video selection styles */
+  .timeline-element-selected {
+    border: 2px solid var(--movieflow-primary) !important;
+    box-shadow: 0 0 8px rgba(106, 244, 249, 0.6) !important;
+  }
+
+  .timeline-element-selected::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--movieflow-gradient);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0.3;
+  }
 }

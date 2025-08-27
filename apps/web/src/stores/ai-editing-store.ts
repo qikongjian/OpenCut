@@ -4,7 +4,6 @@
 // 最后更新: 2025/1/8
 
 import { create } from "zustand";
-import { toast } from "sonner";
 import { AIEditingData, AIEditingPlan, CreateMediaElement } from "@/types/timeline";
 import { useTimelineStore } from "./timeline-store";
 import { useMediaStore } from "./media-store";
@@ -390,11 +389,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
   // 加载AI剪辑数据
   loadAIEditingData: (data: AIEditingData) => {
-    set({ 
+    set({
       aiEditingData: data,
       currentEditingPlan: data.editing_plan.editing_sequence_plans[0] || null
     });
-    toast.success("AI剪辑计划加载成功");
   },
 
   // 设置当前剪辑计划
@@ -406,7 +404,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   executeEditingPlan: async () => {
     const { currentEditingPlan } = get();
     if (!currentEditingPlan) {
-      toast.error("没有可执行的剪辑计划");
       return;
     }
 
@@ -794,15 +791,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       // 更新成功消息，包含字幕信息
       const subtitleMessage = subtitleCount > 0 ? `，${subtitleCount}个字幕` : '';
 
-      if (remoteUrls > 0) {
-        toast.success(`AI剪辑完成! ${localFiles}个视频已下载，${remoteUrls}个使用远程URL（CORS限制），总时长${timelinePosition.toFixed(1)}秒${subtitleMessage}。`);
-      } else {
-        toast.success(`AI剪辑完成! 已下载${totalClips}个视频到本地并连续排列，总时长${timelinePosition.toFixed(1)}秒${subtitleMessage}。`);
-      }
+
       
     } catch (error) {
       console.error("执行剪辑计划失败:", error);
-      toast.error("执行剪辑计划失败");
     } finally {
       set({
         isExecutingPlan: false,
@@ -861,7 +853,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     });
     window.dispatchEvent(zoomEvent);
 
-    toast.info(`🔍 已调整缩放至 ${optimalZoomLevel.toFixed(2)}x (90%显示)，总时长 ${totalDuration.toFixed(1)}秒`);
+
 
     return optimalZoomLevel;
   },
@@ -870,7 +862,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   executeVisualEditingPlan: async () => {
     const { currentEditingPlan, isShowingOriginalVideo, originalVideoTrackId } = get();
     if (!currentEditingPlan) {
-      toast.error("没有可执行的剪辑计划");
       return;
     }
 
@@ -932,8 +923,7 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         visualEditingState: 'completed'
       });
 
-      // 🎉 成功提示
-      toast.success("🎉 可视化剪辑完成！已应用一键剪辑结果和字幕");
+
 
       // 🎯 延迟清理状态，让用户看到完成状态
       setTimeout(() => {
@@ -947,7 +937,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
     } catch (error) {
       console.error("可视化剪辑失败:", error);
-      toast.error("可视化剪辑失败");
     } finally {
       set({
         isExecutingPlan: false,
@@ -1378,10 +1367,8 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
             if (trackId) {
               console.log(`✅ AI字幕已成功添加到时间轴，共 ${finalTextElements.length} 条字幕`);
-              toast.success(`成功添加 ${finalTextElements.length} 条AI字幕到时间轴`);
             } else {
-              console.error("❌ 字幕轨道创建失败");
-              toast.error("字幕轨道创建失败");
+              console.error("❌字幕轨道创建失败");
             }
           } else {
             console.warn("⚠️ 没有解析出有效的字幕元素");
@@ -1391,7 +1378,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         }
       } catch (error) {
         console.error("❌ 添加AI字幕失败:", error);
-        toast.error("添加AI字幕失败");
       }
     } else {
       console.warn("⚠️ AI剪辑数据中没有字幕数据");
@@ -1495,7 +1481,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     });
 
     // 这里可以添加预览逻辑，比如在预览面板中显示对应的视频片段
-    toast.info(`预览片段: ${currentEditingPlan.timeline_clips[clipIndex].sequence_clip_id}`);
   },
 
   // 停止预览
@@ -1526,7 +1511,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   showOriginalVideoInTimeline: async () => {
     const { currentEditingPlan } = get();
     if (!currentEditingPlan) {
-      toast.error("没有可用的剪辑计划");
       return;
     }
 
@@ -1546,7 +1530,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
       console.log(`🚀 开始并行处理 ${allClips.length} 个视频片段`);
 
       if (allClips.length === 0) {
-        toast.error("没有找到视频片段");
         return;
       }
 
@@ -1757,11 +1740,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         note: "显示的是完整原视频，不是剪辑后的片段"
       });
 
-      toast.success(`✅ 已显示所有 ${mediaItems.length} 个完整原视频 (${uniqueUrls} 个不同视频，原视频总时长: ${currentTimelinePosition.toFixed(1)}秒)`);
+
 
     } catch (error) {
       console.error("显示原始视频失败:", error);
-      toast.error(`显示原始视频失败: ${error instanceof Error ? error.message : '未知错误'}`);
       set({
         visualEditingState: 'idle',
         isShowingOriginalVideo: false // 🔧 修复：出错时也要重置状态
@@ -1790,7 +1772,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
   generateAIEditingPlanFromAPI: async (projectId: string) => {
     // 验证项目ID
     if (!validateProjectId(projectId)) {
-      toast.error("无效的项目ID格式");
       return;
     }
 
@@ -1845,7 +1826,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         isLoadingPlan: false
       });
 
-      toast.success("AI剪辑计划生成成功！");
       console.log('✅ AI剪辑计划加载完成，数据已存储到store');
 
     } catch (error) {
@@ -1859,7 +1839,6 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         errorMessage = `生成失败: ${error.message}`;
       }
 
-      toast.error(errorMessage);
       set({ isLoadingPlan: false });
     }
   },

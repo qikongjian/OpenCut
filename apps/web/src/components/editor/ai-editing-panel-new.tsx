@@ -183,8 +183,8 @@ export function AIEditingPanelNew() {
       {/* 🎨 Modern header design */}
       <div className="flex items-center justify-between p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm">
-            <Bot className="w-4 h-4 text-primary-foreground" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg movieflow-gradient-bg shadow-sm">
+            <Bot className="w-4 h-4 text-white movieflow-icon-highlight" />
           </div>
           <div>
             <h3 className="font-semibold text-sm text-foreground">AI Smart Editing</h3>
@@ -206,8 +206,8 @@ export function AIEditingPanelNew() {
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
               {/* Icon and title */}
               <div className="relative mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 flex items-center justify-center mb-4 mx-auto">
-                  <Bot className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                <div className="w-16 h-16 rounded-2xl movieflow-gradient-bg flex items-center justify-center mb-4 mx-auto">
+                  <Bot className="w-8 h-8 text-white movieflow-icon-highlight" />
                 </div>
                 <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center">
                   <Zap className="w-3 h-3 text-white" />
@@ -265,8 +265,7 @@ export function AIEditingPanelNew() {
                 onClick={handleGenerateAIEditingPlan}
                 disabled={isLoadingPlan}
                 size="default"
-                variant="ai-gradient"
-                className="w-full max-w-sm ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm"
+                className="w-full max-w-sm movieflow-button movieflow-gradient-bg movieflow-gradient-hover movieflow-gradient-disabled backdrop-blur-sm"
               >
                 {isLoadingPlan ? (
                   <>
@@ -275,7 +274,7 @@ export function AIEditingPanelNew() {
                   </>
                 ) : (
                   <>
-                    <Bot className="w-4 h-4 mr-2" />
+                    <Bot className="w-4 h-4 mr-2 movieflow-icon-highlight" />
                     Generate AI Editing Plan
                   </>
                 )}
@@ -330,12 +329,12 @@ export function AIEditingPanelNew() {
                     </>
                   ) : isShowingOriginalVideo ? (
                     <>
-                      <CheckCircle className="w-3 h-3 mr-2 text-green-600" />
+                      <CheckCircle className="w-3 h-3 mr-2 movieflow-icon-highlight" />
                       Original video shown
                     </>
                   ) : (
                     <>
-                      <Film className="w-3 h-3 mr-2 text-blue-600" />
+                      <Film className="w-3 h-3 mr-2 movieflow-icon-highlight" />
                       Show complete original video
                     </>
                   )}
@@ -345,8 +344,7 @@ export function AIEditingPanelNew() {
                   onClick={handleExecuteEditing}
                   disabled={isExecutingPlan}
                   size="sm"
-                  variant="ai-gradient"
-                  className="w-full justify-start text-xs ai-gradient-bg ai-gradient-hover ai-gradient-disabled backdrop-blur-sm"
+                  className="w-full justify-start text-xs movieflow-button movieflow-gradient-bg movieflow-gradient-hover movieflow-gradient-disabled backdrop-blur-sm"
                 >
                   {isExecutingPlan ? (
                     <>
@@ -355,12 +353,12 @@ export function AIEditingPanelNew() {
                     </>
                   ) : isShowingOriginalVideo ? (
                     <>
-                      <Zap className="w-3 h-3 mr-2" />
+                      <Zap className="w-3 h-3 mr-2 movieflow-icon-highlight" />
                       Start visual editing
                     </>
                   ) : (
                     <>
-                      <Zap className="w-3 h-3 mr-2" />
+                      <Zap className="w-3 h-3 mr-2 movieflow-icon-highlight" />
                       Start One-Click Edit
                     </>
                   )}
@@ -373,8 +371,8 @@ export function AIEditingPanelNew() {
               <div className="p-4 border-b border-border/40">
                 <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
                   <div className="flex items-center gap-2 mb-2">
-                    <Clock className="w-4 h-4 text-blue-600 animate-spin" />
-                    <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    <Clock className="w-4 h-4 movieflow-icon-highlight animate-spin" />
+                    <span className="text-sm font-medium movieflow-gradient-text">
                       Executing editing plan
                     </span>
                     <Badge variant="secondary" className="text-xs ml-auto">
@@ -471,7 +469,7 @@ export function AIEditingPanelNew() {
                               className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               {isPreviewMode && previewClipIndex === index ? (
-                                <Eye className="w-3 h-3 text-blue-600" />
+                                <Eye className="w-3 h-3 movieflow-icon-highlight" />
                               ) : (
                                 <Play className="w-3 h-3" />
                               )}
@@ -520,7 +518,7 @@ export function AIEditingPanelNew() {
                                 className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Locate source video"
                               >
-                                <Search className="w-3 h-3 text-blue-500" />
+                                <Search className="w-3 h-3 movieflow-icon-highlight" />
                               </Button>
                             </div>
                           </div>

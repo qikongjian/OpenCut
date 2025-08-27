@@ -187,22 +187,13 @@ export const AI_EDITING_STAGES = {
     ],
   },
   'applying-result': {
-    range: [80, 90],
-    duration: 10000, // 10秒
+    range: [80, 100],
+    duration: 15000, // 15秒
     messages: [
       '应用剪辑结果...',
       '添加AI字幕...',
       '优化时间轴...',
-    ],
-  },
-  'exporting': {
-    range: [90, 100],
-    duration: 15000, // 15秒
-    messages: [
-      '准备导出...',
-      '处理视频文件...',
-      '生成最终视频...',
-      '准备下载...',
+      '完成剪辑流程...',
     ],
   },
 } as const;
