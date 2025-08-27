@@ -3,7 +3,7 @@ import { z } from "zod";
 import { AwsClient } from "aws4fetch";
 import { nanoid } from "nanoid";
 import { env } from "@/env";
-import { baseRateLimit } from "@/lib/rate-limit";
+import { safeRateLimit } from "@/lib/rate-limit";
 import { isTranscriptionConfigured } from "@/lib/transcription-utils";
 
 const uploadRequestSchema = z.object({
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const ip = request.headers.get("x-forwarded-for") ?? "anonymous";
-    const { success } = await baseRateLimit.limit(ip);
+    const { success } = await safeRateLimit.limit(ip);
 
     if (!success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });

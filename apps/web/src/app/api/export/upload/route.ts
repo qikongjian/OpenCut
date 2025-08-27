@@ -16,6 +16,14 @@ import { ASSGenerator } from "@/lib/export/ass-generator";
 export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
   let workDir: string | null = null;
+  
+  // 从URL中获取项目ID
+  const url = new URL(req.url);
+  const projectId = url.searchParams.get('project_id');
+  
+  console.log('📋 导出请求信息:');
+  console.log('  - 项目ID:', projectId || '未提供');
+  console.log('  - 请求URL:', req.url);
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -76,14 +84,53 @@ export async function POST(req: NextRequest) {
         const outputPath = join(workDir, 'output.mp4');
         const stats = await fs.stat(outputPath);
 
-        // 提取导出ID（去掉前缀和后缀）
-        const exportId = workDir.split('/').pop()?.replace('opencut-stream-export-', '') || '';
+        // 提取导出ID（去掉前缀）
+        const exportId = workDir.split('/').pop()?.replace('video-export-upload-', '') || '';
+
+        // 🚀 新增：同步上传到七牛云
+        let qiniuUrl = null;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'progress',
+            stage: 'uploading',
+            message: '正在上传到七牛云...',
+            progress: 0.9,
+          })}\n\n`));
+
+          const qiniuResult = await uploadToQiniu(outputPath, exportId);
+          
+          if (qiniuResult.success) {
+            qiniuUrl = qiniuResult.url;
+            console.log('✅ 七牛云上传成功:', qiniuUrl);
+          } else {
+            console.warn('⚠️ 七牛云上传失败:', qiniuResult.error);
+          }
+        } catch (error) {
+          console.warn('⚠️ 七牛云上传异常:', error);
+        }
+
+        // 🚀 新增：调用任务结果更新接口
+        if (qiniuUrl) {
+          try {
+            // 使用项目ID而不是导出ID
+            const actualProjectId = projectId || exportId;
+            console.log('🎬 准备调用粗剪视频接口:');
+            console.log('  - 使用项目ID:', actualProjectId);
+            console.log('  - 导出ID:', exportId);
+            
+            await updateTaskResult(qiniuUrl, actualProjectId);
+            console.log('✅ 任务结果更新成功');
+          } catch (error) {
+            console.warn('⚠️ 任务结果更新失败:', error);
+          }
+        }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'complete',
           downloadUrl: `/api/export/download/${exportId}`,
           size: stats.size,
           duration: ir.duration / 1000,
+          qiniuUrl: qiniuUrl, // 新增：七牛云URL
         })}\n\n`));
 
       } catch (error) {
@@ -345,4 +392,107 @@ function executeFFmpegWithProgress(
 
     ffmpeg.on('error', reject);
   });
+}
+
+/**
+ * 上传文件到七牛云
+ */
+async function uploadToQiniu(filePath: string, exportId: string): Promise<{
+  success: boolean;
+  url?: string;
+  error?: string;
+}> {
+  try {
+    // 创建七牛云上传器
+    const { QiniuUploader } = await import('@/lib/qiniu-uploader');
+    const uploader = new QiniuUploader();
+    
+    // 检查配置
+    if (!uploader.isConfigured()) {
+      return {
+        success: false,
+        error: '七牛云配置不完整'
+      };
+    }
+
+    // 上传视频文件
+    const targetFileName = `export_${exportId}.mp4`;
+    const result = await uploader.uploadVideo(filePath, targetFileName);
+    
+    if (result.success) {
+      return {
+        success: true,
+        url: result.url
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error
+      };
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `七牛云上传失败: ${error instanceof Error ? error.message : String(error)}`
+    };
+  }
+}
+
+/**
+ * 更新任务结果
+ */
+async function updateTaskResult(qiniuUrl: string, exportId: string): Promise<void> {
+  try {
+    console.log('🎬 开始调用粗剪视频接口:');
+    console.log('  - 七牛云视频URL:', qiniuUrl);
+    console.log('  - 导出ID:', exportId);
+    
+    // 构建任务结果数据
+    const taskResult = {
+      task_result: JSON.stringify({
+        video: qiniuUrl
+      }),
+      task_name: "generate_final_simple_video",
+      project_id: exportId
+    };
+
+    console.log('📤 粗剪视频接口入参:');
+    console.log('  - task_result:', taskResult.task_result);
+    console.log('  - task_name:', taskResult.task_name);
+    console.log('  - project_id:', taskResult.project_id);
+
+    // 直接调用外部粗剪视频API，而不是通过自己的后端API
+    const externalApiUrl = 'https://77.smartvideo.py.qikongjian.com/movie/update_task_result';
+    console.log('📡 调用外部粗剪视频API:', externalApiUrl);
+    
+    const response = await fetch(externalApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'OpenCut/1.0',
+      },
+      body: JSON.stringify(taskResult),
+    });
+
+    console.log('📥 外部API响应:');
+    console.log('  - 状态码:', response.status);
+    console.log('  - 状态文本:', response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ 外部API响应错误:', response.status, response.statusText);
+      console.error('错误详情:', errorText);
+      throw new Error(`外部API错误: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('📥 外部API返回数据:', result);
+    
+    console.log('✅ 粗剪视频接口调用成功');
+
+  } catch (error) {
+    console.error('❌ 更新任务结果失败:', error);
+    throw error;
+  }
 }

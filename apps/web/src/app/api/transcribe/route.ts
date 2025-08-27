@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/env";
-import { baseRateLimit } from "@/lib/rate-limit";
+import { safeRateLimit } from "@/lib/rate-limit";
 import { isTranscriptionConfigured } from "@/lib/transcription-utils";
 
 const transcribeRequestSchema = z.object({
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting
     const ip = request.headers.get("x-forwarded-for") ?? "anonymous";
-    const { success } = await baseRateLimit.limit(ip);
+    const { success } = await safeRateLimit.limit(ip);
     const origin = request.headers.get("origin");
 
     if (!success) {

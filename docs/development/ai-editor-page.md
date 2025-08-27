@@ -17,7 +17,7 @@
 ### 访问方式
 
 1. **通过项目页面**: 在项目卡片的下拉菜单中选择 "Open in AI Editor"
-2. **直接访问**: `http://localhost:3001/ai-editor/{project_id}`
+2. **直接访问**: `http://localhost:3000/ai-editor/{project_id}`
 
 ## 🎯 主要功能
 
@@ -163,12 +163,12 @@ await createNewProject('AI Editing Project', projectId)
 
 ### 开发环境
 
-- 确保开发服务器运行在端口 3001
+- 确保开发服务器运行在端口 3000
 - 使用 `bun dev` 启动完整的开发环境
 
 ### 测试方法
 
-1. 访问 http://localhost:3001/projects
+1. 访问 http://localhost:3000/projects
 2. 创建或选择一个项目
 3. 使用下拉菜单中的 "Open in AI Editor" 选项
 4. 验证页面正常加载和功能正常

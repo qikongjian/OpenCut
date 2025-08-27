@@ -13,19 +13,24 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
-    UPSTASH_REDIS_REST_URL: z.string().url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string(),
-    FREESOUND_CLIENT_ID: z.string(),
-    FREESOUND_API_KEY: z.string(),
+    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+    FREESOUND_CLIENT_ID: z.string().optional(),
+    FREESOUND_API_KEY: z.string().optional(),
     // R2 / Cloudflare
-    CLOUDFLARE_ACCOUNT_ID: z.string(),
-    R2_ACCESS_KEY_ID: z.string(),
-    R2_SECRET_ACCESS_KEY: z.string(),
-    R2_BUCKET_NAME: z.string(),
+    CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+    R2_ACCESS_KEY_ID: z.string().optional(),
+    R2_SECRET_ACCESS_KEY: z.string().optional(),
+    R2_BUCKET_NAME: z.string().optional(),
     // Modal transcription
-    MODAL_TRANSCRIPTION_URL: z.string(),
+    MODAL_TRANSCRIPTION_URL: z.string().optional(),
     // AI剪辑计划API
     AI_EDITING_PLAN_API_URL: z.string().url().optional(),
+    // 七牛云配置
+    QINIU_ACCESS_KEY: z.string().optional(),
+    QINIU_SECRET_KEY: z.string().optional(),
+    QINIU_BUCKET_NAME: z.string().optional(),
+    QINIU_DOMAIN: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_AI_EDITING_PLAN_API_URL: z.string().url().optional(),
@@ -48,5 +53,10 @@ export const env = createEnv({
     // AI剪辑计划API
     AI_EDITING_PLAN_API_URL: process.env.AI_EDITING_PLAN_API_URL,
     NEXT_PUBLIC_AI_EDITING_PLAN_API_URL: process.env.NEXT_PUBLIC_AI_EDITING_PLAN_API_URL,
+    // 七牛云配置
+    QINIU_ACCESS_KEY: process.env.QINIU_ACCESS_KEY,
+    QINIU_SECRET_KEY: process.env.QINIU_SECRET_KEY,
+    QINIU_BUCKET_NAME: process.env.QINIU_BUCKET_NAME,
+    QINIU_DOMAIN: process.env.QINIU_DOMAIN,
   },
 });

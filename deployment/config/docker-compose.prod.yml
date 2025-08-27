@@ -7,7 +7,7 @@ services:
     container_name: smartcut-container
     restart: unless-stopped
     ports:
-      - '3001:3000'
+      - '3000:3000'
     env_file:
       - .env.production
     depends_on:

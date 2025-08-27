@@ -68,7 +68,7 @@ const getProjectId = () => {
 
 ### 1. 在URL中指定项目ID
 ```
-http://localhost:3001/editor/dae204bc-1a62-481a-93ba-af378a05294b
+http://localhost:3000/editor/dae204bc-1a62-481a-93ba-af378a05294b
 ```
 
 ### 2. 点击"生成AI剪辑计划"按钮
@@ -102,7 +102,7 @@ node test-ai-api.js
 
 ### 2. 浏览器测试页面
 ```
-http://localhost:3001/test-ai-api
+http://localhost:3000/test-ai-api
 ```
 
 ### 3. 模拟数据打印测试

@@ -736,7 +736,16 @@ export class BackendExporter {
       }
     }
 
-    const response = await fetch('/api/export/upload', {
+    // 获取当前项目ID
+    const currentProjectId = this.getCurrentProjectId();
+    const uploadUrl = currentProjectId 
+      ? `/api/export/upload?project_id=${currentProjectId}`
+      : '/api/export/upload';
+    
+    console.log('📤 调用导出API:', uploadUrl);
+    console.log('  - 项目ID:', currentProjectId || '未获取到');
+    
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
       signal: this.abortController?.signal,
@@ -1225,6 +1234,53 @@ export class BackendExporter {
     } catch (error) {
       console.error('❌ 时间码转换失败:', timecode, error);
       return 0;
+    }
+  }
+
+  /**
+   * 获取当前项目ID
+   */
+  private getCurrentProjectId(): string | null {
+    try {
+      // 方法1: 从URL中获取项目ID
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname;
+        const projectIdMatch = pathname.match(/\/editor\/([^\/]+)/);
+        if (projectIdMatch) {
+          const projectId = projectIdMatch[1];
+          console.log('🔍 从URL获取项目ID:', projectId);
+          return projectId;
+        }
+      }
+
+      // 方法2: 从AI编辑store中获取项目ID
+      try {
+        const aiEditingStore = useAIEditingStore.getState();
+        if (aiEditingStore.aiEditingData?.project_id) {
+          const projectId = aiEditingStore.aiEditingData.project_id;
+          console.log('🔍 从AI编辑store获取项目ID:', projectId);
+          return projectId;
+        }
+      } catch (error) {
+        console.warn('⚠️ 无法从AI编辑store获取项目ID:', error);
+      }
+
+      // 方法3: 从时间轴store中获取项目ID
+      try {
+        const timelineStore = useTimelineStore.getState();
+        if (timelineStore.projectId) {
+          console.log('🔍 从时间轴store获取项目ID:', timelineStore.projectId);
+          return timelineStore.projectId;
+        }
+      } catch (error) {
+        console.warn('⚠️ 无法从时间轴store获取项目ID:', error);
+      }
+
+      console.warn('⚠️ 无法获取项目ID，将使用导出ID作为替代');
+      return null;
+    } catch (error) {
+      console.error('❌ 获取项目ID失败:', error);
+      return null;
     }
   }
 }

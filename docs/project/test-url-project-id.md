@@ -6,7 +6,7 @@
 ## 测试步骤
 
 ### 1. 测试URL项目ID加载
-- 访问: `http://localhost:3001/editor/dae204bc-1a62-481a-93ba-af378a05294b`
+- 访问: `http://localhost:3000/editor/dae204bc-1a62-481a-93ba-af378a05294b`
 - 预期结果: 
   - 页面正常加载
   - 不会重定向到新的项目ID

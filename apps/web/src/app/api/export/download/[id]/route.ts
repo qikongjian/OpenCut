@@ -27,6 +27,7 @@ export async function GET(
 
     // 构建文件路径 - 支持多种导出类型
     const possibleWorkDirs = [
+      join(tmpdir(), `video-export-upload-${id}`), // 上传导出
       join(tmpdir(), `incremental-export-${id}`), // 增量导出
       join(tmpdir(), `opencut-stream-export-${id}`),
       join(tmpdir(), `ai-clips-export-${id}`),
@@ -43,8 +44,10 @@ export async function GET(
         await fs.access(testPath);
         outputPath = testPath;
         foundWorkDir = workDir;
+        console.log('✅ Found file at:', testPath);
         break;
       } catch {
+        console.log('❌ Path not found:', testPath);
         // 继续尝试下一个路径
       }
     }
