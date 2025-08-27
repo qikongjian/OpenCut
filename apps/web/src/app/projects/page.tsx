@@ -463,6 +463,12 @@ function ProjectCard({
                   e.stopPropagation();
                 }}
               >
+                <DropdownMenuItem asChild>
+                  <Link href={`/ai-editor/${project.id}`} className="w-full">
+                    Open in AI Editor
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.preventDefault();
