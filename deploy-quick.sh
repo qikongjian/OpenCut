@@ -4,7 +4,7 @@
 # 优化版本，支持压缩包检测和选择
 
 # 配置
-PROJECT_PATH="/Users/lishuqing/PycharmProjects/OpenCut"
+PROJECT_PATH="/Users/Shared/Relocated Items/Security/myDesk/my-pro/OpenCut"
 SERVER="mf@39.105.24.90"
 SERVER_PATH="/home/mf"
 REMOTE_PROJECT_PATH="/home/mf/OpenCut"

@@ -38,6 +38,7 @@ import {
   PrivacyLevel
 } from "@/types/export";
 import { toast } from "sonner";
+import { downloadExportResult } from "@/lib/download-utils";
 
 interface ExportButtonProps {
   className?: string;
@@ -143,21 +144,36 @@ export function ExportButton({
           description: `文件大小: ${(result.size! / 1024 / 1024).toFixed(1)}MB`,
           action: {
             label: "下载",
-            onClick: () => {
-              const a = document.createElement('a');
-              a.href = result.url!;
-              a.download = result.filename!;
-              a.click();
+            onClick: async () => {
+              // 🚀 修复：手动下载使用统一的下载工具
+              const success = await downloadExportResult(
+                result.url!,
+                result.filename!,
+                result.size
+              );
+
+              if (!success) {
+                toast.error('手动下载失败', {
+                  description: '请尝试重新导出'
+                });
+              }
             },
           },
         });
 
-        // 自动下载
+        // 🚀 修复：使用统一的下载工具，确保直接下载
         if (result.url) {
-          const a = document.createElement('a');
-          a.href = result.url;
-          a.download = result.filename || 'ai-video-export.mp4';
-          a.click();
+          const success = await downloadExportResult(
+            result.url,
+            result.filename || 'ai-video-export.mp4',
+            result.size
+          );
+
+          if (!success) {
+            toast.error('自动下载失败', {
+              description: '请点击下载按钮手动下载'
+            });
+          }
         }
 
       } else {
@@ -198,32 +214,34 @@ export function ExportButton({
           description: `文件大小: ${(result.size / 1024 / 1024).toFixed(1)}MB`,
           action: {
             label: "下载",
-            onClick: () => {
-              try {
-                const a = document.createElement('a');
-                a.href = result.url;
-                a.download = result.filename || 'export.mp4';
-                a.click();
-              } catch (downloadError) {
-                console.error('Manual download failed:', downloadError);
+            onClick: async () => {
+              // 🚀 修复：手动下载使用统一的下载工具
+              const success = await downloadExportResult(
+                result.url,
+                result.filename || 'export.mp4',
+                result.size
+              );
+
+              if (!success) {
                 toast.error('手动下载失败', {
-                  description: '请尝试重新Export'
+                  description: '请尝试重新导出'
                 });
               }
             },
           },
         });
 
-        // 自动下载
-        try {
-          const a = document.createElement('a');
-          a.href = result.url;
-          a.download = result.filename || 'export.mp4';
-          a.click();
-          console.log('✅ Auto download triggered successfully');
-        } catch (autoDownloadError) {
-          console.error('Auto download failed:', autoDownloadError);
-          // 自动下载失败不显示错误，用户可以手动点击下载按钮
+        // 🚀 修复：使用统一的下载工具，确保直接下载
+        const success = await downloadExportResult(
+          result.url,
+          result.filename || 'export.mp4',
+          result.size
+        );
+
+        if (!success) {
+          toast.error('自动下载失败', {
+            description: '请点击下载按钮手动下载'
+          });
         }
       }
 

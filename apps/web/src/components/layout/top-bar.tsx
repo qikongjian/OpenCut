@@ -121,7 +121,7 @@ export function TopBar({ collapsed, onToggleSidebar }: { collapsed: boolean; onT
               <span>
                 <h1 className="logo text-2xl font-bold">
                   <GradientText
-                    text="MovieFlow"
+                    text="SmartCut"
                     startPercentage={30}
                     endPercentage={70}
                   />
@@ -130,7 +130,7 @@ export function TopBar({ collapsed, onToggleSidebar }: { collapsed: boolean; onT
               <span>
                 <h1 className="logo text-2xl font-bold">
                   <GradientText
-                    text="MovieFlow"
+                    text="SmartCut"
                     startPercentage={30}
                     endPercentage={70}
                   />

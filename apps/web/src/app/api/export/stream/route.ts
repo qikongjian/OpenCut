@@ -195,14 +195,18 @@ function executeFFmpegWithProgress(
         const minutes = parseInt(timeMatch[2]);
         const seconds = parseInt(timeMatch[3]);
         const currentTime = hours * 3600 + minutes * 60 + seconds;
-        
-        const progress = Math.min(0.4 + (currentTime / totalDurationSeconds) * 0.5, 0.9);
-        
+
+        // 🚀 修复：确保进度不超过100%
+        const rawProgress = totalDurationSeconds > 0 ? currentTime / totalDurationSeconds : 0;
+        const encodingProgress = Math.min(rawProgress, 1); // 限制在100%以内
+        const overallProgress = Math.min(0.4 + encodingProgress * 0.5, 0.9);
+        const displayPercentage = Math.min(Math.round(encodingProgress * 100), 100); // 显示百分比限制在100%
+
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'progress',
           stage: 'encoding',
-          message: `编码进度: ${Math.round(progress * 100)}%`,
-          progress,
+          message: `编码进度: ${displayPercentage}%`,
+          progress: overallProgress,
           currentTime,
           totalTime: totalDurationSeconds,
         })}\n\n`));

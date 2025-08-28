@@ -10,6 +10,13 @@ import { defaultFont } from "../lib/font-config";
 import { BotIdClient } from "botid/client";
 import { env } from "@/env";
 
+// 初始化File polyfill以解决生产环境兼容性问题
+if (typeof window !== 'undefined') {
+  import('@/lib/file-polyfill').then(({ initFilePolyfill }) => {
+    initFilePolyfill();
+  }).catch(console.error);
+}
+
 export const metadata = baseMetaData;
 
 const protectedRoutes = [

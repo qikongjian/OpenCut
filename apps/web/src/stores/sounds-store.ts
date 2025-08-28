@@ -243,9 +243,9 @@ export const useSoundsStore = create<SoundsStore>((set, get) => ({
         throw new Error(`Failed to download audio: ${response.statusText}`);
 
       const blob = await response.blob();
-      const file = new File([blob], `${sound.name}.mp3`, {
-        type: "audio/mpeg",
-      });
+      // 🚀 修复：使用兼容性工具创建File对象
+      const { createFileFromBlob } = await import('@/lib/file-polyfill');
+      const file = createFileFromBlob(blob, `${sound.name}.mp3`, { type: "audio/mpeg" });
 
       const mediaItem = await useMediaStore.getState().addMediaItem(activeProject.id, {
         name: sound.name,

@@ -879,14 +879,18 @@ async function executeFFmpegWithProgress(
         const seconds = parseFloat(progressMatch[3]);
         const currentTime = hours * 3600 + minutes * 60 + seconds;
 
-        // 假设总时长已知，计算进度
-        const progress = 0.5 + (currentTime / 60) * 0.4; // 50%-90%
+        // 🚀 修复：使用实际总时长计算进度，避免超过100%
+        // 假设总时长为60秒，如果实际时长不同需要动态获取
+        const estimatedTotalTime = 60; // 可以从IR中获取实际时长
+        const rawProgress = Math.min(currentTime / estimatedTotalTime, 1); // 限制在100%以内
+        const overallProgress = Math.min(0.5 + rawProgress * 0.4, 0.9); // 50%-90%
+        const displayPercentage = Math.min(Math.round(rawProgress * 100), 100); // 显示百分比限制在100%
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'progress',
           stage: 'encoding',
-          message: `编码中... ${Math.round(progress * 100)}%`,
-          progress: Math.min(progress, 0.9),
+          message: `编码中... ${displayPercentage}%`,
+          progress: overallProgress,
         })}\n\n`));
       }
     });

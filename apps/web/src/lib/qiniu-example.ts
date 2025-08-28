@@ -118,7 +118,9 @@ export class QiniuIntegrationExample {
       try {
         // 创建一个测试文件
         const testBlob = new Blob(['test'], { type: 'text/plain' });
-        const testFile = new File([testBlob], 'test.txt');
+        // 🚀 修复：使用兼容性工具创建File对象
+        const { createFileFromBlob } = await import('@/lib/file-polyfill');
+        const testFile = createFileFromBlob(testBlob, 'test.txt');
         
         const result = await qiniuClient.uploadFile(testFile, { 
           keyPrefix: 'test',

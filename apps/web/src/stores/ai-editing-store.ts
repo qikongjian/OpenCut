@@ -490,7 +490,10 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
             }
           }
 
-          const file = new File([blob], actualFileName, { type: 'video/mp4' });
+          // 🚀 修复：使用兼容性工具创建File对象
+          const { createFileFromBlob } = await import('@/lib/file-polyfill');
+          const file = createFileFromBlob(blob, actualFileName, { type: 'video/mp4' });
+
           const localUrl = URL.createObjectURL(blob);
 
           // 获取视频时长
@@ -1016,7 +1019,9 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
         console.log(`🚀 后台下载视频: ${clip.sequence_clip_id}`);
         const response = await fetch(clip.video_url);
         const blob = await response.blob();
-        const file = new File([blob], `${clip.sequence_clip_id}.mp4`, { type: "video/mp4" });
+        // 🚀 修复：使用兼容性工具创建File对象
+        const { createFileFromBlob } = await import('@/lib/file-polyfill');
+        const file = createFileFromBlob(blob, `${clip.sequence_clip_id}.mp4`, { type: "video/mp4" });
 
         // 🎬 生成缩略图
         let thumbnailUrl: string | undefined;
@@ -1278,7 +1283,9 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
         const response = await fetch(clip.video_url);
         const blob = await response.blob();
-        const file = new File([blob], `${clip.sequence_clip_id}.mp4`, { type: "video/mp4" });
+        // 🚀 修复：使用兼容性工具创建File对象
+        const { createFileFromBlob } = await import('@/lib/file-polyfill');
+        const file = createFileFromBlob(blob, `${clip.sequence_clip_id}.mp4`, { type: "video/mp4" });
 
         // 🎬 步骤2：添加到媒体库
         console.log(`📚 添加到媒体库: ${clip.sequence_clip_id}`);

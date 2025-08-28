@@ -365,13 +365,18 @@ function executeFFmpegWithProgress(
         const minutes = parseInt(timeMatch[2]);
         const seconds = parseFloat(timeMatch[3]);
         const currentTime = hours * 3600 + minutes * 60 + seconds;
-        const progress = Math.min(0.4 + (currentTime / (totalDuration / 1000)) * 0.5, 0.9);
-        
+
+        // 🚀 修复：确保进度不超过100%
+        const totalTimeSeconds = totalDuration / 1000;
+        const rawProgress = totalTimeSeconds > 0 ? Math.min(currentTime / totalTimeSeconds, 1) : 0;
+        const overallProgress = Math.min(0.4 + rawProgress * 0.5, 0.9);
+        const displayPercentage = Math.min(Math.round(rawProgress * 100), 100);
+
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'progress',
           stage: 'encoding',
-          message: `编码中... ${Math.round(progress * 100)}%`,
-          progress,
+          message: `编码中... ${displayPercentage}%`,
+          progress: overallProgress,
         })}\n\n`));
       }
     });
