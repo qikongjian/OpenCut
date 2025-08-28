@@ -25,7 +25,8 @@ import {
   ExternalLink,
   Search,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  LogIn
 } from "lucide-react";
 import { useAIEditingStore } from "@/stores/ai-editing-store";
 import { useProjectStore } from "@/stores/project-store";
@@ -269,8 +270,8 @@ export function AIEditingPanelNew() {
               >
                 {isLoadingPlan ? (
                   <>
-                    <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Generating...
+                    <LogIn className="w-4 h-4 mr-2 animate-pulse movieflow-icon-highlight" />
+                    Loading editing plan...
                   </>
                 ) : (
                   <>

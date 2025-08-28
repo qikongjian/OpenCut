@@ -12,6 +12,7 @@ import {
   Bell,
   PanelsLeftBottom,
   Library,
+  Crown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -130,10 +131,10 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
   const rightContent = (
     <div className="flex items-center space-x-4">
       {/* Pricing Link */}
-      <Button 
-        variant="text" 
+      <Button
+        variant="text"
         size="sm"
-        onClick={() => router.push('/pricing')}
+        onClick={() => window.open('https://pre.pi.huiying.video/pricing', '_blank')}
         className="text-gray-300 hover:text-white"
       >
         Pricing
@@ -220,7 +221,17 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
                 <motion.button
                   whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
                   className="w-full flex items-center space-x-2 px-3 py-2 rounded-md text-sm text-white"
-                  onClick={() => router.push('/my-library')}
+                  onClick={() => window.open('https://pre.pi.huiying.video/pricing', '_blank')}
+                  data-alt="upgrade-button"
+                >
+                  <Crown className="h-4 w-4" />
+                  <span>升级</span>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                  className="w-full flex items-center space-x-2 px-3 py-2 rounded-md text-sm text-white"
+                  onClick={() => window.open('https://pre.pi.huiying.video/my-library', '_blank')}
                   data-alt="my-library-button"
                 >
                   <Library className="h-4 w-4" />
@@ -233,6 +244,8 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
                   onClick={() => {
                     // 处理退出登录
                     setIsUserMenuOpen(false);
+                    // 跳转到登录页面或首页
+                    window.location.href = 'https://pre.pi.huiying.video/logout';
                   }}
                   data-alt="logout-button"
                 >
@@ -326,7 +339,7 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push('/pricing')}
+              onClick={() => window.open('https://pre.pi.huiying.video/pricing', '_blank')}
               className="text-gray-300 hover:text-white"
             >
               Pricing

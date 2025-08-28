@@ -1777,6 +1777,14 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
     set({ isLoadingPlan: true });
 
+    // 显示加载消息提示
+    const { toast } = await import('sonner');
+    const loadingToastId = toast.loading('Loading editing plan...', {
+      description: 'AI is analyzing your content',
+      duration: Infinity,
+      icon: '🔄'
+    });
+
     try {
       console.log('🚀 开始从API生成AI剪辑计划:', projectId);
 
@@ -1828,18 +1836,32 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
 
       console.log('✅ AI剪辑计划加载完成，数据已存储到store');
 
+      // 隐藏加载消息并显示成功消息
+      toast.dismiss(loadingToastId);
+      toast.success('Editing plan loaded successfully!', {
+        description: `Generated ${aiEditingData.editing_plan.editing_sequence_plans[0]?.timeline_clips?.length || 0} clips`,
+        duration: 3000
+      });
+
     } catch (error) {
       console.error('❌ AI剪辑计划生成失败:', error);
 
-      let errorMessage = "AI剪辑计划生成失败";
+      let errorMessage = "Server is busy, please try again later";
 
       if (error instanceof AIEditingApiError) {
-        errorMessage = error.message;
+        errorMessage = "Server is busy, please try again later";
       } else if (error instanceof Error) {
-        errorMessage = `生成失败: ${error.message}`;
+        errorMessage = "Server is busy, please try again later";
       }
 
       set({ isLoadingPlan: false });
+
+      // 隐藏加载消息并显示错误消息
+      toast.dismiss(loadingToastId);
+      toast.error('Failed to load editing plan', {
+        description: errorMessage,
+        duration: 5000
+      });
     }
   },
 
