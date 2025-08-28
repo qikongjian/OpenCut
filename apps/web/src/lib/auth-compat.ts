@@ -14,8 +14,8 @@ interface User {
   token?: string;
 }
 
-// 存储键
-const TOKEN_KEY = 'auth_token';
+// 存储键 - 与video-flow项目保持一致
+const TOKEN_KEY = 'token';
 const USER_KEY = 'currentUser';
 
 /**
@@ -78,6 +78,39 @@ export const logoutUser = () => {
  */
 export const isAuthenticated = (): boolean => {
   return !!getToken() || !!getCurrentUser()?.token;
+};
+
+/**
+ * 鉴权检查 - 验证token是否有效
+ * 使用标准的Authorization Bearer格式，与video-flow项目保持一致
+ */
+export const checkAuth = async (): Promise<boolean> => {
+  const token = getToken();
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/login/auth`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    // 简化验证逻辑，如果请求成功就认为token有效
+    return true;
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    return false;
+  }
 };
 
 /**

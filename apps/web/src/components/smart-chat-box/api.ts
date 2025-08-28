@@ -16,33 +16,146 @@ import {
   ShotSketchGeneration,
   ShotVideoGeneration
 } from "./types";
+import { authFetchWithSmartToken, getSmartToken, initializeTokenSystem } from "@/lib/ai-editing-auth";
+import {
+  SMART_CHAT_CONFIG,
+  SmartChatError,
+  categorizeError,
+  shouldRetry,
+  calculateRetryDelay,
+  logSmartChatEvent,
+  SmartChatPerformanceMonitor
+} from "./auth-config";
 
-// 完全复制video-flow的post请求函数
+// 🚀 升级版post请求函数 - 集成健全token处理系统
 async function post<T>(url: string, data?: any): Promise<T> {
-  const token = localStorage?.getItem('token') || 'mock-token';
+  console.log('🚀 SmartChatBox API调用:', {
+    url: url,
+    hasData: !!data,
+    timestamp: new Date().toISOString()
+  });
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_SMART_API || 'https://77.smartvideo.py.qikongjian.com'}${url}`, {
+  // 🔐 确保token系统已初始化
+  await initializeTokenSystem();
+
+  // 🔍 获取最佳token
+  const tokenInfo = await getSmartToken();
+
+  if (tokenInfo) {
+    console.log(`🔑 SmartChatBox使用${tokenInfo.source}来源的token`);
+  } else {
+    console.log('⚠️ SmartChatBox未找到token，使用fallback token');
+  }
+
+  // 🌐 构建完整URL
+  const baseUrl = process.env.NEXT_PUBLIC_SMART_API || 'https://77.smartvideo.py.qikongjian.com';
+  const fullUrl = `${baseUrl}${url}`;
+
+  // 🚀 使用智能token处理的fetch
+  const response = await authFetchWithSmartToken(fullUrl, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
+    body: data ? JSON.stringify(data) : undefined,
   });
 
   if (!response.ok) {
+    console.error('❌ SmartChatBox API请求失败:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: url
+    });
     throw new Error(`HTTP error! status: ${response.status}`);
   }
 
   const result = await response.json();
 
-  // 检查业务状态码 - 复制video-flow的错误处理逻辑
+  // 检查业务状态码 - 保持video-flow的错误处理逻辑
   if (result.code !== 0) {
+    console.error('❌ SmartChatBox业务错误:', {
+      code: result.code,
+      message: result.message,
+      url: url
+    });
     throw new Error(result.message || '请求失败');
   }
 
+  console.log('✅ SmartChatBox API调用成功:', {
+    url: url,
+    code: result.code,
+    hasData: !!result.data
+  });
+
   return result;
+}
+
+// 🔄 带重试机制的智能API调用 - 升级版
+async function postWithRetry<T>(url: string, data?: any, maxRetries: number = SMART_CHAT_CONFIG.retry.maxRetries): Promise<T> {
+  const operationId = `API_${url.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
+  SmartChatPerformanceMonitor.start(operationId);
+
+  let lastError: SmartChatError | null = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      logSmartChatEvent('info', `第${attempt}次尝试调用API`, { url, attempt, maxRetries });
+
+      const result = await post<T>(url, data);
+
+      SmartChatPerformanceMonitor.end(operationId);
+      logSmartChatEvent('info', 'API调用成功', { url, attempt });
+
+      return result;
+    } catch (error) {
+      // 分类错误
+      lastError = categorizeError(error);
+
+      logSmartChatEvent('error', `第${attempt}次API调用失败`, {
+        url,
+        attempt,
+        maxRetries,
+        error: lastError.message,
+        errorType: lastError.type,
+        errorCode: lastError.code
+      });
+
+      // 判断是否应该重试
+      if (!shouldRetry(lastError, attempt, maxRetries)) {
+        logSmartChatEvent('warn', '不满足重试条件，停止重试', {
+          url,
+          attempt,
+          errorType: lastError.type
+        });
+        break;
+      }
+
+      // 如果不是最后一次尝试，等待后重试
+      if (attempt < maxRetries) {
+        const delay = calculateRetryDelay(attempt, lastError);
+
+        if (delay > 0) {
+          logSmartChatEvent('info', `${delay}ms后重试`, { url, attempt, delay });
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+  }
+
+  // 所有重试都失败了
+  SmartChatPerformanceMonitor.end(operationId);
+
+  const finalError = new SmartChatError(
+    `API调用失败，已重试${maxRetries}次: ${lastError?.message}`,
+    lastError?.code,
+    lastError?.type
+  );
+
+  logSmartChatEvent('error', '所有重试都失败了', {
+    url,
+    maxRetries,
+    finalError: finalError.message,
+    errorType: finalError.type
+  });
+
+  throw finalError;
 }
 
 // 完全复制video-flow的类型检查函数
@@ -299,7 +412,7 @@ function transformMessage(apiMessage: RealApiMessage): ChatMessage {
 
 
 /**
- * 获取消息列表 - 完全复制video-flow版本
+ * 获取消息列表 - 升级版，集成健全token处理
  */
 export async function fetchMessages(
   config: ChatConfig,
@@ -317,9 +430,21 @@ export async function fetchMessages(
   };
 
   try {
-    console.log('Sending history request:', request);
-    const response = await post<ApiResponse<MessagesResponse>>("/intelligent/history", request);
-    console.log('Received history response:', response);
+    console.log('🔍 SmartChatBox获取消息历史:', {
+      projectId: config.projectId,
+      userId: config.userId,
+      offset,
+      limit
+    });
+
+    // 🚀 使用带重试机制的API调用
+    const response = await postWithRetry<ApiResponse<MessagesResponse>>("/intelligent/history", request);
+
+    console.log('✅ SmartChatBox消息历史获取成功:', {
+      messageCount: response.data?.messages?.length || 0,
+      hasMore: response.data?.has_more || false,
+      totalCount: response.data?.total_count || 0
+    });
 
     // 确保 response.data 和 messages 存在
     if (!response.data || !response.data.messages) {
@@ -353,7 +478,7 @@ export async function fetchMessages(
 }
 
 /**
- * 发送新消息 - 适配smartcut的fetch API
+ * 发送新消息 - 升级版，集成健全token处理和重试机制
  */
 export async function sendMessage(
   blocks: MessageBlock[],
@@ -364,7 +489,7 @@ export async function sendMessage(
   const textBlocks = blocks.filter(b => b.type === "text");
   const imageBlocks = blocks.filter(b => b.type === "image");
   const videoBlocks = blocks.filter(b => b.type === "video");
-  
+
   const request: SendMessageRequest = {
     session_id: `project_${config.projectId}_user_${config.userId}`,
     user_input: textBlocks.map(b => (b as { text: string }).text).join("\n"),
@@ -388,10 +513,21 @@ export async function sendMessage(
   }
 
   try {
-    console.log('Sending message request:', request);
-    await post<ApiResponse<RealApiMessage>>("/intelligent/chat", request);
+    console.log('💬 SmartChatBox发送消息:', {
+      projectId: config.projectId,
+      userId: config.userId,
+      textLength: request.user_input.length,
+      hasImage: !!request.image_url,
+      hasVideo: !!request.video_url,
+      videoId: videoId
+    });
+
+    // 🚀 使用带重试机制的API调用
+    await postWithRetry<ApiResponse<RealApiMessage>>("/intelligent/chat", request);
+
+    console.log('✅ SmartChatBox消息发送成功');
   } catch (error) {
-    console.error("Failed to send message:", error);
+    console.error("❌ SmartChatBox消息发送失败:", error);
     throw error;
   }
 }

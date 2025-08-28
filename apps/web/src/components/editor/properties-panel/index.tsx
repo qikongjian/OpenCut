@@ -2,15 +2,23 @@
 
 import { useMediaStore } from "@/stores/media-store";
 import { useTimelineStore } from "@/stores/timeline-store";
+import { useAIEditingStore } from "@/stores/ai-editing-store";
 import { ScrollArea } from "../../ui/scroll-area";
 import { AudioProperties } from "./audio-properties";
 import { MediaProperties } from "./media-properties";
 import { TextProperties } from "./text-properties";
+import { ClipDescriptionPanel } from "../clip-description-panel";
 import { SquareSlashIcon } from "lucide-react";
 
 export function PropertiesPanel() {
   const { selectedElements, tracks } = useTimelineStore();
   const { mediaItems } = useMediaStore();
+  const { currentEditingPlan } = useAIEditingStore();
+
+  // 🚀 优先显示AI剪辑计划的片段描述
+  if (currentEditingPlan && selectedElements.length === 0) {
+    return <ClipDescriptionPanel />;
+  }
 
   return (
     <>
@@ -45,6 +53,8 @@ export function PropertiesPanel() {
             return null;
           })}
         </ScrollArea>
+      ) : currentEditingPlan ? (
+        <ClipDescriptionPanel />
       ) : (
         <EmptyView />
       )}

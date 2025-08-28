@@ -4,6 +4,7 @@
 // 最后更新: 2025/1/8
 
 import { AIEditingData } from "@/types/timeline";
+import { authFetchWithSmartToken, initializeTokenSystem, getSmartToken } from "./ai-editing-auth";
 
 // API响应类型定义
 export interface AIEditingPlanApiResponse {
@@ -164,6 +165,17 @@ export async function generateAIEditingPlan(projectId: string): Promise<AIEditin
     projectId,
   });
 
+  // 🔐 初始化token系统
+  await initializeTokenSystem();
+
+  // 🔍 检查token状态
+  const tokenInfo = await getSmartToken();
+  if (tokenInfo) {
+    console.log(`🔑 使用${tokenInfo.source}来源的token进行API调用`);
+  } else {
+    console.log('⚠️ 未找到token，将尝试无认证调用');
+  }
+
   let lastError: Error | null = null;
 
   // 重试机制
@@ -171,11 +183,9 @@ export async function generateAIEditingPlan(projectId: string): Promise<AIEditin
     try {
       console.log(`📡 第${attempt}次尝试调用API...`);
 
-      const response = await fetch(apiUrl, {
+      // 🚀 使用智能token处理的fetch
+      const response = await authFetchWithSmartToken(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(requestData),
       });
 

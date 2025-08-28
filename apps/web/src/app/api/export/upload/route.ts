@@ -270,24 +270,34 @@ duration ${duration}`;
   const totalDuration = ir.duration / 1000;
   args.push('-t', totalDuration.toString());
 
-  // 基础设置
+  // 🚀 优化：基础设置，提升编码速度
   args.push('-c:v', options.codec || 'libx264');
   args.push('-c:a', 'aac');
-  args.push('-preset', 'medium');
+  args.push('-preset', 'fast'); // 从medium改为fast，提升编码速度
   args.push('-pix_fmt', 'yuv420p');
   args.push('-s', `${ir.width}x${ir.height}`);
   args.push('-r', ir.fps.toString());
 
-  // 质量设置
+  // 🚀 优化：添加编码优化参数
+  args.push('-tune', 'fastdecode'); // 优化解码速度
+  args.push('-movflags', '+faststart'); // 优化网络播放
+
+  // 🚀 优化：质量设置，平衡质量和速度
   switch (options.quality) {
     case 'preview':
       args.push('-crf', '28');
+      args.push('-maxrate', '2M'); // 限制最大码率
+      args.push('-bufsize', '4M');
       break;
     case 'standard':
       args.push('-crf', '23');
+      args.push('-maxrate', '8M'); // 适中的码率限制
+      args.push('-bufsize', '16M');
       break;
     case 'professional':
-      args.push('-crf', '18');
+      args.push('-crf', '20'); // 从18调整为20，稍微降低质量但提升速度
+      args.push('-maxrate', '12M'); // 限制最大码率避免过大文件
+      args.push('-bufsize', '24M');
       break;
   }
 

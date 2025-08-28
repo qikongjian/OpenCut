@@ -955,6 +955,8 @@ function PreviewToolbar({
             <Play className="h-3 w-3" />
           )}
         </Button>
+        {/* 🚀 隐藏抖音图标按钮 */}
+        {false && (
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -1003,6 +1005,7 @@ function PreviewToolbar({
             </div>
           </PopoverContent>
         </Popover>
+        )}
         <Button
           variant="text"
           size="icon"

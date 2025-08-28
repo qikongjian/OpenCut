@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ResizablePanelGroup,
@@ -11,8 +11,7 @@ import { PropertiesPanel } from "../../../components/editor/properties-panel";
 import { Timeline } from "../../../components/editor/timeline";
 import { PreviewPanel } from "../../../components/editor/preview-panel";
 import { AIEditorHeader } from "@/components/ai-editor-header";
-import { AIEditingPanelNew } from "@/components/editor/ai-editing-panel-new";
-import { SmartChatTrigger } from "@/components/smart-chat-trigger";
+import SmartChatBox from "@/components/smart-chat-box/SmartChatBox";
 import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/editor-provider";
@@ -20,6 +19,7 @@ import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/onboarding";
 
 import { useAutoAIEditingStore } from "@/stores/auto-ai-editing-store";
+import { initializeTokenSystem } from "@/lib/ai-editing-auth";
 
 
 export default function AIEditor() {
@@ -58,6 +58,9 @@ export default function AIEditor() {
 
   const { startAutoAIEditing, currentStage } = useAutoAIEditingStore();
 
+  // SmartChatBox状态管理
+  const [isSmartChatBoxOpen, setIsSmartChatBoxOpen] = useState(true); // 默认打开，因为现在在左侧面板
+
   usePlaybackControls();
 
   useEffect(() => {
@@ -66,6 +69,13 @@ export default function AIEditor() {
     const initProject = async () => {
       if (!projectId) {
         return;
+      }
+
+      // 🔐 初始化token系统（优先执行）
+      try {
+        await initializeTokenSystem();
+      } catch (error) {
+        console.error('❌ Token系统初始化失败:', error);
       }
 
       // Prevent duplicate initialization
@@ -211,12 +221,12 @@ export default function AIEditor() {
             >
               <ResizablePanel
                 defaultSize={toolsPanel}
-                minSize={15}
-                maxSize={40}
+                minSize={20}
+                maxSize={50}
                 onResize={setToolsPanel}
                 className="min-w-0 rounded-sm"
               >
-                <AIEditingPanelNew />
+                <PropertiesPanel />
               </ResizablePanel>
 
               <ResizableHandle withHandle />
@@ -259,7 +269,14 @@ export default function AIEditor() {
                         onResize={setPropertiesPanel}
                         className="min-w-0"
                       >
-                        <PropertiesPanel />
+                        <div className="h-full bg-panel border border-border rounded-sm">
+                          <SmartChatBox
+                            userId={userId}
+                            projectId={projectId}
+                            isSmartChatBoxOpen={isSmartChatBoxOpen}
+                            setIsSmartChatBoxOpen={setIsSmartChatBoxOpen}
+                          />
+                        </div>
                       </ResizablePanel>
                     </ResizablePanelGroup>
                   </ResizablePanel>
@@ -307,12 +324,12 @@ export default function AIEditor() {
                     >
                       <ResizablePanel
                         defaultSize={toolsPanel}
-                        minSize={15}
-                        maxSize={40}
+                        minSize={20}
+                        maxSize={50}
                         onResize={setToolsPanel}
                         className="min-w-0 rounded-sm"
                       >
-                        <AIEditingPanelNew />
+                        <PropertiesPanel />
                       </ResizablePanel>
 
                       <ResizableHandle withHandle />
@@ -383,12 +400,12 @@ export default function AIEditor() {
                     >
                       <ResizablePanel
                         defaultSize={toolsPanel}
-                        minSize={15}
-                        maxSize={40}
+                        minSize={20}
+                        maxSize={50}
                         onResize={setToolsPanel}
                         className="min-w-0 rounded-sm"
                       >
-                        <AIEditingPanelNew />
+                        <PropertiesPanel />
                       </ResizablePanel>
 
                       <ResizableHandle withHandle />
@@ -400,7 +417,14 @@ export default function AIEditor() {
                         onResize={setPropertiesPanel}
                         className="min-w-0"
                       >
-                        <PropertiesPanel />
+                        <div className="h-full bg-panel border border-border rounded-sm">
+                          <SmartChatBox
+                            userId={userId}
+                            projectId={projectId}
+                            isSmartChatBoxOpen={isSmartChatBoxOpen}
+                            setIsSmartChatBoxOpen={setIsSmartChatBoxOpen}
+                          />
+                        </div>
                       </ResizablePanel>
                     </ResizablePanelGroup>
                   </ResizablePanel>
@@ -448,15 +472,15 @@ export default function AIEditor() {
                   direction="horizontal"
                   className="h-full w-full gap-[0.19rem] px-3"
                 >
-                  {/* AI Editing Panel */}
+                  {/* Properties Panel */}
                   <ResizablePanel
                     defaultSize={toolsPanel}
-                    minSize={15}
-                    maxSize={40}
+                    minSize={20}
+                    maxSize={50}
                     onResize={setToolsPanel}
                     className="min-w-0 rounded-sm"
                   >
-                    <AIEditingPanelNew />
+                    <PropertiesPanel />
                   </ResizablePanel>
 
                   <ResizableHandle withHandle />
@@ -480,7 +504,14 @@ export default function AIEditor() {
                     onResize={setPropertiesPanel}
                     className="min-w-0 rounded-sm"
                   >
-                    <PropertiesPanel />
+                    <div className="h-full bg-panel border border-border rounded-sm">
+                      <SmartChatBox
+                        userId={userId}
+                        projectId={projectId}
+                        isSmartChatBoxOpen={isSmartChatBoxOpen}
+                        setIsSmartChatBoxOpen={setIsSmartChatBoxOpen}
+                      />
+                    </div>
                   </ResizablePanel>
                 </ResizablePanelGroup>
               </ResizablePanel>
@@ -501,9 +532,6 @@ export default function AIEditor() {
           )}
         </div>
         <Onboarding />
-
-        {/* SmartChat触发器 */}
-        <SmartChatTrigger userId={userId} />
       </div>
     </EditorProvider>
   );

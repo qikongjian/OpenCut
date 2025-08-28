@@ -7,6 +7,7 @@ import { useMessages } from "./useMessages";
 import { DateDivider } from "./DateDivider";
 import { LoadMoreButton } from "./LoadMoreButton";
 import { ChatMessage } from "./types";
+import { initializeTokenSystem } from "@/lib/ai-editing-auth";
 
 interface SmartChatBoxProps {
   isSmartChatBoxOpen: boolean;
@@ -29,7 +30,7 @@ function BackToLatestButton({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       className="fixed bottom-24 right-4 bg-blue-500 hover:bg-blue-400 text-white rounded-full p-2 shadow-lg"
-      title="返回最新消息"
+      title="Back to latest"
     >
       <ChevronDown size={20} />
     </button>
@@ -87,6 +88,20 @@ export default function SmartChatBox({
     checkIfAtBottom();
   }, [checkIfAtBottom]);
 
+  // 🔐 初始化token系统
+  useEffect(() => {
+    const initTokenSystem = async () => {
+      try {
+        await initializeTokenSystem();
+        console.log('✅ SmartChatBox token系统初始化成功');
+      } catch (error) {
+        console.error('❌ SmartChatBox token系统初始化失败:', error);
+      }
+    };
+
+    initTokenSystem();
+  }, []);
+
   // 使用消息管理 hook
   const [
     { messages, isLoading, error, hasMore, loadMoreMessages, backToLatest, isViewingHistory },
@@ -130,8 +145,8 @@ export default function SmartChatBox({
           <span>Chat</span>
           {/* System push toggle */}
           <Switch
-            checkedChildren="系统推送：开"
-            unCheckedChildren="系统推送：关"
+            checkedChildren="System push: On"
+            unCheckedChildren="System push: Off"
             checked={systemPush}
             onChange={toggleSystemPush}
             className="ml-2"

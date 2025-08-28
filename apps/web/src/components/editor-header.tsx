@@ -202,11 +202,27 @@ function ExportButton() {
 
       console.log(`项目信息: ${ir.video.length}个视频, ${ir.audio.length}个音频, ${ir.texts.length}个文本, 总时长${(ir.duration/1000).toFixed(1)}秒`);
 
+      // 🚀 优化：根据原视频分辨率自动选择质量
+      // 分析视频分辨率，选择合适的质量设置
+      let quality: 'preview' | 'standard' | 'professional' = 'standard';
+
+      // 如果是高分辨率视频（1080p及以上），使用标准质量以平衡速度和质量
+      // 如果是4K视频，仍使用标准质量避免过慢
+      if (ir.width >= 1920 && ir.height >= 1080) {
+        quality = 'standard'; // 保持标准质量，确保合理的导出速度
+      } else if (ir.width >= 1280 && ir.height >= 720) {
+        quality = 'standard'; // 720p使用标准质量
+      } else {
+        quality = 'preview'; // 低分辨率使用预览质量，加快速度
+      }
+
+      console.log(`🎬 视频分辨率: ${ir.width}x${ir.height}, 选择质量: ${quality}`);
+
       // 智能Export
       const result = await exportManager.smartExport(
         {
           privacy: 'balanced',
-          quality: 'standard',
+          quality: quality,
           allowCloudProcessing: true,
         },
         (progress) => {
@@ -219,14 +235,16 @@ function ExportButton() {
       setExportMessage("Export完成!");
       setExportProgress(1);
 
-      // 自动下载
+      // 🚀 修复：使用统一的下载工具，确保直接下载
       if (result.url) {
-        const a = document.createElement('a');
-        a.href = result.url;
-        a.download = result.filename || 'opencut-export.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // 动态导入下载工具
+        const { downloadExportResult } = await import("@/lib/download-utils");
+
+        const success = await downloadExportResult(
+          result.url,
+          result.filename || 'opencut-export.mp4',
+          result.size
+        );
 
         // 显示成功消息
         console.log("Export成功:", {
@@ -235,6 +253,10 @@ function ExportButton() {
           method: result.method,
           quality: result.quality
         });
+
+        if (!success) {
+          console.warn("自动下载失败，用户需要手动下载");
+        }
       }
 
     } catch (error) {

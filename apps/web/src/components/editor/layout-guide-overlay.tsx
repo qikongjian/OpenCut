@@ -20,8 +20,11 @@ function TikTokGuide() {
 export function LayoutGuideOverlay() {
   const { layoutGuide } = useEditorStore();
 
-  if (layoutGuide.platform === null) return null;
-  if (layoutGuide.platform === "tiktok") return <TikTokGuide />;
-
+  // 🚀 隐藏所有布局指南，包括抖音指南
   return null;
+
+  // 原始代码（已禁用）
+  // if (layoutGuide.platform === null) return null;
+  // if (layoutGuide.platform === "tiktok") return <TikTokGuide />;
+  // return null;
 }

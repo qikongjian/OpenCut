@@ -17,6 +17,7 @@ import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/editor-provider";
 import { usePlaybackControls } from "@/hooks/use-playback-controls";
 import { Onboarding } from "@/components/onboarding";
+import { initializeTokenSystem } from "@/lib/ai-editing-auth";
 
 
 export default function Editor() {
@@ -56,6 +57,14 @@ export default function Editor() {
     const initProject = async () => {
       if (!projectId) {
         return;
+      }
+
+      // 🔐 初始化token系统（优先执行）
+      try {
+        await initializeTokenSystem();
+        console.log('✅ Editor token系统初始化成功');
+      } catch (error) {
+        console.error('❌ Editor token系统初始化失败:', error);
       }
 
       // Prevent duplicate initialization
