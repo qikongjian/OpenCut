@@ -216,13 +216,12 @@ export function TimelineElement({
 
       return (
         <div className="w-full h-full flex items-center justify-center">
-          <div
-            className={`w-full h-full relative ${
-              isSelected ? "bg-primary" : "bg-transparent"
-            }`}
-          >
+          <div className="w-full h-full relative overflow-hidden">
+            {/* 视频缩略图背景 */}
             <div
-              className={`absolute top-[0.15rem] bottom-[0.15rem] left-0 right-0`}
+              className={`absolute inset-0 ${
+                isSelected ? "opacity-100" : "opacity-90"
+              } transition-opacity duration-200`}
               style={{
                 backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
                 backgroundRepeat: "repeat-x",
@@ -232,6 +231,14 @@ export function TimelineElement({
               }}
               aria-label={`Tiled ${isImage ? "background" : "thumbnail"} of ${mediaItem.name}`}
             />
+
+            {/* 选中状态的轻微遮罩，增强对比度 */}
+            {isSelected && (
+              <div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"
+                style={{ mixBlendMode: 'overlay' }}
+              />
+            )}
           </div>
         </div>
       );
@@ -285,10 +292,12 @@ export function TimelineElement({
           onMouseLeave={resizing ? handleResizeEnd : undefined}
         >
           <div
-            className={`relative h-full rounded-[0.15rem] cursor-pointer overflow-hidden ${getTrackElementClasses(
-              track.type
-            )} ${isSelected ? "timeline-element-selected" : ""} ${
-              isBeingDragged ? "z-50" : "z-10"
+            className={`timeline-element relative h-full cursor-pointer overflow-hidden transition-all duration-200 ${
+              isSelected
+                ? "timeline-element-selected rounded-lg"
+                : "rounded-[0.15rem]"
+            } ${getTrackElementClasses(track.type)} ${
+              isBeingDragged ? "z-50" : isSelected ? "z-40" : "z-10"
             } ${element.hidden ? "opacity-50" : ""}`}
             onClick={(e) => onElementClick && onElementClick(e, element)}
             onMouseDown={handleElementMouseDown}
@@ -312,14 +321,22 @@ export function TimelineElement({
 
             {isSelected && (
               <>
+                {/* 左侧拖拽手柄 - 白色发光设计 */}
                 <div
-                  className="absolute left-0 top-0 bottom-0 w-[0.2rem] cursor-w-resize z-50"
-                  style={{ background: 'var(--movieflow-primary)' }}
+                  className="absolute left-0 top-0 bottom-0 w-[4px] cursor-w-resize z-50 bg-white/90 shadow-lg"
+                  style={{
+                    borderRadius: '2px 0 0 2px',
+                    boxShadow: '0 0 4px rgba(255, 255, 255, 0.8), inset 0 0 2px rgba(255, 255, 255, 0.5)'
+                  }}
                   onMouseDown={(e) => handleResizeStart(e, element.id, "left")}
                 />
+                {/* 右侧拖拽手柄 - 白色发光设计 */}
                 <div
-                  className="absolute right-0 top-0 bottom-0 w-[0.2rem] cursor-e-resize z-50"
-                  style={{ background: 'var(--movieflow-primary)' }}
+                  className="absolute right-0 top-0 bottom-0 w-[4px] cursor-e-resize z-50 bg-white/90 shadow-lg"
+                  style={{
+                    borderRadius: '0 2px 2px 0',
+                    boxShadow: '0 0 4px rgba(255, 255, 255, 0.8), inset 0 0 2px rgba(255, 255, 255, 0.5)'
+                  }}
                   onMouseDown={(e) => handleResizeStart(e, element.id, "right")}
                 />
               </>

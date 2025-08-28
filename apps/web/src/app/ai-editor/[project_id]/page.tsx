@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "../../../components/ui/resizable";
-import { MediaPanel } from "../../../components/editor/media-panel";
 import { PropertiesPanel } from "../../../components/editor/properties-panel";
 import { Timeline } from "../../../components/editor/timeline";
 import { PreviewPanel } from "../../../components/editor/preview-panel";
-import { EditorHeader } from "@/components/editor-header";
+import { AIEditorHeader } from "@/components/ai-editor-header";
+import { AIEditingPanelNew } from "@/components/editor/ai-editing-panel-new";
+import { SmartChatTrigger } from "@/components/smart-chat-trigger";
 import { usePanelStore } from "@/stores/panel-store";
 import { useProjectStore } from "@/stores/project-store";
 import { EditorProvider } from "@/components/editor-provider";
@@ -46,7 +47,11 @@ export default function AIEditor() {
   } = useProjectStore();
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const projectId = params.project_id as string;
+
+  // 从URL查询参数获取user_id，如果没有则使用默认值1
+  const userId = searchParams.get('user_id') ? parseInt(searchParams.get('user_id')!) : 1;
   const handledProjectIds = useRef<Set<string>>(new Set());
   const isInitializingRef = useRef<boolean>(false);
   const autoStartedRef = useRef<boolean>(false);
@@ -196,7 +201,7 @@ export default function AIEditor() {
   return (
     <EditorProvider>
       <div className="ai-editor-page h-screen w-screen flex flex-col bg-background overflow-hidden">
-        <EditorHeader />
+        <AIEditorHeader />
         <div className="flex-1 min-h-0 min-w-0">
           {activePreset === "media" ? (
             <ResizablePanelGroup
@@ -211,7 +216,7 @@ export default function AIEditor() {
                 onResize={setToolsPanel}
                 className="min-w-0 rounded-sm"
               >
-                <MediaPanel />
+                <AIEditingPanelNew />
               </ResizablePanel>
 
               <ResizableHandle withHandle />
@@ -307,7 +312,7 @@ export default function AIEditor() {
                         onResize={setToolsPanel}
                         className="min-w-0 rounded-sm"
                       >
-                        <MediaPanel />
+                        <AIEditingPanelNew />
                       </ResizablePanel>
 
                       <ResizableHandle withHandle />
@@ -383,7 +388,7 @@ export default function AIEditor() {
                         onResize={setToolsPanel}
                         className="min-w-0 rounded-sm"
                       >
-                        <MediaPanel />
+                        <AIEditingPanelNew />
                       </ResizablePanel>
 
                       <ResizableHandle withHandle />
@@ -443,7 +448,7 @@ export default function AIEditor() {
                   direction="horizontal"
                   className="h-full w-full gap-[0.19rem] px-3"
                 >
-                  {/* Tools Panel */}
+                  {/* AI Editing Panel */}
                   <ResizablePanel
                     defaultSize={toolsPanel}
                     minSize={15}
@@ -451,7 +456,7 @@ export default function AIEditor() {
                     onResize={setToolsPanel}
                     className="min-w-0 rounded-sm"
                   >
-                    <MediaPanel />
+                    <AIEditingPanelNew />
                   </ResizablePanel>
 
                   <ResizableHandle withHandle />
@@ -496,6 +501,9 @@ export default function AIEditor() {
           )}
         </div>
         <Onboarding />
+
+        {/* SmartChat触发器 */}
+        <SmartChatTrigger userId={userId} />
       </div>
     </EditorProvider>
   );

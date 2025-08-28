@@ -296,12 +296,10 @@ export function displayDiagnostics(diagnostics: StorageDiagnostics) {
   
   console.groupEnd();
   
-  // 显示用户友好的提示
+  // 只在有问题时显示提示
   if (diagnostics.issues.length > 0) {
     toast.warning('存储系统检测到问题', {
       description: `发现 ${diagnostics.issues.length} 个问题，请检查控制台了解详情`,
     });
-  } else {
-    toast.success('存储系统正常');
   }
 }

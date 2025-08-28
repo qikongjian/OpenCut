@@ -179,7 +179,7 @@ export function AIEditingPanelNew() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-panel">
       {/* 🎨 Modern header design */}
       <div className="flex items-center justify-between p-4 border-b border-border/40">
         <div className="flex items-center gap-3">

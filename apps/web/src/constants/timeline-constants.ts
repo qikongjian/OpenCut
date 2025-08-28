@@ -7,8 +7,8 @@ export const TRACK_COLORS: Record<
 > = {
   media: {
     solid: "bg-blue-500",
-    background: "",
-    border: "",
+    background: "bg-slate-700/80 backdrop-blur-sm",
+    border: "border-slate-600/50",
   },
   text: {
     solid: "bg-[#5DBAA0]",

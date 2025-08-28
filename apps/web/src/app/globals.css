@@ -1,5 +1,6 @@
 
 @import "tailwindcss";
+@import "../styles/top-bar.css";
 
 /* Custom variant for dark mode */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -347,22 +348,9 @@
     filter: drop-shadow(0 0 4px rgba(106, 244, 249, 0.5));
   }
 
-  /* Timeline video selection styles */
+  /* Timeline element selection styles */
   .timeline-element-selected {
     border: 2px solid var(--movieflow-primary) !important;
-    box-shadow: 0 0 8px rgba(106, 244, 249, 0.6) !important;
-  }
-
-  .timeline-element-selected::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: var(--movieflow-gradient);
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0.3;
+    box-shadow: 0 0 0 1px var(--movieflow-primary), 0 0 8px rgba(106, 244, 249, 0.5) !important;
   }
 }

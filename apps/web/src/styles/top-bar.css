@@ -1,0 +1,106 @@
+.header {
+  pointer-events: none;
+  transition: color .2s;
+}
+
+@keyframes btnAnimation2 {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(0, 100%);
+  }
+}
+
+@media (pointer: fine) {
+  .roll.on .translate {
+    animation-name: btnAnimation2;
+    animation-play-state: running;
+    animation-iteration-count: 1;
+    animation-duration: .4s;
+    animation-timing-function: cubic-bezier(.16, .03, .08, 1.55);
+  }
+}
+
+.roll .translate>span:last-child {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+}
+
+.logo {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+}
+
+.header-wrapper .logo,
+.roll2>span .logo,
+.roll3>span .logo {
+  height: 22px;
+}
+
+.roll .translate {
+  display: inline-block;
+}
+
+.header-wrapper,
+.header .link-logo {
+  pointer-events: initial;
+  overflow: hidden;
+}
+
+.header button {
+  pointer-events: initial;
+}
+
+/* 用户菜单下拉动画 */
+.user-menu-dropdown {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 悬停效果 */
+.hover-bg-transition {
+  transition: background-color 0.2s ease;
+}
+
+.hover-bg-transition:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Logo动画效果 */
+.logo-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-text {
+  transition: transform 0.3s ease;
+}
+
+.logo-container:hover .logo-text {
+  transform: translateY(-100%);
+}
+
+.logo-hover-text {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  transition: transform 0.3s ease;
+}
+
+.logo-container:hover .logo-hover-text {
+  transform: translateY(-100%);
+}

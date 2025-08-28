@@ -56,11 +56,7 @@ export function StorageProvider({ children }: StorageProviderProps) {
           // 尝试修复存储问题
           const fixResult = await attemptStorageFix();
 
-          if (fixResult.success) {
-            toast.success("存储系统已优化", {
-              description: "已应用兼容性修复"
-            });
-          } else {
+          if (!fixResult.success) {
             toast.warning("存储功能受限", {
               description: "某些功能可能无法正常工作，建议使用现代浏览器"
             });
@@ -82,9 +78,7 @@ export function StorageProvider({ children }: StorageProviderProps) {
         // 即使初始化失败，也尝试修复
         try {
           const fixResult = await attemptStorageFix();
-          if (fixResult.success) {
-            toast.info("存储系统已切换到兼容模式");
-          }
+          // 移除成功提示，只在失败时显示错误
         } catch (fixError) {
           console.error("存储修复也失败:", fixError);
         }
