@@ -13,6 +13,7 @@ import {
   PanelsLeftBottom,
   Library,
   Crown,
+  ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -78,18 +79,38 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
 
 
 
-  // 左侧内容：侧边栏切换 + Logo + 项目菜单
+  // 返回上一页的处理函数
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/');
+    }
+  };
+
+  // 左侧内容：返回按钮 + 侧边栏切换 + Logo + 项目菜单
   const leftContent = (
     <div className="flex items-center gap-2">
+      {/* 返回按钮 */}
+      <Button
+        variant="text"
+        size="sm"
+        onClick={handleGoBack}
+        className="movieflow-icon-highlight hover:bg-white/10 transition-colors duration-200"
+        title="返回上一页"
+      >
+        <ArrowLeft className="h-4 w-4" />
+      </Button>
+
       {/* 侧边栏切换按钮（如果提供了回调） */}
       {onToggleSidebar && (
         <Button variant="text" size="sm" onClick={onToggleSidebar}>
           <PanelsLeftBottom className="h-4 w-4" />
         </Button>
       )}
-      
+
       {/* Logo */}
-      <div 
+      <div
         className="flex items-center cursor-pointer space-x-4 logo-container"
         onClick={() => router.push('/')}
         onMouseEnter={handleMouseEnter}
@@ -97,7 +118,7 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
       >
         <div className="logo-wrapper">
           <h1 className="text-2xl font-bold">
-            <GradientText 
+            <GradientText
               text="MovieFlow"
               startPercentage={30}
               endPercentage={70}
@@ -272,6 +293,17 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
       <div className="fixed right-0 top-0 left-0 h-16 header z-[999]" style={{ isolation: 'isolate' }}>
         <div className="h-full flex items-center justify-between pr-6 pl-6">
           <div className="flex items-center space-x-4">
+            {/* 返回按钮 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleGoBack}
+              className="movieflow-icon-highlight hover:bg-white/10 transition-colors duration-200"
+              title="返回上一页"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+
             {/* 侧边栏切换按钮 */}
             {onToggleSidebar && (
               <Button
