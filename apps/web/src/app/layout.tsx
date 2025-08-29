@@ -34,7 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <BotIdClient protect={protectedRoutes} />
+        {/* <BotIdClient
+          protect={protectedRoutes}
+          debug={false}
+        /> */}
       </head>
       <body className={`${defaultFont.className} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="dark">

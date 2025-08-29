@@ -16,7 +16,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useTimelineStore } from "@/stores/timeline-store";
 import { HeaderBase } from "./header-base";
 import { formatTimeCode } from "@/lib/time";
@@ -37,6 +37,8 @@ interface AIEditorHeaderProps {
 export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -81,10 +83,23 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
 
   // 返回上一页的处理函数
   const handleGoBack = () => {
-    if (window.history.length > 1) {
-      router.back();
+    // 从URL路径中提取项目ID
+    // 例如: /ai-editor/6fb14ce4-2d90-4c25-af07-f09c8b66e19c -> 6fb14ce4-2d90-4c25-af07-f09c8b66e19c
+    const pathSegments = pathname.split('/');
+    const projectId = pathSegments[pathSegments.length - 1]; // 获取路径的最后一段作为项目ID
+
+    if (projectId && projectId !== 'ai-editor' && projectId.length > 10) {
+      // 如果有有效的项目ID，跳转到指定的MovieFlow链接，使用项目ID作为episodeId
+      const targetUrl = `http://movieflow.ai/create/work-flow?episodeId=${projectId}&from=1`;
+      console.log(`🔗 跳转到MovieFlow: ${targetUrl}`);
+      window.location.href = targetUrl;
     } else {
-      router.push('/');
+      // 如果没有有效的项目ID，执行原来的返回逻辑
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.push('/');
+      }
     }
   };
 

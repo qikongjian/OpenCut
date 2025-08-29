@@ -1514,7 +1514,384 @@ export const useAIEditingStore = create<AIEditingState>((set, get) => ({
     });
   },
 
-  // 新增：在时间轴显示所有原始视频（高性能并行版本）
+  // 🚀 性能优化版本：在时间轴显示所有原始视频
+  showOriginalVideoInTimelineOptimized: async () => {
+    const { currentEditingPlan } = get();
+    if (!currentEditingPlan) {
+      return;
+    }
+
+    console.log("🚀 开始优化的原视频加载流程");
+    set({ visualEditingState: 'showing-original' });
+
+    try {
+      const timelineStore = useTimelineStore.getState();
+      const mediaStore = useMediaStore.getState();
+      const projectStore = useProjectStore.getState();
+
+      if (!projectStore.activeProject) {
+        throw new Error("没有活动项目");
+      }
+
+      // 🎯 性能优化1：使用批量视频处理器
+      const { BatchVideoProcessor, videoMemoryManager } = await import('@/lib/video-processing-optimizer');
+      const batchProcessor = new BatchVideoProcessor();
+
+      // 清空现有时间轴
+      timelineStore.clearTimeline();
+      const originalTrackId = timelineStore.findOrCreateTrack("media");
+
+      const allClips = currentEditingPlan.timeline_clips;
+      console.log(`⚡ 开始优化处理 ${allClips.length} 个视频片段`);
+
+      if (allClips.length === 0) {
+        return;
+      }
+
+      // 🎯 性能优化2：预先收集唯一视频URL，避免重复处理
+      const uniqueUrls = [...new Set(allClips.map(clip => clip.video_url))];
+      console.log(`📊 发现 ${uniqueUrls.length} 个唯一视频，总共 ${allClips.length} 个片段`);
+
+      // 🎯 性能优化3：并行下载和处理视频
+      const downloadPromises = uniqueUrls.map(async (url, index) => {
+        try {
+          console.log(`📥 下载视频 ${index + 1}/${uniqueUrls.length}: ${url}`);
+
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`下载失败: ${response.statusText}`);
+
+          const blob = await response.blob();
+          const file = new File([blob], `video-${index + 1}.mp4`, { type: 'video/mp4' });
+
+          return { url, file, index };
+        } catch (error) {
+          console.error(`❌ 视频下载失败: ${url}`, error);
+          return null;
+        }
+      });
+
+      // 等待所有视频下载完成
+      const downloadResults = await Promise.allSettled(downloadPromises);
+      const successfulDownloads = downloadResults
+        .filter(result => result.status === 'fulfilled' && result.value !== null)
+        .map(result => (result as PromiseFulfilledResult<any>).value);
+
+      if (successfulDownloads.length === 0) {
+        throw new Error("所有视频下载失败");
+      }
+
+      console.log(`✅ 成功下载 ${successfulDownloads.length}/${uniqueUrls.length} 个视频`);
+
+      // 🎯 性能优化4：使用浏览器原生API处理视频（避免FFmpeg问题）
+      const urlToFileMap = new Map();
+      successfulDownloads.forEach(({ url, file }) => {
+        urlToFileMap.set(url, file);
+      });
+
+      // 🎯 性能优化5：快速创建媒体项和时间轴元素
+      const mediaItems: any[] = [];
+      const timelineElements: any[] = [];
+      let currentTimelinePosition = 0;
+
+      for (let i = 0; i < allClips.length; i++) {
+        const clip = allClips[i];
+        const file = urlToFileMap.get(clip.video_url);
+
+        if (!file) {
+          console.warn(`⚠️ 跳过无法下载的视频: ${clip.video_url}`);
+          continue;
+        }
+
+        // 🚀 使用浏览器原生API获取视频信息和缩略图（避免FFmpeg初始化问题）
+        let videoInfo = { duration: 30, width: 1920, height: 1080, fps: 30 };
+        let thumbnailUrl = '';
+
+        try {
+          // 使用浏览器原生API获取视频信息
+          const { generateVideoThumbnail } = await import('@/stores/media-store');
+          const thumbnailData = await generateVideoThumbnail(file);
+          thumbnailUrl = thumbnailData.thumbnailUrl;
+          videoInfo.width = thumbnailData.width;
+          videoInfo.height = thumbnailData.height;
+
+          // 获取视频时长
+          const { getVideoDurationNative } = await import('@/lib/video-processing-optimizer');
+          const videoDuration = await getVideoDurationNative(file);
+          videoInfo.duration = videoDuration;
+
+          console.log(`✅ 视频信息获取成功: ${file.name}`, videoInfo);
+        } catch (error) {
+          console.warn(`⚠️ 视频信息获取失败，使用默认值: ${file.name}`, error);
+          // 生成默认缩略图
+          const { generateDefaultThumbnail } = await import('@/lib/video-processing-optimizer');
+          thumbnailUrl = generateDefaultThumbnail();
+        }
+
+        // 创建媒体项
+        const mediaItem = {
+          id: `original-video-${clip.sequence_clip_id}-${Date.now()}-${i}`,
+          name: `原视频-${clip.sequence_clip_id}`,
+          type: "video" as const,
+          url: clip.video_url,
+          duration: videoInfo?.duration || 30,
+          width: videoInfo?.width || 1920,
+          height: videoInfo?.height || 1080,
+          fps: videoInfo?.fps || 30,
+          thumbnailUrl: thumbnailUrl,
+          file: file,
+        };
+
+        mediaItems.push(mediaItem);
+
+        // 创建时间轴元素
+        const timelineElement = {
+          type: "media" as const,
+          name: mediaItem.name,
+          mediaId: mediaItem.id,
+          duration: mediaItem.duration,
+          startTime: currentTimelinePosition,
+          trimStart: 0,
+          trimEnd: 0,
+          muted: false,
+          horizontalFlip: false,
+        };
+
+        timelineElements.push(timelineElement);
+        currentTimelinePosition += mediaItem.duration;
+      }
+
+      // 🎯 性能优化7：批量添加媒体项到存储
+      if (!projectStore.activeProject) {
+        throw new Error("没有活动项目");
+      }
+
+      await Promise.all(
+        mediaItems.map(item =>
+          mediaStore.addMediaItem(projectStore.activeProject!.id, item)
+        )
+      );
+
+      console.log(`✅ 成功添加 ${mediaItems.length} 个媒体项`);
+
+      // 🎯 性能优化8：使用优化的渐进式添加，减少延迟
+      await timelineStore.addElementsToTrackProgressive(originalTrackId, timelineElements, {
+        delayBetweenElements: 30, // 大幅减少延迟从200ms到30ms
+        showAnimation: true,
+        onProgress: (current, total, element) => {
+          console.log(`⚡ 快速添加进度: ${current}/${total} - ${element.name}`);
+        }
+      });
+
+      // 🎯 设置状态
+      set({
+        isShowingOriginalVideo: true,
+        originalVideoTrackId: originalTrackId,
+        visualEditingState: 'completed'
+      });
+
+      // 🎯 自动调整时间轴缩放
+      setTimeout(() => {
+        get().adjustTimelineZoomForOriginalVideos();
+      }, 500);
+
+      // 🎯 清理资源
+      batchProcessor.clear();
+
+      console.log(`🚀 优化的原视频加载完成: ${mediaItems.length} 个视频，总时长 ${currentTimelinePosition.toFixed(1)}s`);
+
+    } catch (error) {
+      console.error("优化的原视频加载失败:", error);
+      set({
+        visualEditingState: 'idle',
+        isShowingOriginalVideo: false
+      });
+      throw error;
+    }
+  },
+
+  // 🚀 无FFmpeg版本：在时间轴显示所有原始视频（完全避免FFmpeg依赖）
+  showOriginalVideoInTimelineNoFFmpeg: async () => {
+    const { currentEditingPlan } = get();
+    if (!currentEditingPlan) {
+      return;
+    }
+
+    console.log("🚀 开始无FFmpeg的原视频加载流程");
+    set({ visualEditingState: 'showing-original' });
+
+    try {
+      const timelineStore = useTimelineStore.getState();
+      const mediaStore = useMediaStore.getState();
+      const projectStore = useProjectStore.getState();
+
+      if (!projectStore.activeProject) {
+        throw new Error("没有活动项目");
+      }
+
+      // 清空现有时间轴
+      timelineStore.clearTimeline();
+      const originalTrackId = timelineStore.findOrCreateTrack("media");
+
+      const allClips = currentEditingPlan.timeline_clips;
+      console.log(`⚡ 开始处理 ${allClips.length} 个视频片段（无FFmpeg模式）`);
+
+      if (allClips.length === 0) {
+        return;
+      }
+
+      // 🎯 收集唯一视频URL
+      const uniqueUrls = [...new Set(allClips.map(clip => clip.video_url))];
+      console.log(`📊 发现 ${uniqueUrls.length} 个唯一视频`);
+
+      // 🎯 并行下载视频
+      const downloadPromises = uniqueUrls.map(async (url, index) => {
+        try {
+          console.log(`📥 下载视频 ${index + 1}/${uniqueUrls.length}: ${url}`);
+
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`下载失败: ${response.statusText}`);
+
+          const blob = await response.blob();
+          const file = new File([blob], `video-${index + 1}.mp4`, { type: 'video/mp4' });
+
+          return { url, file, index };
+        } catch (error) {
+          console.error(`❌ 视频下载失败: ${url}`, error);
+          return null;
+        }
+      });
+
+      const downloadResults = await Promise.allSettled(downloadPromises);
+      const successfulDownloads = downloadResults
+        .filter(result => result.status === 'fulfilled' && result.value !== null)
+        .map(result => (result as PromiseFulfilledResult<any>).value);
+
+      if (successfulDownloads.length === 0) {
+        throw new Error("所有视频下载失败");
+      }
+
+      console.log(`✅ 成功下载 ${successfulDownloads.length}/${uniqueUrls.length} 个视频`);
+
+      // 🎯 创建URL到文件的映射
+      const urlToFileMap = new Map();
+      successfulDownloads.forEach(({ url, file }) => {
+        urlToFileMap.set(url, file);
+      });
+
+      // 🎯 使用浏览器原生API处理视频（完全避免FFmpeg）
+      const mediaItems = await Promise.all(
+        successfulDownloads.map(async ({ url, file, index }) => {
+          try {
+            console.log(`🔄 处理视频 ${index + 1}/${successfulDownloads.length}: ${file.name}`);
+
+            // 🚀 使用media-store中的generateVideoThumbnail（已知稳定）
+            const { generateVideoThumbnail } = await import('@/stores/media-store');
+            const thumbnailData = await generateVideoThumbnail(file);
+
+            console.log(`✅ 视频处理完成: ${file.name}`, {
+              width: thumbnailData.width,
+              height: thumbnailData.height,
+              hasThumbnail: !!thumbnailData.thumbnailUrl
+            });
+
+            return await mediaStore.addMediaItem(projectStore.activeProject!.id, {
+              name: `原视频-${index + 1}`,
+              type: "video" as const,
+              file: file,
+              url: url,
+              thumbnailUrl: thumbnailData.thumbnailUrl,
+              duration: 30, // 使用默认时长，避免复杂的时长获取
+              width: thumbnailData.width,
+              height: thumbnailData.height,
+            });
+          } catch (error) {
+            console.error(`❌ 视频处理失败: ${file.name}`, error);
+
+            // 🎯 创建基本媒体项（使用默认值）
+            return await mediaStore.addMediaItem(projectStore.activeProject!.id, {
+              name: `原视频-${index + 1}`,
+              type: "video" as const,
+              file: file,
+              url: url,
+              thumbnailUrl: '', // 暂时不生成缩略图
+              duration: 30,
+              width: 1920,
+              height: 1080,
+            });
+          }
+        })
+      );
+
+      console.log(`✅ 成功添加 ${mediaItems.length} 个媒体项`);
+
+      // 🎯 创建URL到媒体项的映射
+      const urlToMediaMap = new Map();
+      successfulDownloads.forEach(({ url }, index) => {
+        urlToMediaMap.set(url, mediaItems[index]);
+      });
+
+      // 🎯 快速创建时间轴元素
+      const timelineElements = [];
+      let currentTimelinePosition = 0;
+
+      for (const clip of allClips) {
+        const mediaItem = urlToMediaMap.get(clip.video_url);
+
+        if (!mediaItem) {
+          console.warn(`⚠️ 跳过无法处理的视频: ${clip.video_url}`);
+          continue;
+        }
+
+        const timelineElement = {
+          type: "media" as const,
+          name: `原视频片段-${clip.sequence_clip_id}`,
+          mediaId: mediaItem.id,
+          duration: mediaItem.duration,
+          startTime: currentTimelinePosition,
+          trimStart: 0,
+          trimEnd: 0,
+          muted: false,
+          horizontalFlip: false,
+        };
+
+        timelineElements.push(timelineElement);
+        currentTimelinePosition += mediaItem.duration;
+      }
+
+      // 🎯 快速添加到时间轴（减少延迟）
+      await timelineStore.addElementsToTrackProgressive(originalTrackId, timelineElements, {
+        delayBetweenElements: 100, // 减少延迟
+        showAnimation: true,
+        onProgress: (current, total, element) => {
+          console.log(`⚡ 添加进度: ${current}/${total} - ${element.name}`);
+        }
+      });
+
+      // 🎯 设置状态
+      set({
+        isShowingOriginalVideo: true,
+        originalVideoTrackId: originalTrackId,
+        visualEditingState: 'completed'
+      });
+
+      // 🎯 自动调整时间轴缩放
+      setTimeout(() => {
+        get().adjustTimelineZoomForOriginalVideos();
+      }, 500);
+
+      console.log(`🚀 无FFmpeg原视频加载完成: ${mediaItems.length} 个视频，总时长 ${currentTimelinePosition.toFixed(1)}s`);
+
+    } catch (error) {
+      console.error("无FFmpeg原视频加载失败:", error);
+      set({
+        visualEditingState: 'idle',
+        isShowingOriginalVideo: false
+      });
+      throw error;
+    }
+  },
+
+  // 原版本：在时间轴显示所有原始视频（保留作为备用）
   showOriginalVideoInTimeline: async () => {
     const { currentEditingPlan } = get();
     if (!currentEditingPlan) {

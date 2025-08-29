@@ -122,6 +122,46 @@ export const trimVideo = async (
   return blob;
 };
 
+// 🚀 优化：添加快速视频信息获取方法
+export const getVideoInfoFast = async (
+  videoFile: File
+): Promise<{
+  duration: number;
+  width: number;
+  height: number;
+  fps: number;
+}> => {
+  // 🎯 优先使用浏览器原生API获取基本信息
+  try {
+    const videoElement = document.createElement('video');
+    const url = URL.createObjectURL(videoFile);
+
+    return new Promise((resolve, reject) => {
+      videoElement.onloadedmetadata = () => {
+        const result = {
+          duration: videoElement.duration,
+          width: videoElement.videoWidth,
+          height: videoElement.videoHeight,
+          fps: 30, // 默认帧率，如需精确可后续用FFmpeg获取
+        };
+        URL.revokeObjectURL(url);
+        resolve(result);
+      };
+
+      videoElement.onerror = () => {
+        URL.revokeObjectURL(url);
+        // 回退到FFmpeg方法
+        getVideoInfo(videoFile).then(resolve).catch(reject);
+      };
+
+      videoElement.src = url;
+    });
+  } catch (error) {
+    // 回退到原有方法
+    return getVideoInfo(videoFile);
+  }
+};
+
 export const getVideoInfo = async (
   videoFile: File
 ): Promise<{

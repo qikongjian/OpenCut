@@ -107,13 +107,12 @@ export const useAutoAIEditingStore = create<AutoAIEditingState>((set, get) => ({
       
       setProgress(25, 100);
       
-      // 阶段2: 显示原视频 (优化进度反馈)
-      setStage('showing-original', '正在显示原视频到时间轴...');
+      // 阶段2: 显示原视频 (使用无FFmpeg版本)
+      setStage('showing-original', '正在加载原视频到时间轴...');
       setProgress(35, 0);
 
-
-
-      await aiEditingStore.showOriginalVideoInTimeline();
+      // 🎯 使用完全不依赖FFmpeg的方法
+      await aiEditingStore.showOriginalVideoInTimelineNoFFmpeg();
 
       setProgress(50, 100);
       

@@ -644,12 +644,13 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
       console.log(`✅ 批量添加 ${validElements.length} 个元素到轨道 ${trackId}`);
     },
 
-    // 🎨 渐进式添加元素到轨道（优化用户体验版本）
+    // 🚀 性能优化版本：渐进式添加元素到轨道
     addElementsToTrackProgressive: async (trackId, elements, options = {}) => {
       const {
-        delayBetweenElements = 300,
+        delayBetweenElements = 50, // 🎯 大幅减少延迟从300ms到50ms
         onProgress,
-        showAnimation = true
+        showAnimation = true,
+        batchSize = 5 // 🎯 新增：批量处理大小
       } = options;
 
       get().pushHistory();
@@ -660,71 +661,84 @@ export const useTimelineStore = create<TimelineStore>((set, get) => {
         return;
       }
 
-      console.log(`🎨 开始渐进式添加 ${elements.length} 个元素到轨道 ${trackId}`);
+      console.log(`🚀 开始优化的渐进式添加 ${elements.length} 个元素到轨道 ${trackId}`);
 
-      for (let i = 0; i < elements.length; i++) {
-        const elementData = elements[i];
-
-        // 验证元素
+      // 🎯 性能优化1：预验证所有元素，避免循环中重复验证
+      const validElements = elements.filter(elementData => {
         const validation = validateElementTrackCompatibility(elementData, track);
         if (!validation.isValid) {
           console.error(validation.errorMessage);
-          continue;
+          return false;
         }
 
         if (elementData.type === "media" && !elementData.mediaId) {
           console.error("Media element must have mediaId");
-          continue;
+          return false;
         }
 
         if (elementData.type === "text" && !elementData.content) {
           console.error("Text element must have content");
-          continue;
+          return false;
         }
 
-        // 创建新元素
-        const newElement: TimelineElement = {
+        return true;
+      });
+
+      console.log(`✅ 验证通过 ${validElements.length}/${elements.length} 个元素`);
+
+      // 🎯 性能优化2：批量处理元素，减少DOM更新频率
+      for (let batchStart = 0; batchStart < validElements.length; batchStart += batchSize) {
+        const batch = validElements.slice(batchStart, Math.min(batchStart + batchSize, validElements.length));
+
+        // 🎯 批量创建元素
+        const newElements = batch.map(elementData => ({
           id: generateUUID(),
           ...elementData,
-        };
+        }));
 
-        // 添加单个元素到轨道
+        // 🎯 批量更新轨道（减少状态更新次数）
         const currentTrack = get()._tracks.find((t) => t.id === trackId);
         if (currentTrack) {
           updateTracksAndSave(
             get()._tracks.map((track) =>
               track.id === trackId
-                ? { ...track, elements: [...track.elements, newElement] }
+                ? { ...track, elements: [...track.elements, ...newElements] }
                 : track
             )
           );
 
-          // 选择当前添加的元素
-          get().selectElement(trackId, newElement.id);
+          // 🎯 只选择批次中的最后一个元素
+          const lastElement = newElements[newElements.length - 1];
+          get().selectElement(trackId, lastElement.id);
 
-          // 🎯 触发缩放调整事件，让时间轴自动适应新内容
-          if (i === 0) {
+          // 🎯 只在第一个批次触发缩放调整
+          if (batchStart === 0) {
             const event = new CustomEvent('timeline-zoom-adjust', {
-              detail: { zoomLevel: 0.5 } // 适当的缩放级别
+              detail: { zoomLevel: 0.5 }
             });
             window.dispatchEvent(event);
           }
 
-          console.log(`✨ 渐进式添加第 ${i + 1}/${elements.length} 个元素: ${newElement.name}`);
+          // 🎯 批量进度回调
+          for (let i = 0; i < newElements.length; i++) {
+            const globalIndex = batchStart + i + 1;
+            const element = newElements[i];
 
-          // 进度回调
-          if (onProgress) {
-            onProgress(i + 1, elements.length, newElement);
+            console.log(`⚡ 快速添加第 ${globalIndex}/${validElements.length} 个元素: ${element.name}`);
+
+            if (onProgress) {
+              onProgress(globalIndex, validElements.length, element);
+            }
           }
 
-          // 延迟以创建渐进效果
-          if (i < elements.length - 1 && showAnimation) {
+          // 🎯 批次间延迟（而不是每个元素间延迟）
+          if (batchStart + batchSize < validElements.length && showAnimation) {
             await new Promise(resolve => setTimeout(resolve, delayBetweenElements));
           }
         }
       }
 
-      console.log(`🎉 渐进式添加完成！共添加 ${elements.length} 个元素`);
+      console.log(`🚀 优化的渐进式添加完成！共添加 ${validElements.length} 个元素`);
     },
 
     removeElementFromTrack: (trackId, elementId, pushHistory = true) => {
