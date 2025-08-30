@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import { ArrowRightFromLine, ChevronDown } from 'lucide-react';
 import { Switch } from 'antd';
+import { useSearchParams } from 'next/navigation';
 import { MessageRenderer } from "./MessageRenderer";
 import { InputBar } from "./InputBar";
 import { useMessages } from "./useMessages";
@@ -50,6 +51,13 @@ export default function SmartChatBox({
   // 消息列表引用
   const listRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
+  
+  // 从URL获取uid参数
+  const searchParams = useSearchParams();
+  const urlUid = searchParams.get('uid');
+  
+  // 优先使用URL中的uid，如果没有则使用传入的userId
+  const finalUserId = urlUid ? parseInt(urlUid) : userId;
 
   // 检查是否滚动到底部
   const checkIfAtBottom = useCallback(() => {
@@ -108,7 +116,7 @@ export default function SmartChatBox({
     { sendMessage },
     { enabled: systemPush, toggle: toggleSystemPush }
   ] = useMessages({ 
-    config: { projectId, userId },
+    config: { projectId, userId: finalUserId },
     onMessagesUpdate: handleMessagesUpdate
   });
 
@@ -150,6 +158,10 @@ export default function SmartChatBox({
             checked={systemPush}
             onChange={toggleSystemPush}
             className="ml-2"
+            style={{
+              backgroundColor: systemPush ? '#2567EC' : '#6B7280',
+              borderColor: systemPush ? '#2567EC' : '#6B7280'
+            }}
           />
         </div>
         <div className="text-xs opacity-70">

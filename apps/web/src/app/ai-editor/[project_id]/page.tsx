@@ -20,6 +20,8 @@ import { Onboarding } from "@/components/onboarding";
 
 import { useAutoAIEditingStore } from "@/stores/auto-ai-editing-store";
 import { initializeTokenSystem } from "@/lib/ai-editing-auth";
+import { MediaPanel } from "../../../components/editor/media-panel";
+import { useMediaPanelStore } from "../../../components/editor/media-panel/store";
 
 
 export default function AIEditor() {
@@ -50,18 +52,30 @@ export default function AIEditor() {
   const searchParams = useSearchParams();
   const projectId = params.project_id as string;
 
-  // 从URL查询参数获取user_id，如果没有则使用默认值1
-  const userId = searchParams.get('user_id') ? parseInt(searchParams.get('user_id')!) : 1;
+  // 从URL查询参数获取uid或user_id，如果没有则使用默认值1
+  const uid = searchParams.get('uid');
+  const user_id = searchParams.get('user_id');
+  const userId = uid ? parseInt(uid) : (user_id ? parseInt(user_id) : 1);
   const handledProjectIds = useRef<Set<string>>(new Set());
   const isInitializingRef = useRef<boolean>(false);
   const autoStartedRef = useRef<boolean>(false);
 
-  const { startAutoAIEditing, currentStage } = useAutoAIEditingStore();
+  const { startAutoAIEditing, currentStage, isAutoRunning } = useAutoAIEditingStore();
+  const { setActiveTab } = useMediaPanelStore();
 
   // SmartChatBox状态管理
   const [isSmartChatBoxOpen, setIsSmartChatBoxOpen] = useState(true); // 默认打开，因为现在在左侧面板
 
   usePlaybackControls();
+
+  // 监听AI剪辑流程状态，自动切换到AI剪辑标签页
+  useEffect(() => {
+    if (isAutoRunning && currentStage !== 'idle') {
+      // 当AI剪辑流程开始时，自动切换到AI剪辑标签页
+      setActiveTab('ai-editing');
+      console.log('🤖 自动切换到AI剪辑标签页');
+    }
+  }, [isAutoRunning, currentStage, setActiveTab]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -226,7 +240,7 @@ export default function AIEditor() {
                 onResize={setToolsPanel}
                 className="min-w-0 rounded-sm"
               >
-                <PropertiesPanel />
+                <MediaPanel />
               </ResizablePanel>
 
               <ResizableHandle withHandle />
@@ -329,7 +343,7 @@ export default function AIEditor() {
                         onResize={setToolsPanel}
                         className="min-w-0 rounded-sm"
                       >
-                        <PropertiesPanel />
+                        <MediaPanel />
                       </ResizablePanel>
 
                       <ResizableHandle withHandle />
@@ -405,7 +419,7 @@ export default function AIEditor() {
                         onResize={setToolsPanel}
                         className="min-w-0 rounded-sm"
                       >
-                        <PropertiesPanel />
+                        <MediaPanel />
                       </ResizablePanel>
 
                       <ResizableHandle withHandle />
@@ -480,7 +494,7 @@ export default function AIEditor() {
                     onResize={setToolsPanel}
                     className="min-w-0 rounded-sm"
                   >
-                    <PropertiesPanel />
+                    <MediaPanel />
                   </ResizablePanel>
 
                   <ResizableHandle withHandle />

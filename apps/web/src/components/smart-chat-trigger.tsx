@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import { useSearchParams } from 'next/navigation';
 import SmartChatBox from "./smart-chat-box/SmartChatBox";
 import { useProjectStore } from "@/stores/project-store";
 import { Drawer } from 'antd';
@@ -15,6 +16,8 @@ interface SmartChatTriggerProps {
 export function SmartChatTrigger({ className = "", userId = 1 }: SmartChatTriggerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { activeProject } = useProjectStore();
+  const searchParams = useSearchParams();
+  const uid = searchParams.get('uid');
 
   // 如果没有活跃项目，不显示聊天功能
   if (!activeProject) {
@@ -27,13 +30,13 @@ export function SmartChatTrigger({ className = "", userId = 1 }: SmartChatTrigge
       <motion.button
         className={`fixed bottom-6 right-6 z-40 rounded-full p-4 shadow-lg transition-all duration-300 focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring ${className}`}
         style={{
-          background: 'linear-gradient(135deg, #6AF4F9 30%, #C73BFF 70%)',
-          boxShadow: '0 0 20px rgba(106, 244, 249, 0.3), 0 0 40px rgba(199, 59, 255, 0.2)'
+          background: 'linear-gradient(135deg, #2567EC 30%, #37B6F7 70%)',
+          boxShadow: '0 0 20px rgba(37, 103, 236, 0.3), 0 0 40px rgba(55, 182, 247, 0.2)'
         }}
         onClick={() => setIsOpen(true)}
         whileHover={{
           scale: 1.05,
-          boxShadow: '0 0 30px rgba(106, 244, 249, 0.4), 0 0 60px rgba(199, 59, 255, 0.3)'
+          boxShadow: '0 0 30px rgba(37, 103, 236, 0.4), 0 0 60px rgba(55, 182, 247, 0.3)'
         }}
         whileTap={{ scale: 0.95 }}
         title="打开AI聊天"
@@ -72,7 +75,7 @@ export function SmartChatTrigger({ className = "", userId = 1 }: SmartChatTrigge
           isSmartChatBoxOpen={isOpen}
           setIsSmartChatBoxOpen={setIsOpen}
           projectId={activeProject.id}
-          userId={userId}
+          userId={uid ? parseInt(uid, 10) : userId}
         />
       </Drawer>
     </>

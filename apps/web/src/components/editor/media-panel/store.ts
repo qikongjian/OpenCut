@@ -15,6 +15,7 @@ import {
 import { create } from "zustand";
 
 export type Tab =
+  | "ai-editing"
   | "media"
   | "sounds"
   | "text"
@@ -24,10 +25,13 @@ export type Tab =
   | "captions"
   | "filters"
   | "adjustment"
-  | "settings"
-  | "ai-editing";
+  | "settings";
 
 export const tabs: { [key in Tab]: { icon: LucideIcon; label: string } } = {
+  "ai-editing": {
+    icon: Bot,
+    label: "AI剪辑",
+  },
   media: {
     icon: VideoIcon,
     label: "Media",
@@ -68,10 +72,6 @@ export const tabs: { [key in Tab]: { icon: LucideIcon; label: string } } = {
     icon: SettingsIcon,
     label: "Settings",
   },
-  "ai-editing": {
-    icon: Bot,
-    label: "AI剪辑",
-  },
 };
 
 interface MediaPanelStore {
@@ -80,6 +80,6 @@ interface MediaPanelStore {
 }
 
 export const useMediaPanelStore = create<MediaPanelStore>((set) => ({
-  activeTab: "media",
+  activeTab: "ai-editing",
   setActiveTab: (tab) => set({ activeTab: tab }),
 }));
