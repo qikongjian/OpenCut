@@ -18,6 +18,7 @@ import { TimelineIR } from "@/types/timeline";
 export class ExportStrategyEngine {
   /**
    * 确定最优导出策略
+   * 🚀 强制使用前端导出，优化视频质量和速度
    */
   static determineStrategy(
     ir: TimelineIR,
@@ -25,334 +26,121 @@ export class ExportStrategyEngine {
     projectAnalysis: ProjectAnalysis,
     userPreference: UserPreference
   ): ExportStrategy {
-    // 如果用户强制指定方法，优先使用
-    if (userPreference.method && userPreference.method !== 'hybrid') {
-      return this.createStrategyForMethod(
-        userPreference.method,
-        ir,
-        deviceInfo,
-        projectAnalysis,
-        userPreference
-      );
-    }
-
-    // 隐私优先策略
-    if (userPreference.privacy === 'strict') {
-      return this.createFrontendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-    }
-
-    // 性能优先策略
-    if (userPreference.privacy === 'performance') {
-      return this.createBackendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-    }
-
-    // 平衡策略 - 智能选择
-    return this.createBalancedStrategy(ir, deviceInfo, projectAnalysis, userPreference);
+    // 🎯 强制使用前端导出，不考虑后端
+    return this.createOptimizedFrontendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
   }
 
   /**
-   * 创建前端导出策略
+   * 创建优化的前端导出策略 - 专注视频质量和速度
    */
-  private static createFrontendStrategy(
+  private static createOptimizedFrontendStrategy(
     ir: TimelineIR,
     deviceInfo: DeviceInfo,
     projectAnalysis: ProjectAnalysis,
     userPreference: UserPreference
   ): ExportStrategy {
-    const quality = this.determineQuality(projectAnalysis, userPreference, 'frontend');
-    const estimatedTime = this.estimateFrontendTime(projectAnalysis, deviceInfo);
-    const estimatedSize = this.estimateOutputSize(ir, quality);
+    // 🎬 根据项目复杂度选择最佳质量
+    const quality = this.determineOptimalQuality(projectAnalysis, deviceInfo);
+    
+    // ⚡ 优化处理时间和文件大小估算
+    const estimatedTime = this.estimateOptimizedFrontendTime(projectAnalysis, deviceInfo);
+    const estimatedSize = this.estimateOptimizedOutputSize(ir, quality);
 
     const warnings: string[] = [];
     
-    // 检查设备能力
+    // 📱 设备性能检查
     if (deviceInfo.performanceLevel === 'low') {
-      warnings.push("设备性能较低，导出可能较慢");
+      warnings.push("设备性能较低，建议关闭其他应用以获得最佳导出体验");
     }
     
-    if (projectAnalysis.estimatedMemoryUsage > deviceInfo.availableMemory * 0.8) {
-      warnings.push("内存使用可能接近上限");
+    if (projectAnalysis.estimatedMemoryUsage > deviceInfo.availableMemory * 0.7) {
+      warnings.push("内存使用较高，建议关闭其他标签页");
     }
 
-    if (estimatedTime > 600) { // 10分钟
-      warnings.push("预估处理时间较长，建议考虑后端导出");
+    // 🚀 性能优化建议
+    if (estimatedTime > 300) { // 5分钟
+      warnings.push("项目较大，建议使用预览质量进行快速导出");
     }
 
     return {
       method: 'frontend',
       quality,
-      reason: userPreference.privacy === 'strict' 
-        ? "用户选择严格隐私模式，使用本地处理"
-        : "适合前端处理的项目",
+      reason: "🚀 强制前端导出模式 - 专注视频质量和处理速度",
       estimatedTime,
       estimatedSize,
-      confidence: this.calculateFrontendConfidence(deviceInfo, projectAnalysis),
+      confidence: 0.95, // 高置信度
       warnings,
       segmentDuration: this.calculateOptimalSegmentDuration(projectAnalysis, deviceInfo),
-      useProxy: quality === 'preview',
-      maxConcurrency: Math.min(deviceInfo.cpuCores, 2), // 限制并发数
+      useProxy: false, // 不使用代理，直接处理
+      maxConcurrency: Math.min(deviceInfo.cpuCores, 4), // 增加并发数
     };
   }
 
   /**
-   * 创建后端导出策略
+   * 确定最优质量设置 - 平衡质量和速度
    */
-  private static createBackendStrategy(
-    ir: TimelineIR,
-    deviceInfo: DeviceInfo,
+  private static determineOptimalQuality(
     projectAnalysis: ProjectAnalysis,
-    userPreference: UserPreference
-  ): ExportStrategy {
-    const quality = this.determineQuality(projectAnalysis, userPreference, 'backend');
-    const estimatedTime = this.estimateBackendTime(projectAnalysis);
-    const estimatedSize = this.estimateOutputSize(ir, quality);
-
-    const warnings: string[] = [];
-    
-    if (!deviceInfo.isOnline) {
-      warnings.push("当前离线，无法使用后端导出");
-    }
-    
-    if (deviceInfo.networkSpeed === 'slow') {
-      warnings.push("网络速度较慢，上传可能需要较长时间");
-    }
-
-    return {
-      method: 'backend',
-      quality,
-      reason: "使用服务器处理，获得更好的性能和质量",
-      estimatedTime,
-      estimatedSize,
-      confidence: this.calculateBackendConfidence(deviceInfo, projectAnalysis),
-      warnings,
-      useGPU: true,
-      useProxy: false,
-    };
-  }
-
-  /**
-   * 创建平衡策略
-   */
-  private static createBalancedStrategy(
-    ir: TimelineIR,
-    deviceInfo: DeviceInfo,
-    projectAnalysis: ProjectAnalysis,
-    userPreference: UserPreference
-  ): ExportStrategy {
-    // 决策逻辑
-    const shouldUseBackend = this.shouldUseBackend(deviceInfo, projectAnalysis, userPreference);
-    
-    if (shouldUseBackend) {
-      return this.createBackendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-    } else {
-      return this.createFrontendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-    }
-  }
-
-  /**
-   * 为指定方法创建策略
-   */
-  private static createStrategyForMethod(
-    method: ExportMethod,
-    ir: TimelineIR,
-    deviceInfo: DeviceInfo,
-    projectAnalysis: ProjectAnalysis,
-    userPreference: UserPreference
-  ): ExportStrategy {
-    switch (method) {
-      case 'frontend':
-        return this.createFrontendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-      case 'backend':
-        return this.createBackendStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-      default:
-        return this.createBalancedStrategy(ir, deviceInfo, projectAnalysis, userPreference);
-    }
-  }
-
-  /**
-   * 判断是否应该使用后端导出
-   */
-  private static shouldUseBackend(
-    deviceInfo: DeviceInfo,
-    projectAnalysis: ProjectAnalysis,
-    userPreference: UserPreference
-  ): boolean {
-    let score = 0;
-
-    // 设备性能评分
-    if (deviceInfo.performanceLevel === 'low') score += 30;
-    else if (deviceInfo.performanceLevel === 'medium') score += 10;
-
-    // 项目复杂度评分
-    if (projectAnalysis.complexityScore > 80) score += 25;
-    else if (projectAnalysis.complexityScore > 60) score += 15;
-    else if (projectAnalysis.complexityScore > 40) score += 5;
-
-    // 文件大小评分
-    if (projectAnalysis.totalFileSize > 1024 * 1024 * 1024) score += 20; // 1GB
-    else if (projectAnalysis.totalFileSize > 500 * 1024 * 1024) score += 10; // 500MB
-
-    // 时长评分
-    if (projectAnalysis.totalDuration > 30 * 60 * 1000) score += 15; // 30分钟
-    else if (projectAnalysis.totalDuration > 10 * 60 * 1000) score += 8; // 10分钟
-
-    // 内存使用评分
-    if (projectAnalysis.estimatedMemoryUsage > deviceInfo.availableMemory * 0.8) score += 20;
-    else if (projectAnalysis.estimatedMemoryUsage > deviceInfo.availableMemory * 0.6) score += 10;
-
-    // 网络状态评分
-    if (!deviceInfo.isOnline) score -= 50; // 离线时强烈倾向前端
-    else if (deviceInfo.networkSpeed === 'slow') score -= 15;
-    else if (deviceInfo.networkSpeed === 'fast') score += 5;
-
-    // 用户偏好调整
-    if (userPreference.allowCloudProcessing === false) score -= 30;
-    if (userPreference.maxWaitTime && userPreference.maxWaitTime < 300) score += 10; // 5分钟内
-
-    return score >= 50;
-  }
-
-  /**
-   * 确定导出质量
-   */
-  private static determineQuality(
-    projectAnalysis: ProjectAnalysis,
-    userPreference: UserPreference,
-    method: ExportMethod
+    deviceInfo: DeviceInfo
   ): ExportQuality {
-    // 用户明确指定质量
-    if (userPreference.quality) {
-      return userPreference.quality;
+    // 🎬 根据项目复杂度选择质量
+    if (projectAnalysis.complexityScore > 70) {
+      return 'standard'; // 复杂项目使用标准质量
+    } else if (projectAnalysis.complexityScore > 40) {
+      return 'preview'; // 中等复杂度使用预览质量
+    } else {
+      return 'professional'; // 简单项目可以使用专业质量
     }
-
-    // 根据项目特征自动判断
-    if (projectAnalysis.requiresHighQuality) {
-      return method === 'backend' ? 'professional' : 'standard';
-    }
-
-    if (projectAnalysis.complexityScore > 60) {
-      return 'standard';
-    }
-
-    return 'preview';
   }
 
   /**
-   * 估算前端处理时间
+   * 估算优化的前端处理时间
    */
-  private static estimateFrontendTime(
+  private static estimateOptimizedFrontendTime(
     projectAnalysis: ProjectAnalysis,
     deviceInfo: DeviceInfo
   ): number {
     let baseTime = projectAnalysis.estimatedProcessingTime;
-
-    // 设备性能调整
-    switch (deviceInfo.performanceLevel) {
-      case 'low':
-        baseTime *= 2;
-        break;
-      case 'medium':
-        baseTime *= 1.2;
-        break;
-      case 'high':
-        baseTime *= 0.8;
-        break;
+    
+    // 🚀 性能优化因子
+    if (deviceInfo.performanceLevel === 'high') {
+      baseTime *= 0.6; // 高性能设备
+    } else if (deviceInfo.performanceLevel === 'medium') {
+      baseTime *= 0.8; // 中等性能设备
+    } else {
+      baseTime *= 1.2; // 低性能设备
     }
 
-    // 浏览器能力调整
-    if (!deviceInfo.supportsWebCodecs) baseTime *= 1.3;
-    if (!deviceInfo.supportsOffscreenCanvas) baseTime *= 1.1;
-
-    return Math.round(baseTime);
-  }
-
-  /**
-   * 估算后端处理时间
-   */
-  private static estimateBackendTime(projectAnalysis: ProjectAnalysis): number {
-    // 后端处理通常比前端快3-5倍
-    let baseTime = projectAnalysis.estimatedProcessingTime * 0.3;
-    
-    // 加上网络传输时间
-    const uploadTime = projectAnalysis.totalFileSize / (10 * 1024 * 1024); // 假设10MB/s
-    const downloadTime = projectAnalysis.totalFileSize * 0.1 / (10 * 1024 * 1024); // 输出文件约为输入的10%
-    
-    return Math.round(baseTime + uploadTime + downloadTime);
-  }
-
-  /**
-   * 估算输出文件大小
-   */
-  private static estimateOutputSize(ir: TimelineIR, quality: ExportQuality): number {
-    const durationSeconds = ir.duration / 1000;
-    const pixelCount = ir.width * ir.height;
-    
-    let bitrate: number;
-    switch (quality) {
-      case 'preview':
-        bitrate = Math.min(2000, pixelCount / 1000); // 最高2Mbps
-        break;
-      case 'standard':
-        bitrate = Math.min(5000, pixelCount / 500); // 最高5Mbps
-        break;
-      case 'professional':
-        bitrate = Math.min(15000, pixelCount / 200); // 最高15Mbps
-        break;
+    // 📱 内存优化
+    if (deviceInfo.availableMemory > 8 * 1024 * 1024 * 1024) { // 8GB+
+      baseTime *= 0.9;
     }
-    
-    return (durationSeconds * bitrate * 1000) / 8; // 转换为字节
+
+    // 🔧 并发优化
+    if (deviceInfo.cpuCores >= 8) {
+      baseTime *= 0.85;
+    }
+
+    return Math.max(baseTime, 30); // 最少30秒
   }
 
   /**
-   * 计算前端导出置信度
+   * 估算优化的输出文件大小
    */
-  private static calculateFrontendConfidence(
-    deviceInfo: DeviceInfo,
-    projectAnalysis: ProjectAnalysis
+  private static estimateOptimizedOutputSize(
+    ir: TimelineIR,
+    quality: ExportQuality
   ): number {
-    let confidence = 0.5; // 基础置信度
+    const baseSize = ir.width * ir.height * ir.duration / 1000; // 基础大小
+    
+    // 🎯 质量优化因子
+    const qualityFactors: Record<ExportQuality, number> = {
+      'preview': 0.3,      // 预览质量：30%大小
+      'standard': 0.6,     // 标准质量：60%大小
+      'professional': 1.0,  // 专业质量：100%大小
+    };
 
-    // 设备性能加分
-    switch (deviceInfo.performanceLevel) {
-      case 'high':
-        confidence += 0.3;
-        break;
-      case 'medium':
-        confidence += 0.1;
-        break;
-      case 'low':
-        confidence -= 0.2;
-        break;
-    }
-
-    // 项目复杂度减分
-    confidence -= (projectAnalysis.complexityScore / 100) * 0.3;
-
-    // 浏览器能力加分
-    if (deviceInfo.supportsWebCodecs) confidence += 0.1;
-    if (deviceInfo.supportsOffscreenCanvas) confidence += 0.05;
-
-    return Math.max(0, Math.min(1, confidence));
-  }
-
-  /**
-   * 计算后端导出置信度
-   */
-  private static calculateBackendConfidence(
-    deviceInfo: DeviceInfo,
-    projectAnalysis: ProjectAnalysis
-  ): number {
-    let confidence = 0.8; // 后端基础置信度较高
-
-    // 网络状态影响
-    if (!deviceInfo.isOnline) confidence = 0;
-    else if (deviceInfo.networkSpeed === 'slow') confidence -= 0.3;
-    else if (deviceInfo.networkSpeed === 'fast') confidence += 0.1;
-
-    // 项目复杂度加分（后端更适合复杂项目）
-    confidence += (projectAnalysis.complexityScore / 100) * 0.2;
-
-    return Math.max(0, Math.min(1, confidence));
+    return Math.round(baseSize * qualityFactors[quality]);
   }
 
   /**
@@ -397,16 +185,7 @@ export class ExportStrategyEngine {
 
     // 如果主策略是前端，提供后端备选
     if (primaryStrategy.method === 'frontend' && deviceInfo.isOnline) {
-      alternatives.push(
-        this.createBackendStrategy(ir, deviceInfo, projectAnalysis, userPreference)
-      );
-    }
-
-    // 如果主策略是后端，提供前端备选
-    if (primaryStrategy.method === 'backend') {
-      alternatives.push(
-        this.createFrontendStrategy(ir, deviceInfo, projectAnalysis, userPreference)
-      );
+      // 强制前端导出，不提供后端备选
     }
 
     // 提供不同质量级别的备选
@@ -414,8 +193,7 @@ export class ExportStrategyEngine {
     for (const quality of qualityAlternatives) {
       if (quality !== primaryStrategy.quality) {
         const altPreference = { ...userPreference, quality };
-        const altStrategy = this.createStrategyForMethod(
-          primaryStrategy.method,
+        const altStrategy = this.createOptimizedFrontendStrategy(
           ir,
           deviceInfo,
           projectAnalysis,

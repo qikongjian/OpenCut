@@ -26,6 +26,9 @@ export const env = createEnv({
     MODAL_TRANSCRIPTION_URL: z.string().optional(),
     // AI剪辑计划API
     AI_EDITING_PLAN_API_URL: z.string().url().optional(),
+    // 粗剪视频API配置
+    ROUGH_CUT_API_URL: z.string().url().optional(),
+    ROUGH_CUT_API_TIMEOUT: z.string().transform(val => parseInt(val, 10)).default("30000"),
     // 七牛云配置
     QINIU_ACCESS_KEY: z.string().optional(),
     QINIU_SECRET_KEY: z.string().optional(),
@@ -34,6 +37,9 @@ export const env = createEnv({
   },
   client: {
     NEXT_PUBLIC_AI_EDITING_PLAN_API_URL: z.string().url().optional(),
+    NEXT_PUBLIC_PYTHON_EXPORT_URL: z.string().url().optional(),
+    NEXT_PUBLIC_PYTHON_EXPORT_TIMEOUT: z.string().optional(),
+    NEXT_PUBLIC_ENABLE_PYTHON_EXPORT: z.string().optional(),
   },
   runtimeEnv: {
     ANALYZE: process.env.ANALYZE,
@@ -52,7 +58,14 @@ export const env = createEnv({
     MODAL_TRANSCRIPTION_URL: process.env.MODAL_TRANSCRIPTION_URL,
     // AI剪辑计划API
     AI_EDITING_PLAN_API_URL: process.env.AI_EDITING_PLAN_API_URL,
+    // 粗剪视频API配置
+    ROUGH_CUT_API_URL: process.env.ROUGH_CUT_API_URL,
+    ROUGH_CUT_API_TIMEOUT: process.env.ROUGH_CUT_API_TIMEOUT,
     NEXT_PUBLIC_AI_EDITING_PLAN_API_URL: process.env.NEXT_PUBLIC_AI_EDITING_PLAN_API_URL,
+    // Python导出服务配置
+    NEXT_PUBLIC_PYTHON_EXPORT_URL: process.env.NEXT_PUBLIC_PYTHON_EXPORT_URL,
+    NEXT_PUBLIC_PYTHON_EXPORT_TIMEOUT: process.env.NEXT_PUBLIC_PYTHON_EXPORT_TIMEOUT,
+    NEXT_PUBLIC_ENABLE_PYTHON_EXPORT: process.env.NEXT_PUBLIC_ENABLE_PYTHON_EXPORT,
     // 七牛云配置
     QINIU_ACCESS_KEY: process.env.QINIU_ACCESS_KEY,
     QINIU_SECRET_KEY: process.env.QINIU_SECRET_KEY,

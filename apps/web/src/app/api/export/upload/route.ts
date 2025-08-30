@@ -109,20 +109,22 @@ export async function POST(req: NextRequest) {
           console.warn('⚠️ 七牛云上传异常:', error);
         }
 
-        // 🚀 新增：调用任务结果更新接口
+        // 🚀 新增：准备粗剪接口调用数据（返回给前端）
+        let roughCutData = null;
         if (qiniuUrl) {
-          try {
-            // 使用项目ID而不是导出ID
-            const actualProjectId = projectId || exportId;
-            console.log('🎬 准备调用粗剪视频接口:');
-            console.log('  - 使用项目ID:', actualProjectId);
-            console.log('  - 导出ID:', exportId);
-            
-            await updateTaskResult(qiniuUrl, actualProjectId);
-            console.log('✅ 任务结果更新成功');
-          } catch (error) {
-            console.warn('⚠️ 任务结果更新失败:', error);
-          }
+          const actualProjectId = projectId || exportId;
+          roughCutData = {
+            projectId: actualProjectId,
+            exportId: exportId,
+            videoUrl: qiniuUrl,
+            metadata: {
+              size: stats.size,
+              format: 'mp4',
+              quality: options.quality || 'standard',
+              method: 'backend_upload'
+            }
+          };
+          console.log('🎬 准备粗剪接口调用数据:', roughCutData);
         }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
@@ -131,6 +133,7 @@ export async function POST(req: NextRequest) {
           size: stats.size,
           duration: ir.duration / 1000,
           qiniuUrl: qiniuUrl, // 新增：七牛云URL
+          roughCutData: roughCutData // 新增：粗剪接口调用数据
         })}\n\n`));
 
       } catch (error) {
@@ -477,34 +480,25 @@ async function updateTaskResult(qiniuUrl: string, exportId: string): Promise<voi
     console.log('  - task_name:', taskResult.task_name);
     console.log('  - project_id:', taskResult.project_id);
 
-    // 直接调用外部粗剪视频API，而不是通过自己的后端API
-    const externalApiUrl = 'https://77.smartvideo.py.qikongjian.com/movie/update_task_result';
-    console.log('📡 调用外部粗剪视频API:', externalApiUrl);
+    // 使用新的粗剪视频服务
+    const { roughCutService } = await import('@/lib/rough-cut-service');
     
-    const response = await fetch(externalApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'OpenCut/1.0',
-      },
-      body: JSON.stringify(taskResult),
-    });
-
-    console.log('📥 外部API响应:');
-    console.log('  - 状态码:', response.status);
-    console.log('  - 状态文本:', response.statusText);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ 外部API响应错误:', response.status, response.statusText);
-      console.error('错误详情:', errorText);
-      throw new Error(`外部API错误: ${response.status} ${response.statusText}`);
+    // 检查服务配置
+    if (!roughCutService.configured) {
+      console.warn('⚠️ 粗剪视频服务未配置，跳过任务结果更新');
+      return;
     }
 
-    const result = await response.json();
-    console.log('📥 外部API返回数据:', result);
+    // 调用粗剪视频服务更新任务结果
+    const result = await roughCutService.updateTaskResult(exportId, qiniuUrl);
     
-    console.log('✅ 粗剪视频接口调用成功');
+    if (result.success) {
+      console.log('✅ 粗剪视频接口调用成功');
+      console.log('📥 返回数据:', result.data);
+    } else {
+      console.warn('⚠️ 粗剪视频接口调用失败:', result.error);
+      // 注意：这里不抛出错误，避免影响导出流程
+    }
 
   } catch (error) {
     console.error('❌ 更新任务结果失败:', error);

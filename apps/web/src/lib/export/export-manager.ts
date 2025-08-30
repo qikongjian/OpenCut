@@ -19,6 +19,7 @@ import { ExportStrategyEngine } from "./strategy-engine";
 import { FrontendExporter } from "./frontend-exporter";
 import { BackendExporter } from "./backend-exporter";
 import { IRGenerator } from "./ir-generator";
+import { pythonExportClient } from "@/lib/python-export-client";
 
 /**
  * 导出管理器 - 统一的导出接口
@@ -65,7 +66,8 @@ export class ExportManager {
   }
 
   /**
-   * 智能导出 - 强制使用后端导出（调试模式）
+   * 智能导出 - 强制使用Python导出服务（七牛云集成）
+   * 🚀 优先使用七牛云存储，自动上传并返回直链
    */
   async smartExport(
     userPreference: UserPreference,
@@ -73,10 +75,16 @@ export class ExportManager {
   ): Promise<ExportResult> {
     await this.ensureInitialized();
 
+    // 检查Python服务可用性
+    const pythonAvailable = await pythonExportClient.checkHealth();
+    if (!pythonAvailable) {
+      throw new Error('🐍 Python导出服务不可用，请检查服务器状态');
+    }
+
     // 生成IR
     const ir = IRGenerator.generateIR();
 
-    console.log('🔧 调试模式：强制使用后端导出');
+    console.log('🎬 开始Python后端导出（七牛云集成）...');
     console.log('IR数据:', {
       videoCount: ir.video.length,
       audioCount: ir.audio.length,
@@ -87,45 +95,43 @@ export class ExportManager {
       fps: ir.fps,
     });
 
-    // 强制使用后端导出策略（跳过策略选择和健康检查）
-    const strategy = {
-      method: 'backend' as const,
-      quality: userPreference.preferredQuality || 'standard' as const,
-      reason: '调试模式：强制后端导出',
-      estimatedTime: 60,
-      estimatedSize: 50 * 1024 * 1024, // 50MB
+    // 分析项目复杂度
+    const projectAnalysis = analyzeProject(ir);
+    console.log('📊 项目分析结果:', projectAnalysis);
+
+    // 🚀 强制使用Python导出服务
+    console.log('🐍 强制使用Python导出服务（七牛云集成）');
+    
+    // 构建导出选项 - 速度优化
+    const options: ExportOptions = {
+      quality: this.determineOptimalQuality(projectAnalysis),
+      method: 'backend', // Python服务作为后端
+      format: (userPreference.preferredFormat as 'mp4' | 'webm' | 'mov') || 'mp4',
+      codec: (userPreference.preferredCodec as 'h264' | 'h265' | 'vp9' | 'av1') || 'h264',
+      subtitleMode: 'hard',
       useGPU: false,
       useProxy: false,
-      segmentDuration: 10,
-      maxConcurrency: 1,
-      alternatives: [],
-    };
-
-    console.log('🚀 使用后端导出策略:', strategy);
-
-    // 构建导出选项
-    const options: ExportOptions = {
-      quality: strategy.quality,
-      method: strategy.method,
-      format: userPreference.preferredFormat || 'mp4',
-      codec: userPreference.preferredCodec || 'h264',
-      subtitleMode: 'hard',
-      useGPU: strategy.useGPU,
-      useProxy: strategy.useProxy,
-      segmentDuration: strategy.segmentDuration,
-      maxConcurrency: strategy.maxConcurrency,
+      segmentDuration: 20,
+      maxConcurrency: 1, // Python服务单线程处理
       onProgress,
+      // 🚀 默认启用快速模式
+      speedMode: projectAnalysis.complexityScore > 60 ? 'fast' : 'normal',
     };
 
-    console.log('📋 导出选项:', options);
-
-    // 直接执行后端导出（跳过executeExport的策略判断）
-    console.log('🎬 开始后端导出...');
-    return await this.backendExporter.exportWithProgress(ir, options);
+    console.log('🐍 Python导出选项（七牛云集成）:', options);
+    const result = await pythonExportClient.streamExport(ir, options);
+    
+    // 添加云存储提供商信息
+    if (result.cloudStorage) {
+      result.cloudProvider = 'qiniu';
+    }
+    
+    return result;
   }
 
   /**
-   * 手动导出 - 使用指定选项
+   * 手动导出 - 强制使用Python导出服务（七牛云集成）
+   * 🚀 只使用Python后端导出，不回退
    */
   async manualExport(
     options: ExportOptions,
@@ -133,22 +139,73 @@ export class ExportManager {
   ): Promise<ExportResult> {
     await this.ensureInitialized();
 
-    const ir = IRGenerator.generateIR();
-    const enhancedOptions = { ...options, onProgress };
-
-    // 根据指定方法执行导出
-    switch (options.method) {
-      case 'frontend':
-        return await this.frontendExporter.export(ir, enhancedOptions);
-      case 'backend':
-        return await this.backendExporter.exportWithProgress(ir, enhancedOptions);
-      default:
-        throw new Error(`Unsupported export method: ${options.method}`);
+    // 检查Python服务可用性
+    const pythonAvailable = await pythonExportClient.checkHealth();
+    if (!pythonAvailable) {
+      throw new Error('🐍 Python导出服务不可用，请检查服务器状态');
     }
+
+    const ir = IRGenerator.generateIR();
+    
+    // 🚀 强制使用Python导出服务
+    console.log('🐍 强制使用Python导出服务（七牛云集成）');
+    const result = await pythonExportClient.streamExport(ir, options);
+    
+    // 添加云存储提供商信息
+    if (result.cloudStorage) {
+      result.cloudProvider = 'qiniu';
+    }
+    
+    return result;
+  }
+
+  /**
+   * 强制使用Python导出服务（七牛云集成）
+   * 🌐 专门的Python导出接口，支持七牛云自动上传
+   */
+  async pythonExport(
+    userPreference: UserPreference,
+    onProgress?: (progress: ExportProgress) => void
+  ): Promise<ExportResult> {
+    await this.ensureInitialized();
+
+    const ir = IRGenerator.generateIR();
+    
+    // 检查Python服务可用性
+    const pythonAvailable = await pythonExportClient.checkHealth();
+    if (!pythonAvailable) {
+      throw new Error('🐍 Python导出服务不可用，请检查服务器状态');
+    }
+
+    console.log('🐍 强制使用Python导出服务（七牛云集成）');
+
+    // 构建导出选项
+    const options: ExportOptions = {
+      quality: userPreference.preferredQuality || 'standard',
+      method: 'backend',
+      format: (userPreference.preferredFormat as 'mp4' | 'webm' | 'mov') || 'mp4',
+      codec: (userPreference.preferredCodec as 'h264' | 'h265' | 'vp9' | 'av1') || 'h264',
+      subtitleMode: 'hard',
+      useGPU: false,
+      useProxy: false,
+      segmentDuration: 20,
+      maxConcurrency: 1,
+      onProgress,
+    };
+
+    const result = await pythonExportClient.streamExport(ir, options);
+    
+    // 添加云存储提供商信息
+    if (result.cloudStorage) {
+      result.cloudProvider = 'qiniu';
+    }
+    
+    return result;
   }
 
   /**
    * 获取导出策略建议
+   * 🚀 优先推荐Python导出服务（七牛云集成）
    */
   async getExportStrategy(userPreference: UserPreference): Promise<{
     primary: ExportStrategy;
@@ -159,29 +216,56 @@ export class ExportManager {
     const ir = IRGenerator.generateIR();
     const projectAnalysis = analyzeProject(ir);
     
-    const primaryStrategy = ExportStrategyEngine.determineStrategy(
-      ir,
-      this.deviceInfo!,
-      projectAnalysis,
-      userPreference
-    );
+    // 🚀 检查Python导出服务可用性
+    let pythonAvailable = false;
+    try {
+      pythonAvailable = await pythonExportClient.checkHealth();
+    } catch (error) {
+      console.warn('Python导出服务健康检查失败:', error);
+    }
+    
+    if (pythonAvailable) {
+      // 🐍 主策略：Python导出服务（七牛云集成）
+      const primaryStrategy: ExportStrategy = {
+        method: 'backend',
+        quality: this.determineOptimalQuality(projectAnalysis),
+        reason: "🐍 Python导出服务 - 高性能后端处理，七牛云加速下载",
+        estimatedTime: this.estimateFrontendTime(projectAnalysis), // 使用前端时间估算
+        estimatedSize: this.estimateOutputSize(ir),
+        useGPU: false,
+        useProxy: false,
+        segmentDuration: 20,
+        maxConcurrency: 1,
+        warnings: [],
+      };
 
-    const alternatives = ExportStrategyEngine.getAlternativeStrategies(
-      primaryStrategy,
-      ir,
-      this.deviceInfo!,
-      projectAnalysis,
-      userPreference
-    );
+      // 🐍 备选策略：不同质量级别
+      const alternatives: ExportStrategy[] = [];
+      const qualityLevels: Array<'preview' | 'standard' | 'professional'> = ['preview', 'standard', 'professional'];
+      
+      for (const quality of qualityLevels) {
+        if (quality !== primaryStrategy.quality) {
+          alternatives.push({
+            ...primaryStrategy,
+            quality,
+            reason: `🐍 Python导出服务（七牛云）- ${quality}质量`,
+          });
+        }
+      }
 
-    return {
-      primary: primaryStrategy,
-      alternatives,
-    };
+      return {
+        primary: primaryStrategy,
+        alternatives: alternatives.slice(0, 2), // 最多2个备选
+      };
+    } else {
+      // ❌ Python服务不可用，抛出错误
+      throw new Error('🐍 Python导出服务不可用，请检查服务器状态。当前版本仅支持Python后端导出。');
+    }
   }
 
   /**
    * 检查导出能力
+   * 🚀 只检查Python后端能力（七牛云集成）
    */
   async checkCapabilities(): Promise<{
     frontend: {
@@ -197,40 +281,32 @@ export class ExportManager {
   }> {
     await this.ensureInitialized();
 
-    // 检查前端能力
-    const frontendCapabilities = {
-      available: this.deviceInfo!.supportsWasm && this.deviceInfo!.supportsWebWorkers,
-      features: [] as string[],
-      limitations: [] as string[],
-    };
-
-    if (this.deviceInfo!.supportsWebCodecs) {
-      frontendCapabilities.features.push('硬件加速解码');
-    }
-    if (this.deviceInfo!.supportsOffscreenCanvas) {
-      frontendCapabilities.features.push('离屏渲染');
-    }
-    if (this.deviceInfo!.performanceLevel === 'low') {
-      frontendCapabilities.limitations.push('设备性能较低');
+    // 🐍 检查Python后端能力
+    let pythonAvailable = false;
+    try {
+      pythonAvailable = await pythonExportClient.checkHealth();
+    } catch (error) {
+      console.warn('Python导出服务健康检查失败:', error);
     }
 
-    // 检查后端能力
-    const backendHealth = await this.backendExporter.checkHealth();
     const backendCapabilities = {
-      available: backendHealth.healthy && backendHealth.ffmpeg,
-      features: [] as string[],
-      limitations: [] as string[],
+      available: pythonAvailable,
+      features: pythonAvailable ? [
+        '🐍 Python FFmpeg处理',
+        '🌐 七牛云自动上传',
+        '🚀 高性能视频编码',
+        '📝 字幕硬编码支持',
+        '🎛️ 多质量级别输出'
+      ] : [],
+      limitations: pythonAvailable ? [] : ['🐍 Python导出服务不可用'],
     };
 
-    if (backendCapabilities.available) {
-      backendCapabilities.features.push('GPU硬件加速', '高质量编码', '大文件处理');
-    } else {
-      backendCapabilities.limitations.push(backendHealth.message || '服务不可用');
-    }
-
-    if (!this.deviceInfo!.isOnline) {
-      backendCapabilities.limitations.push('当前离线');
-    }
+    // 前端能力：已禁用
+    const frontendCapabilities = {
+      available: false,
+      features: [],
+      limitations: ['🚀 当前版本仅支持Python后端导出'],
+    };
 
     return {
       frontend: frontendCapabilities,
@@ -240,6 +316,7 @@ export class ExportManager {
 
   /**
    * 预览导出设置
+   * 🚀 只提供Python后端导出预览（七牛云集成）
    */
   async previewExport(userPreference: UserPreference): Promise<{
     strategy: ExportStrategy;
@@ -255,12 +332,26 @@ export class ExportManager {
 
     const ir = IRGenerator.generateIR();
     const projectAnalysis = analyzeProject(ir);
-    const strategy = ExportStrategyEngine.determineStrategy(
-      ir,
-      this.deviceInfo!,
-      projectAnalysis,
-      userPreference
-    );
+    
+    // 检查Python服务可用性
+    const pythonAvailable = await pythonExportClient.checkHealth();
+    if (!pythonAvailable) {
+      throw new Error('🐍 Python导出服务不可用，无法预览导出设置');
+    }
+    
+    // 🎯 Python后端策略（七牛云集成）
+    const strategy: ExportStrategy = {
+      method: 'backend',
+      quality: this.determineOptimalQuality(projectAnalysis),
+      reason: "🐍 Python导出服务 - 高性能后端处理，七牛云加速下载",
+      estimatedTime: this.estimateFrontendTime(projectAnalysis),
+      estimatedSize: this.estimateOutputSize(ir),
+      useGPU: false,
+      useProxy: false,
+      segmentDuration: 20,
+      maxConcurrency: 1,
+      warnings: [],
+    };
 
     // 估算结果
     const estimatedResult = {
@@ -276,9 +367,12 @@ export class ExportManager {
       warnings.push('项目复杂度较高，导出时间可能较长');
     }
     
-    if (strategy.estimatedTime > 600) {
-      warnings.push('预估导出时间超过10分钟');
+    if (strategy.estimatedTime > 300) { // 5分钟
+      warnings.push('预估导出时间超过5分钟，建议使用预览质量');
     }
+
+    // 添加七牛云相关信息
+    warnings.push('🌐 文件将自动上传到七牛云，提供高速下载');
 
     return {
       strategy,
@@ -290,6 +384,7 @@ export class ExportManager {
 
   /**
    * 执行导出
+   * 🎯 强制使用Python后端导出（七牛云集成）
    */
   private async executeExport(
     ir: TimelineIR,
@@ -297,27 +392,75 @@ export class ExportManager {
     strategy: ExportStrategy
   ): Promise<ExportResult> {
     try {
-      switch (strategy.method) {
-        case 'frontend':
-          return await this.frontendExporter.export(ir, options);
-        case 'backend':
-          return await this.backendExporter.exportWithProgress(ir, options);
-        default:
-          throw new Error(`Unsupported export method: ${strategy.method}`);
-      }
-    } catch (error) {
-      // 如果主要方法失败，尝试备选方案
-      if (strategy.alternatives && strategy.alternatives.length > 0) {
-        console.warn('Primary export method failed, trying alternative:', error);
-        
-        const alternative = strategy.alternatives[0];
-        const alternativeOptions = { ...options, method: alternative.method };
-        
-        return await this.executeExport(ir, alternativeOptions, alternative);
+      // 🎯 强制Python后端导出
+      console.log('🐍 执行Python后端导出（七牛云集成）...');
+      const result = await pythonExportClient.streamExport(ir, options);
+      
+      // 添加云存储提供商信息
+      if (result.cloudStorage) {
+        result.cloudProvider = 'qiniu';
       }
       
+      return result;
+    } catch (error) {
+      console.error('Python后端导出失败:', error);
       throw error;
     }
+  }
+
+  /**
+   * 确定最优质量设置 - 速度优先
+   */
+  private determineOptimalQuality(projectAnalysis: ProjectAnalysis): 'preview' | 'standard' | 'professional' {
+    // 🚀 优先选择更快的质量设置
+    if (projectAnalysis.complexityScore > 80) {
+      return 'preview';  // 高复杂度用最快速度
+    } else if (projectAnalysis.complexityScore > 50) {
+      return 'standard'; // 中等复杂度用标准速度
+    } else {
+      return 'standard'; // 简单项目也用标准速度（不用professional）
+    }
+  }
+
+  /**
+   * 估算前端处理时间
+   */
+  private estimateFrontendTime(projectAnalysis: ProjectAnalysis): number {
+    let baseTime = projectAnalysis.estimatedProcessingTime;
+    
+    if (this.deviceInfo!.performanceLevel === 'high') {
+      baseTime *= 0.6;
+    } else if (this.deviceInfo!.performanceLevel === 'medium') {
+      baseTime *= 0.8;
+    } else {
+      baseTime *= 1.2;
+    }
+
+    if (this.deviceInfo!.availableMemory > 8 * 1024 * 1024 * 1024) {
+      baseTime *= 0.9;
+    }
+
+    if (this.deviceInfo!.cpuCores >= 8) {
+      baseTime *= 0.85;
+    }
+
+    return Math.max(baseTime, 30);
+  }
+
+  /**
+   * 估算输出文件大小
+   */
+  private estimateOutputSize(ir: TimelineIR): number {
+    const baseSize = ir.width * ir.height * ir.duration / 1000;
+    const quality = this.determineOptimalQuality({ complexityScore: 50 } as any);
+    
+    const qualityFactors: Record<'preview' | 'standard' | 'professional', number> = {
+      'preview': 0.3,
+      'standard': 0.6,
+      'professional': 1.0,
+    };
+
+    return Math.round(baseSize * qualityFactors[quality]);
   }
 
   /**

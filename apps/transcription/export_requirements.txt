@@ -1,0 +1,29 @@
+# Python Video Export API 依赖包
+# 文件路径: apps/transcription/export_requirements.txt
+
+# Web框架
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# 异步HTTP客户端
+aiohttp>=3.9.0
+aiofiles>=23.2.0
+
+# 数据验证
+pydantic>=2.5.0
+
+# 云存储
+qiniu>=7.12.0
+
+# 日志和工具
+python-multipart>=0.0.6
+
+# 可选：如果需要更好的性能
+# orjson>=3.9.0  # 更快的JSON处理
+# python-json-logger>=2.0.0  # 结构化日志
+
+# 开发依赖（可选）
+# pytest>=7.4.0
+# pytest-asyncio>=0.21.0
+# black>=23.0.0
+# isort>=5.12.0

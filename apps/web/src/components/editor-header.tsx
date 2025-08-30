@@ -235,6 +235,56 @@ function ExportButton() {
       setExportMessage("Export完成!");
       setExportProgress(1);
 
+      // 🚀 新增：调用粗剪视频接口
+      if (result.url && result.blob) {
+        try {
+          setExportMessage("正在调用粗剪视频接口...");
+          
+          // 🔐 初始化token系统
+          const { initializeTokenSystem } = await import("@/lib/ai-editing-auth");
+          try {
+            await initializeTokenSystem();
+            console.log('✅ 导出按钮token系统初始化成功');
+          } catch (error) {
+            console.warn('⚠️ 导出按钮token系统初始化失败:', error);
+          }
+          
+          // 动态导入粗剪客户端
+          const { roughCutClient } = await import("@/lib/rough-cut-client");
+          
+          // 从浏览器URL获取当前项目ID
+          const { getProjectIdWithFallback } = await import("@/lib/project-utils");
+          const currentProjectId = getProjectIdWithFallback();
+          
+          // 调用粗剪接口
+          const roughCutResult = await roughCutClient.callRoughCutAPI({
+            projectId: currentProjectId,
+            videoUrl: result.url, // 这里使用blob URL，实际应该使用七牛云URL
+            taskName: 'generate_final_simple_video',
+            onProgress: (progress) => {
+              setExportMessage(progress.message);
+              if (progress.stage === 'completed') {
+                setExportMessage("粗剪接口调用成功！");
+              } else if (progress.stage === 'failed') {
+                setExportMessage("粗剪接口调用失败");
+              }
+            }
+          });
+          
+          if (roughCutResult.success) {
+            console.log("✅ 粗剪视频接口调用成功:", roughCutResult);
+            setExportMessage("粗剪接口调用成功！");
+          } else {
+            console.warn("⚠️ 粗剪视频接口调用失败:", roughCutResult.error);
+            setExportMessage("粗剪接口调用失败");
+          }
+          
+        } catch (error) {
+          console.error("❌ 调用粗剪接口异常:", error);
+          setExportMessage("粗剪接口调用异常");
+        }
+      }
+
       // 🚀 修复：使用统一的下载工具，确保直接下载
       if (result.url) {
         // 动态导入下载工具

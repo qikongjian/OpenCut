@@ -187,6 +187,25 @@ export async function downloadExportResult(
     size: size ? `${(size / 1024 / 1024).toFixed(1)}MB` : 'unknown'
   });
   
+  // 🚀 对于七牛云等外部URL，在新标签页打开而不是强制下载
+  if (url.startsWith('http') && !url.includes('localhost')) {
+    console.log('🌐 Opening cloud storage URL in new tab:', url);
+    
+    try {
+      const newWindow = window.open(url, '_blank');
+      if (newWindow) {
+        console.log('✅ Successfully opened URL in new tab');
+        return true;
+      } else {
+        console.warn('⚠️ Popup blocked, falling back to force download');
+        // 如果弹窗被阻止，回退到强制下载
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to open in new tab, falling back:', error);
+    }
+  }
+  
+  // 对于本地blob URL或其他URL，使用强制下载
   const success = await forceDownload(url, {
     filename: finalFilename,
     autoRevoke: url.startsWith('blob:'),
