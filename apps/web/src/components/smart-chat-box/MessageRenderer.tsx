@@ -60,7 +60,7 @@ export function MessageRenderer({ msg }: MessageRendererProps) {
       );
     }
     return (
-      <span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-500/30 text-gray-200">
+      <span className="px-1.5 py-0.5 text-[10px] rounded bg-[#2567EC]/30 text-[#37B6F7]">
         聊天
       </span>
     );

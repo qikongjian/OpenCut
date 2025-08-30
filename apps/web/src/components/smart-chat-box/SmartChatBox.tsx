@@ -159,8 +159,9 @@ export default function SmartChatBox({
             onChange={toggleSystemPush}
             className="ml-2"
             style={{
-              backgroundColor: systemPush ? '#2567EC' : '#6B7280',
-              borderColor: systemPush ? '#2567EC' : '#6B7280'
+              backgroundColor: systemPush ? 'linear-gradient(135deg, #2567EC 30%, #37B6F7 70%)' : '#6B7280',
+              borderColor: systemPush ? '#2567EC' : '#6B7280',
+              background: systemPush ? 'linear-gradient(135deg, #2567EC 30%, #37B6F7 70%)' : '#6B7280'
             }}
           />
         </div>

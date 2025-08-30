@@ -326,7 +326,10 @@ export function InputBar({ onSend, setVideoPreview, initialVideoUrl, initialVide
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSend}
-                  className="inline-flex items-center gap-2 p-2 rounded-full bg-[#f1f3f4] text-[#25294b] shadow disabled:text-white/25 disabled:border disabled:border-white/10 disabled:bg-[#1b1b1b80] disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 p-2 rounded-full text-white shadow disabled:text-white/25 disabled:border disabled:border-white/10 disabled:bg-[#1b1b1b80] disabled:cursor-not-allowed"
+                  style={{
+                    background: 'linear-gradient(135deg, #2567EC 30%, #37B6F7 70%)'
+                  }}
                   data-alt="send-button"
                   disabled={!text.trim()}
                 >
@@ -340,7 +343,10 @@ export function InputBar({ onSend, setVideoPreview, initialVideoUrl, initialVide
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSend}
-                className="inline-flex items-center gap-2 p-2 my-2 rounded-full bg-[#f1f3f4] text-[#25294b] shadow disabled:text-white/25 disabled:border disabled:border-white/10 disabled:bg-[#1b1b1b80] disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 p-2 my-2 rounded-full text-white shadow disabled:text-white/25 disabled:border disabled:border-white/10 disabled:bg-[#1b1b1b80] disabled:cursor-not-allowed"
+                style={{
+                  background: 'linear-gradient(135deg, #2567EC 30%, #37B6F7 70%)'
+                }}
                 data-alt="send-button"
                 disabled={!text.trim()}
               >
