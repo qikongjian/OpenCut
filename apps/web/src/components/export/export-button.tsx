@@ -129,164 +129,119 @@ export function ExportButton({
         startTime: Date.now(),
       });
 
-      // 首先尝试使用AI视频Export器
+      // 🚀 优先使用Python后端导出（七牛云集成），获得实时进度更新
+      try {
+        console.log('🐍 尝试使用Python后端导出服务...');
+        
+        // 动态导入导出管理器
+        const { exportManager } = await import('@/lib/export/export-manager');
+        
+        // 使用Python后端导出，获得实时进度
+        const result = await exportManager.smartExport(
+          defaultPreference,
+          (progress) => {
+            console.log('📊 收到导出进度更新:', progress);
+            setExportProgress(progress);
+          }
+        );
+
+        console.log('🎉 Python后端导出完成:', result);
+        
+        // 处理Python后端导出结果
+        await handleExportResult(result, 'Python后端导出');
+        return result;
+        
+      } catch (pythonError) {
+        console.warn('⚠️ Python后端导出失败，回退到AI视频导出器:', pythonError);
+        
+        // 回退到AI视频导出器
       const { aiVideoExporter, AIVideoExporter } = await import('@/lib/export/ai-video-exporter');
 
       // 检查是否可以使用AI视频Export
       const canExportCheck = AIVideoExporter.canExport();
 
       if (canExportCheck.canExport) {
-        // 🚀 优化：根据性能分析选择最佳策略
-        const useOptimizedExport = performanceAnalysis.optimizations.some(
-          opt => opt.type === 'incremental' && opt.priority === 'high'
-        );
-
-        if (useOptimizedExport) {
-          toast.info("使用增量Export优化", {
-            description: `预计提速 ${performanceAnalysis.optimizations[0]?.estimatedSpeedup || 4}x`,
-          });
-        } else {
-          toast.info('使用AI视频Export器');
-        }
+          toast.info('使用AI视频导出器（回退方案）');
 
         const result = await aiVideoExporter.exportAIVideo((progress) => {
           setExportProgress(progress);
         });
 
-        // Export成功
-        toast.success("AI视频Export完成!", {
-          description: `文件大小: ${(result.size! / 1024 / 1024).toFixed(1)}MB`,
-          action: {
-            label: "下载",
-            onClick: async () => {
-              // 🚀 修复：手动下载使用统一的下载工具
-              const success = await downloadExportResult(
-                result.url!,
-                result.filename!,
-                result.size,
-                async () => {
-                  // 下载前的回调：调用粗剪接口
-                  try {
-                    const { exportManager } = await import('@/lib/export/export-manager');
-                    await exportManager.callRoughCutAPI(result.url!, result);
-                  } catch (error) {
-                    console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
-                  }
-                }
-              );
-
-              if (!success) {
-                toast.error('手动下载失败', {
-                  description: '请尝试重新导出'
-                });
-              }
-            },
-          },
-        });
-
-        // 🚀 修复：使用统一的下载工具，确保直接下载
-        if (result.url) {
-          // 🎬 先调用粗剪接口，再下载
-          const success = await downloadExportResult(
-            result.url,
-            result.filename || 'ai-video-export.mp4',
-            result.size,
-            async () => {
-              // 下载前的回调：调用粗剪接口
-              try {
-                const { exportManager } = await import('@/lib/export/export-manager');
-                await exportManager.callRoughCutAPI(result.url!, result);
-              } catch (error) {
-                console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
-              }
-            }
-          );
-
-          if (!success) {
-            toast.error('自动下载失败', {
-              description: '请点击下载按钮手动下载'
-            });
-          }
+          // 处理AI视频导出结果
+          return await handleExportResult(result, 'AI视频导出');
         }
 
-      } else {
-        // 回退到通用Export系统
-        toast.info(`回退到通用Export: ${canExportCheck.reason}`);
+        // 如果AI视频导出器也不可用，抛出错误
+        throw new Error(`AI视频导出器不可用: ${canExportCheck.reason}`);
+      }
+    } catch (error) {
+      console.error('Export失败:', error);
+      
+      // 清理进度状态
+      setExportProgress(null);
+      setShowProgress(false);
+      
+      // 显示错误信息
+      toast.error('Export失败', {
+        description: error instanceof Error ? error.message : '未知错误',
+      });
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
-        // 强制使用前端Export，因为后端FFmpeg可能不可用
-        const frontendPreference: UserPreference = {
-          ...defaultPreference,
-          method: 'frontend',
-          privacy: 'strict', // 强制本地处理
-        };
+  /**
+   * 处理导出结果
+   */
+  const handleExportResult = async (result: ExportResult, method: string): Promise<void> => {
+    console.log(`${method}完成:`, result);
 
-        const result = await exportManager.smartExport(
-          frontendPreference,
-          (progress) => {
-            setExportProgress(progress);
-          }
-        );
-
-        console.log('Export result received:', result);
-
-        // 检查Export是否成功
+    // 检查导出是否成功
         if (!result.success) {
-          throw new Error('Export失败：' + (result.error || '未知错误'));
+      throw new Error(`${method}失败：${result.error || '未知错误'}`);
         }
 
         // 验证结果对象
         if (!result.url) {
-          throw new Error('Export结果缺少下载URL');
-        }
-        if (!result.size) {
-          throw new Error('Export结果缺少文件大小信息');
-        }
+      throw new Error(`${method}结果缺少下载URL`);
+    }
 
-        // Export成功
-        toast.success("Export完成!", {
-          description: `文件大小: ${(result.size / 1024 / 1024).toFixed(1)}MB`,
+    // 显示成功提示
+    toast.success(`${method}完成!`, {
+      description: result.size ? `文件大小: ${(result.size / 1024 / 1024).toFixed(1)}MB` : '导出完成',
           action: {
             label: "下载",
             onClick: async () => {
-              // 🚀 修复：手动下载使用统一的下载工具
-              const success = await downloadExportResult(
-                result.url,
-                result.filename || 'export.mp4',
-                result.size,
-                async () => {
-                  // 下载前的回调：调用粗剪接口
-                  try {
-                    const { exportManager } = await import('@/lib/export/export-manager');
-                    await exportManager.callRoughCutAPI(result.url, result);
-                  } catch (error) {
-                    console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
-                  }
-                }
-              );
-
-              if (!success) {
-                toast.error('手动下载失败', {
-                  description: '请尝试重新导出'
-                });
-              }
+          await downloadExportResult(result);
             },
           },
         });
 
-        // 🚀 修复：使用统一的下载工具，确保直接下载
+    // 自动下载
+    if (result.url) {
+      await downloadExportResult(result);
+    }
+  };
+
+  /**
+   * 下载导出结果
+   */
+  const downloadExportResult = async (result: ExportResult): Promise<void> => {
+    try {
         const success = await downloadExportResult(
-          result.url,
+        result.url!,
           result.filename || 'export.mp4',
-          result.size,
-          async () => {
-            // 下载前的回调：调用粗剪接口
-            try {
-              const { exportManager } = await import('@/lib/export/export-manager');
-              await exportManager.callRoughCutAPI(result.url, result);
-            } catch (error) {
-              console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
-            }
-          }
+        result.size,
+        async () => {
+          // 下载前的回调：调用粗剪接口
+          try {
+            const { exportManager } = await import('@/lib/export/export-manager');
+            await exportManager.callRoughCutAPI(result.url!, result);
+          } catch (error) {
+            console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+        }
         );
 
         if (!success) {
@@ -294,7 +249,13 @@ export function ExportButton({
             description: '请点击下载按钮手动下载'
           });
         }
+    } catch (error) {
+      console.error('下载失败:', error);
+      toast.error('下载失败', {
+        description: error instanceof Error ? error.message : '未知错误',
+      });
       }
+  };
 
     } catch (error) {
       console.error('Export failed:', error);
@@ -421,15 +382,50 @@ export function ExportButton({
           <Button 
             variant={variant} 
             size={size} 
-            className={className}
+            className={`${className} ${
+              isLoading && exportProgress 
+                ? 'min-h-[80px] px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700' 
+                : ''
+            } transition-all duration-300`}
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin text-blue-600" />
             ) : (
               <Download className="w-4 h-4 mr-2" />
             )}
-            Export视频
+            {isLoading && exportProgress ? (
+              <div className="flex flex-col items-start min-w-[120px]">
+                <span className="text-sm font-medium text-left">
+                  {exportProgress.message || '处理中...'}
+                </span>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500 ease-out relative"
+                    style={{ width: `${exportProgress.overall * 100}%` }}
+                  >
+                    {/* 添加进度条动画效果 */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+                  </div>
+                </div>
+                <div className="flex justify-between items-center w-full mt-1">
+                  <span className="text-xs text-muted-foreground">
+                    {Math.round(exportProgress.overall * 100)}%
+                  </span>
+                  <span className="text-xs text-blue-600 font-medium">
+                    {getStageDisplayName(exportProgress.stage)}
+                  </span>
+                </div>
+                {/* 显示时间信息 */}
+                {exportProgress.elapsedTime > 0 && (
+                  <span className="text-xs text-muted-foreground mt-1">
+                    已用: {Math.round(exportProgress.elapsedTime / 1000)}s
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span>Export视频</span>
+            )}
             <ChevronDown className="w-4 h-4 ml-2" />
           </Button>
         </DropdownMenuTrigger>

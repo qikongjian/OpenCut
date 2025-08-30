@@ -10,7 +10,7 @@ import { Drawer } from 'antd';
 
 interface SmartChatTriggerProps {
   className?: string;
-  userId?: number;
+  userId?: number | string;
 }
 
 export function SmartChatTrigger({ className = "", userId = 1 }: SmartChatTriggerProps) {
@@ -18,6 +18,7 @@ export function SmartChatTrigger({ className = "", userId = 1 }: SmartChatTrigge
   const { activeProject } = useProjectStore();
   const searchParams = useSearchParams();
   const uid = searchParams.get('uid');
+  const user_id = searchParams.get('user_id');
 
   // 如果没有活跃项目，不显示聊天功能
   if (!activeProject) {
@@ -75,7 +76,7 @@ export function SmartChatTrigger({ className = "", userId = 1 }: SmartChatTrigge
           isSmartChatBoxOpen={isOpen}
           setIsSmartChatBoxOpen={setIsOpen}
           projectId={activeProject.id}
-          userId={uid ? parseInt(uid, 10) : userId}
+          userId={uid || user_id || userId}
         />
       </Drawer>
     </>

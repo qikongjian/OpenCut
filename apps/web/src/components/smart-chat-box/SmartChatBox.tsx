@@ -14,7 +14,7 @@ interface SmartChatBoxProps {
   isSmartChatBoxOpen: boolean;
   setIsSmartChatBoxOpen: (v: boolean) => void;
   projectId: string;
-  userId: number;
+  userId: number | string;
   previewVideoUrl?: string | null;
   previewVideoId?: string | null;
   onClearPreview?: () => void;
@@ -52,12 +52,14 @@ export default function SmartChatBox({
   const listRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   
-  // 从URL获取uid参数
+  // 从URL获取uid或user_id参数，原样传递不做处理
   const searchParams = useSearchParams();
   const urlUid = searchParams.get('uid');
+  const urlUserId = searchParams.get('user_id');
   
-  // 优先使用URL中的uid，如果没有则使用传入的userId
-  const finalUserId = urlUid ? parseInt(urlUid) : userId;
+  // 优先使用URL中的uid，然后是user_id，最后使用传入的userId
+  // 注意：这里直接使用字符串值，不做任何解析
+  const finalUserId = urlUid || urlUserId || userId;
 
   // 检查是否滚动到底部
   const checkIfAtBottom = useCallback(() => {

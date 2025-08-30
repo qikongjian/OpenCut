@@ -52,10 +52,10 @@ export default function AIEditor() {
   const searchParams = useSearchParams();
   const projectId = params.project_id as string;
 
-  // 从URL查询参数获取uid或user_id，如果没有则使用默认值1
+  // 从URL查询参数获取uid或user_id，原样传递不做处理
   const uid = searchParams.get('uid');
   const user_id = searchParams.get('user_id');
-  const userId = uid ? parseInt(uid) : (user_id ? parseInt(user_id) : 1);
+  const userId = uid || user_id || 1;
   const handledProjectIds = useRef<Set<string>>(new Set());
   const isInitializingRef = useRef<boolean>(false);
   const autoStartedRef = useRef<boolean>(false);

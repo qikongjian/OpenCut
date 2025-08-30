@@ -459,7 +459,7 @@ export class PythonExportClient {
  */
 export function createPythonExportClient(): PythonExportClient {
   const config: PythonExportConfig = {
-    baseUrl: 'http://39.105.24.90:8000', // 直接写死Python服务地址https://smartcut.huiying.video
+    baseUrl: 'https://smartcut.api.movieflow.ai', // 直接写死Python服务地址https://smartcut.huiying.video
     timeout: 300000, // 5分钟超时，直接写死
     enabled: true, // 直接启，不需要环境变量
   };

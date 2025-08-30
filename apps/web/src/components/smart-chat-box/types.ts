@@ -42,7 +42,7 @@ export interface SystemPushState {
 
 export interface ChatConfig {
   projectId: string;
-  userId: number;
+  userId: number | string;
 }
 
 export interface FetchMessagesRequest {
