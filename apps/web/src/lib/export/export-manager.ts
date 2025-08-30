@@ -119,17 +119,102 @@ export class ExportManager {
     };
 
     console.log('🐍 Python导出选项（七牛云集成）:', options);
-    const result = await pythonExportClient.streamExport(ir, options);
     
-    // 添加云存储提供商信息
-    if (result.cloudStorage) {
-      result.cloudProvider = 'qiniu';
+    try {
+      const result = await pythonExportClient.streamExport(ir, options);
+      
+      // 添加云存储提供商信息
+      if (result.cloudStorage) {
+        result.cloudProvider = 'qiniu';
+      }
+      
+      // 🚀 导出成功后不再自动调用粗剪视频接口，改为在下载前调用
+      // 这样可以避免页面跳转后无法获取token的问题
+      
+      return result;
+    } catch (pythonError) {
+      console.warn('🐍 Python导出服务失败，尝试前端导出回退:', pythonError);
+      
+      // 回退到前端导出
+      return await this.fallbackToFrontendExport(ir, options, onProgress, pythonError);
     }
+  }
+
+  /**
+   * 回退到前端导出
+   */
+  private async fallbackToFrontendExport(
+    ir: TimelineIR,
+    options: ExportOptions,
+    onProgress?: (progress: ExportProgress) => void,
+    originalError?: any
+  ): Promise<ExportResult> {
+    console.log('🔄 开始前端导出回退...');
     
-    // 🚀 导出成功后不再自动调用粗剪视频接口，改为在下载前调用
-    // 这样可以避免页面跳转后无法获取token的问题
-    
-    return result;
+    try {
+      // 更新进度提示用户正在使用回退方案
+      if (onProgress) {
+        onProgress({
+          overall: 0.05,
+          stage: 'preparing',
+          message: 'Python服务不可用，使用本地导出...',
+          elapsedTime: 0,
+          startTime: Date.now(),
+        });
+      }
+
+      // 使用前端导出器
+      const result = await this.frontendExporter.export(ir, options);
+      
+      console.log('✅ 前端导出回退成功:', result);
+      return result;
+    } catch (frontendError) {
+      console.error('❌ 前端导出回退也失败:', frontendError);
+      
+      // 抛出更友好的错误信息
+      const errorMessage = this.generateUserFriendlyErrorMessage(originalError, frontendError);
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * 生成用户友好的错误信息
+   */
+  private generateUserFriendlyErrorMessage(pythonError?: any, frontendError?: any): string {
+    let message = '导出失败';
+    let suggestions: string[] = [];
+
+    // 分析Python错误
+    if (pythonError) {
+      const pythonMsg = pythonError.message || pythonError.toString();
+      if (pythonMsg.includes('No such file or directory')) {
+        suggestions.push('请检查视频文件是否完整');
+        suggestions.push('尝试重新上传视频文件');
+      } else if (pythonMsg.includes('Python导出服务')) {
+        suggestions.push('服务器导出服务暂时不可用');
+      }
+    }
+
+    // 分析前端错误
+    if (frontendError) {
+      const frontendMsg = frontendError.message || frontendError.toString();
+      if (frontendMsg.includes('FFmpeg')) {
+        suggestions.push('浏览器不支持WebAssembly或内存不足');
+        suggestions.push('请尝试关闭其他标签页');
+      } else if (frontendMsg.includes('memory') || frontendMsg.includes('内存')) {
+        suggestions.push('视频文件过大，建议使用较小的视频');
+        suggestions.push('尝试降低导出质量');
+      }
+    }
+
+    // 通用建议
+    if (suggestions.length === 0) {
+      suggestions.push('请检查网络连接');
+      suggestions.push('尝试刷新页面后重试');
+      suggestions.push('如问题持续，请联系技术支持');
+    }
+
+    return `${message}。建议：${suggestions.join('；')}`;
   }
 
   /**

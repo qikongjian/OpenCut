@@ -453,7 +453,54 @@ export function AIEditorHeader({ onToggleSidebar }: AIEditorHeaderProps) {
 function ExportButton() {
   const [isExporting, setIsExporting] = React.useState(false);
   const [exportProgress, setExportProgress] = React.useState<number>(0);
+  const [fakeProgress, setFakeProgress] = React.useState<number>(0);
   const [exportMessage, setExportMessage] = React.useState<string>("");
+  const fakeProgressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // 启动假进度条 - 30秒内从0%到99%
+  const startFakeProgress = React.useCallback(() => {
+    setFakeProgress(0);
+    
+    // 清理之前的定时器
+    if (fakeProgressIntervalRef.current) {
+      clearInterval(fakeProgressIntervalRef.current);
+    }
+    
+    // 30秒内从0%到99%，每100ms更新一次
+    const totalDuration = 30000; // 30秒
+    const maxProgress = 99; // 最大99%
+    const intervalMs = 100; // 每100ms更新一次
+    const progressIncrement = maxProgress / (totalDuration / intervalMs);
+    
+    fakeProgressIntervalRef.current = setInterval(() => {
+      setFakeProgress(prev => {
+        const newProgress = prev + progressIncrement;
+        if (newProgress >= maxProgress) {
+          // 到达99%后停止，不清理定时器，保持在99%
+          return maxProgress;
+        }
+        return newProgress;
+      });
+    }, intervalMs);
+  }, []);
+
+  // 停止假进度条
+  const stopFakeProgress = React.useCallback(() => {
+    if (fakeProgressIntervalRef.current) {
+      clearInterval(fakeProgressIntervalRef.current);
+      fakeProgressIntervalRef.current = null;
+    }
+    setFakeProgress(0);
+  }, []);
+
+  // 清理定时器
+  React.useEffect(() => {
+    return () => {
+      if (fakeProgressIntervalRef.current) {
+        clearInterval(fakeProgressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleExport = async () => {
     if (isExporting) return;
@@ -461,6 +508,9 @@ function ExportButton() {
     setIsExporting(true);
     setExportProgress(0);
     setExportMessage("初始化Export系统...");
+    
+    // 启动假进度条
+    startFakeProgress();
 
     try {
       // 动态导入Export系统
@@ -488,7 +538,7 @@ function ExportButton() {
       const result = await exportManager.smartExport(
         {
           privacy: 'balanced',
-          quality: 'standard',
+          preferredQuality: 'standard',
           allowCloudProcessing: true,
         },
         (progress) => {
@@ -549,10 +599,14 @@ function ExportButton() {
         setIsExporting(false);
         setExportProgress(0);
         setExportMessage('');
+        stopFakeProgress();
       }, 3000);
       return;
     }
 
+    // Export成功，停止假进度条
+    stopFakeProgress();
+    
     // 2秒后重置状态
     setTimeout(() => {
       setIsExporting(false);
@@ -577,7 +631,7 @@ function ExportButton() {
             <TransitionUpIcon className="z-50" />
           )}
           <span className="text-[0.875rem] z-50 min-w-[3rem]">
-            {isExporting ? `${Math.round(exportProgress * 100)}%` : 'Export'}
+            {isExporting ? `${Math.round(Math.max(exportProgress * 100, fakeProgress))}%` : 'Export'}
           </span>
           <div className="absolute w-full h-full left-0 top-0 bg-linear-to-t from-white/0 to-white/50 z-10 rounded-[0.8rem] flex items-center justify-center">
             <div className="absolute w-[calc(100%-4px)] h-[calc(100%-4px)] top-[0.12rem] bg-linear-270 from-[#2567EC] to-[#37B6F7] z-50 rounded-lg"></div>
@@ -585,7 +639,7 @@ function ExportButton() {
           {/* 进度条 */}
           {isExporting && (
             <div className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-[0.8rem] z-60 transition-all duration-300"
-                 style={{ width: `${exportProgress * 100}%` }} />
+                 style={{ width: `${Math.max(exportProgress * 100, fakeProgress)}%` }} />
           )}
         </div>
       </button>

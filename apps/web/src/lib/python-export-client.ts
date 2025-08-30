@@ -206,7 +206,15 @@ export class PythonExportClient {
       });
 
       if (!response.ok) {
-        throw new Error(`Python导出服务请求失败: ${response.status} ${response.statusText}`);
+        // 尝试获取详细错误信息
+        let errorDetails = '';
+        try {
+          const errorData = await response.text();
+          errorDetails = errorData ? ` - ${errorData}` : '';
+        } catch (e) {
+          // 忽略解析错误
+        }
+        throw new Error(`Python导出服务请求失败: ${response.status} ${response.statusText}${errorDetails}`);
       }
 
       // 处理Server-Sent Events流
@@ -311,7 +319,7 @@ export class PythonExportClient {
       }
 
       if (!finalResult) {
-        throw new Error('Python导出服务未返回结果');
+        throw new Error('Python导出服务未返回结果，可能是服务器处理超时或文件处理失败');
       }
 
       return finalResult;

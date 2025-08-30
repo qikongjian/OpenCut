@@ -4,7 +4,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu, 
@@ -69,17 +69,68 @@ export function ExportButton({
   const [showDialog, setShowDialog] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const [fakeProgress, setFakeProgress] = useState<number>(0);
   const [strategies, setStrategies] = useState<{
     primary: ExportStrategy;
     alternatives: ExportStrategy[];
   } | null>(null);
+  
+  // 假进度条相关的 refs
+  const fakeProgressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const exportStartTimeRef = useRef<number>(0);
 
   // Default user preferences
   const defaultPreference: UserPreference = {
     privacy: 'balanced',
-    quality: 'standard',
+    preferredQuality: 'standard',
     allowCloudProcessing: true,
   };
+
+  // 启动假进度条 - 30秒内从0%到99%
+  const startFakeProgress = useCallback(() => {
+    setFakeProgress(0);
+    exportStartTimeRef.current = Date.now();
+    
+    // 清理之前的定时器
+    if (fakeProgressIntervalRef.current) {
+      clearInterval(fakeProgressIntervalRef.current);
+    }
+    
+    // 30秒内从0%到99%，每100ms更新一次
+    const totalDuration = 30000; // 30秒
+    const maxProgress = 99; // 最大99%
+    const intervalMs = 100; // 每100ms更新一次
+    const progressIncrement = maxProgress / (totalDuration / intervalMs);
+    
+    fakeProgressIntervalRef.current = setInterval(() => {
+      setFakeProgress(prev => {
+        const newProgress = prev + progressIncrement;
+        if (newProgress >= maxProgress) {
+          // 到达99%后停止，不清理定时器，保持在99%
+          return maxProgress;
+        }
+        return newProgress;
+      });
+    }, intervalMs);
+  }, []);
+
+  // 停止假进度条
+  const stopFakeProgress = useCallback(() => {
+    if (fakeProgressIntervalRef.current) {
+      clearInterval(fakeProgressIntervalRef.current);
+      fakeProgressIntervalRef.current = null;
+    }
+    setFakeProgress(0);
+  }, []);
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (fakeProgressIntervalRef.current) {
+        clearInterval(fakeProgressIntervalRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Quick export - using AI video exporter
@@ -88,6 +139,9 @@ export function ExportButton({
     setIsLoading(true);
 
     try {
+      // 启动假进度条
+      startFakeProgress();
+      
       // 显示进度对话框
       setShowProgress(true);
 
@@ -180,17 +234,38 @@ export function ExportButton({
       // 清理进度状态
       setExportProgress(null);
       setShowProgress(false);
+      stopFakeProgress();
       
-      // 显示错误信息
-      toast.error('Export失败', {
-        description: error instanceof Error ? error.message : '未知错误',
+      // 显示用户友好的错误信息
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      let toastTitle = 'Export失败';
+      let toastDescription = errorMessage;
+      
+      // 根据错误类型提供不同的提示
+      if (errorMessage.includes('Python导出服务')) {
+        toastTitle = '服务器导出失败';
+        toastDescription = '正在自动尝试本地导出，请稍候...';
+      } else if (errorMessage.includes('No such file')) {
+        toastTitle = '文件缺失';
+        toastDescription = '视频文件可能已损坏，请重新上传';
+      } else if (errorMessage.includes('FFmpeg') || errorMessage.includes('WebAssembly')) {
+        toastTitle = '浏览器兼容性问题';
+        toastDescription = '请尝试使用Chrome浏览器或关闭其他标签页';
+      } else if (errorMessage.includes('memory') || errorMessage.includes('内存')) {
+        toastTitle = '内存不足';
+        toastDescription = '视频文件过大，请尝试降低导出质量或关闭其他应用';
+      }
+      
+      toast.error(toastTitle, {
+        description: toastDescription,
+        duration: 5000, // 延长显示时间
       });
       
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [startFakeProgress, stopFakeProgress, defaultPreference]);
 
   /**
    * 处理导出结果
@@ -208,46 +283,37 @@ export function ExportButton({
       throw new Error(`${method}结果缺少下载URL`);
     }
 
+    // 导出成功，停止假进度条
+    stopFakeProgress();
+
     // 显示成功提示
     toast.success(`${method}完成!`, {
       description: result.size ? `文件大小: ${(result.size / 1024 / 1024).toFixed(1)}MB` : '导出完成',
           action: {
             label: "下载",
             onClick: async () => {
-          await downloadExportResult(result);
+          await handleDownloadExportResult(result);
             },
           },
         });
 
     // 自动下载
     if (result.url) {
-      await downloadExportResult(result);
+      await handleDownloadExportResult(result);
     }
   };
 
   /**
    * 下载导出结果
    */
-  const downloadExportResult = async (result: ExportResult): Promise<void> => {
+  const handleDownloadExportResult = async (result: ExportResult): Promise<void> => {
     try {
-        const success = await downloadExportResult(
-        result.url!,
-          result.filename || 'export.mp4',
-        result.size,
-        async () => {
-          // 下载前的回调：调用粗剪接口
-          try {
-            const { exportManager } = await import('@/lib/export/export-manager');
-            await exportManager.callRoughCutAPI(result.url!, result);
-          } catch (error) {
-            console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
-        }
-        );
-
-        if (!success) {
-          toast.error('自动下载失败', {
-            description: '请点击下载按钮手动下载'
-          });
+        if (result.url) {
+          await downloadExportResult(
+            result.url,
+            result.filename || `export_${Date.now()}.mp4`,
+            result.size
+          );
         }
     } catch (error) {
       console.error('下载失败:', error);
@@ -256,46 +322,6 @@ export function ExportButton({
       });
       }
   };
-
-    } catch (error) {
-      console.error('Export failed:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-      console.error('Error type:', typeof error);
-      console.error('Error constructor:', error?.constructor?.name);
-
-      // 提供更详细的错误信息和解决建议
-      let errorMessage = "Export失败";
-      let errorDescription = "未知错误";
-
-      if (error instanceof Error) {
-        errorDescription = error.message;
-        console.error('Error message:', error.message);
-
-        // 根据错误类型提供建议
-        if (error.message.includes('FFmpeg')) {
-          errorDescription += "\nSuggestion: Please ensure your browser supports WebAssembly";
-        } else if (error.message.includes('memory') || error.message.includes('内存')) {
-          errorDescription += "\nSuggestion: Try closing other tabs or reducing export quality";
-        } else if (error.message.includes('项目为空') || error.message.includes('时间轴为空')) {
-          errorDescription += "\nSuggestion: Please execute AI editing first or add video content to timeline";
-        } else if (error.message.includes('AI剪辑')) {
-          errorDescription += "\nSuggestion: Please click 'Generate AI Editing Plan' and execute 'One-Click Edit' first";
-        } else if (error.message.includes('download') || error.message.includes('下载') || error.message.includes('File not found')) {
-          errorDescription += "\nSuggestion: Export file may have expired, please try exporting again";
-        } else if (error.message.includes('Failed to download result file')) {
-          errorDescription += "\nSuggestion: Network connection issue or file has been cleaned up, please try exporting again";
-        }
-      }
-
-      toast.error(errorMessage, {
-        description: errorDescription,
-      });
-    } finally {
-      setIsLoading(false);
-      setShowProgress(false);
-      setExportProgress(null);
-    }
-  }, []);
 
   /**
    * 高级Export - 显示选项对话框
@@ -316,7 +342,7 @@ export function ExportButton({
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [defaultPreference]);
 
   /**
    * 渲染策略徽章
@@ -394,15 +420,15 @@ export function ExportButton({
             ) : (
               <Download className="w-4 h-4 mr-2" />
             )}
-            {isLoading && exportProgress ? (
+            {isLoading && (exportProgress || fakeProgress > 0) ? (
               <div className="flex flex-col items-start min-w-[120px]">
                 <span className="text-sm font-medium text-left">
-                  {exportProgress.message || '处理中...'}
+                  {exportProgress?.message || '处理中...'}
                 </span>
                 <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-blue-500 to-blue-600 h-1.5 rounded-full transition-all duration-500 ease-out relative"
-                    style={{ width: `${exportProgress.overall * 100}%` }}
+                    style={{ width: `${Math.max((exportProgress?.overall || 0) * 100, fakeProgress)}%` }}
                   >
                     {/* 添加进度条动画效果 */}
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
@@ -410,14 +436,14 @@ export function ExportButton({
                 </div>
                 <div className="flex justify-between items-center w-full mt-1">
                   <span className="text-xs text-muted-foreground">
-                    {Math.round(exportProgress.overall * 100)}%
+                    {Math.round(Math.max((exportProgress?.overall || 0) * 100, fakeProgress))}%
                   </span>
                   <span className="text-xs text-blue-600 font-medium">
-                    {getStageDisplayName(exportProgress.stage)}
+                    {exportProgress ? getStageDisplayName(exportProgress.stage) : '导出中'}
                   </span>
                 </div>
                 {/* 显示时间信息 */}
-                {exportProgress.elapsedTime > 0 && (
+                {exportProgress?.elapsedTime && exportProgress.elapsedTime > 0 && (
                   <span className="text-xs text-muted-foreground mt-1">
                     已用: {Math.round(exportProgress.elapsedTime / 1000)}s
                   </span>
@@ -490,45 +516,45 @@ export function ExportButton({
         </div>
       )}
 
-      {showProgress && exportProgress && (
+      {showProgress && (exportProgress || fakeProgress > 0) && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Export进度</h3>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span>{exportProgress.message || '处理中...'}</span>
-                  <span>{Math.round(exportProgress.overall * 100)}%</span>
+                  <span>{exportProgress?.message || '处理中...'}</span>
+                  <span>{Math.round(Math.max((exportProgress?.overall || 0) * 100, fakeProgress))}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${exportProgress.overall * 100}%` }}
+                    style={{ width: `${Math.max((exportProgress?.overall || 0) * 100, fakeProgress)}%` }}
                   />
                 </div>
               </div>
               
               {/* 显示当前阶段 */}
               <div className="text-xs text-muted-foreground">
-                <span>当前阶段: {getStageDisplayName(exportProgress.stage)}</span>
+                <span>当前阶段: {exportProgress ? getStageDisplayName(exportProgress.stage) : '导出中'}</span>
               </div>
               
               {/* 显示详细信息 */}
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>已用时间: {Math.round(exportProgress.elapsedTime / 1000)}秒</span>
-                {exportProgress.estimatedTimeRemaining && (
+                <span>已用时间: {exportProgress ? Math.round(exportProgress.elapsedTime / 1000) : Math.round((Date.now() - exportStartTimeRef.current) / 1000)}秒</span>
+                {exportProgress?.estimatedTimeRemaining && (
                   <span>预计剩余: {Math.round(exportProgress.estimatedTimeRemaining / 1000)}秒</span>
                 )}
               </div>
               
               {/* 显示处理速度等信息 */}
-              {exportProgress.processingSpeed && (
+              {exportProgress?.processingSpeed && (
                 <div className="text-xs text-muted-foreground">
                   <span>处理速度: {exportProgress.processingSpeed.toFixed(1)} 帧/秒</span>
                 </div>
               )}
               
-              {exportProgress.currentFrame && (
+              {exportProgress?.currentFrame && (
                 <div className="text-xs text-muted-foreground">
                   <span>当前帧: {exportProgress.currentFrame}</span>
                 </div>
@@ -546,6 +572,7 @@ export function ExportButton({
                   } finally {
                     setShowProgress(false);
                     setExportProgress(null);
+                    stopFakeProgress();
                   }
                 }}
               >
