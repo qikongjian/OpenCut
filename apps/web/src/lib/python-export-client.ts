@@ -67,6 +67,7 @@ export interface PythonExportResponse {
 export class PythonExportClient {
   private config: PythonExportConfig;
   private abortController: AbortController | null = null;
+  private exportStartTime: number = 0;
 
   constructor(config: PythonExportConfig) {
     this.config = config;
@@ -171,6 +172,9 @@ export class PythonExportClient {
     this.abortController = new AbortController();
 
     try {
+      // 🚀 记录导出开始时间
+      this.exportStartTime = Date.now();
+      
       // 🚀 收集所有blob视频文件数据
       const videoFiles = await this.collectVideoFiles(ir);
 
@@ -233,8 +237,8 @@ export class PythonExportClient {
                   overall: data.progress || 0,
                   stage: this.mapStage(data.stage || 'preparing'),
                   message: data.message,
-                  elapsedTime: 0,
-                  startTime: Date.now(),
+                  elapsedTime: Date.now() - this.exportStartTime, // 计算实际已用时间
+                  startTime: this.exportStartTime,
                   estimatedTimeRemaining: undefined,
                   currentFrame: data.frames,
                   processingSpeed: data.speed,
@@ -271,7 +275,7 @@ export class PythonExportClient {
                     size: data.file_size,
                     duration: 0,
                     quality: options.quality,
-                    method: 'python',
+                    method: 'backend',
                     format: options.format || 'mp4',
                     codec: options.codec || 'libx264',
                     // 添加额外信息
@@ -375,7 +379,7 @@ export class PythonExportClient {
         size: result.result.file_size,
         duration: 0,
         quality: options.quality,
-        method: 'python',
+        method: 'backend',
         format: options.format || 'mp4',
         codec: options.codec || 'libx264',
       };
@@ -440,6 +444,7 @@ export class PythonExportClient {
   private mapStage(pythonStage: string): ExportProgress['stage'] {
     const stageMap: Record<string, ExportProgress['stage']> = {
       'preparing': 'preparing',
+      'processing': 'processing', // 添加处理阶段
       'encoding': 'encoding',
       'uploading': 'finalizing', // 上传阶段映射为最终化阶段
       'finalizing': 'finalizing',
@@ -454,9 +459,9 @@ export class PythonExportClient {
  */
 export function createPythonExportClient(): PythonExportClient {
   const config: PythonExportConfig = {
-    baseUrl: 'https://smartcut.huiying.video', // 直接写死Python服务地址
+    baseUrl: 'http://39.105.24.90:8000', // 直接写死Python服务地址https://smartcut.huiying.video
     timeout: 300000, // 5分钟超时，直接写死
-    enabled: true, // 直接启用，不需要环境变量
+    enabled: true, // 直接启，不需要环境变量
   };
 
   return new PythonExportClient(config);

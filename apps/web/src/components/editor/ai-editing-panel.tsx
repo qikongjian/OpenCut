@@ -204,11 +204,11 @@ export function AIEditingPanel() {
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {!aiEditingData ? (
-          // 🎨 Redesigned empty state
+          // Redesigned empty state
           <div className="flex flex-col h-full">
-            {/* 主要内容区域 */}
+            {/* Main content area */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              {/* 图标和标题 */}
+              {/* Icon and title */}
               <div className="relative mb-6">
                 <div className="w-20 h-20 rounded-full movieflow-gradient-bg flex items-center justify-center mb-4">
                   <Bot className="w-10 h-10 text-white movieflow-icon-highlight" />
@@ -259,7 +259,7 @@ export function AIEditingPanel() {
                 )}
               </div>
 
-              {/* 主要操作按钮 */}
+              {/* Main action buttons */}
               <Button
                 onClick={handleGenerateAIEditingPlan}
                 disabled={isLoadingPlan}
@@ -305,7 +305,7 @@ export function AIEditingPanel() {
               </p>
             </div>
 
-            {/* 操作按钮 */}
+            {/* Action buttons */}
             <div className="flex gap-2 mb-4">
               <Button
                 onClick={handleExecuteEditing}

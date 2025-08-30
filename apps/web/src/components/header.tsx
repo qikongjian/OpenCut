@@ -25,8 +25,8 @@ export function Header() {
   // 未登录用户使用原有的header布局
   const leftContent = (
     <Link href="/" className="flex items-center gap-3">
-      <Image src="/logo.svg" alt="SmartCut Logo" className="invert dark:invert-0" width={32} height={32} />
-      <span className="text-xl font-medium hidden md:block">SmartCut</span>
+              <Image src="/logo.svg" alt="MovieFlow Logo" className="invert dark:invert-0" width={32} height={32} />
+        <span className="text-xl font-medium hidden md:block">MovieFlow</span>
     </Link>
   );
 

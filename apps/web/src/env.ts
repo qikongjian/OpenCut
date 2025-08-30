@@ -40,6 +40,9 @@ export const env = createEnv({
     NEXT_PUBLIC_PYTHON_EXPORT_URL: z.string().url().optional(),
     NEXT_PUBLIC_PYTHON_EXPORT_TIMEOUT: z.string().optional(),
     NEXT_PUBLIC_ENABLE_PYTHON_EXPORT: z.string().optional(),
+    // 粗剪视频API配置 - 客户端可用
+    NEXT_PUBLIC_ROUGH_CUT_API_URL: z.string().url().optional(),
+    NEXT_PUBLIC_ROUGH_CUT_API_TIMEOUT: z.string().optional(),
   },
   runtimeEnv: {
     ANALYZE: process.env.ANALYZE,
@@ -66,6 +69,9 @@ export const env = createEnv({
     NEXT_PUBLIC_PYTHON_EXPORT_URL: process.env.NEXT_PUBLIC_PYTHON_EXPORT_URL,
     NEXT_PUBLIC_PYTHON_EXPORT_TIMEOUT: process.env.NEXT_PUBLIC_PYTHON_EXPORT_TIMEOUT,
     NEXT_PUBLIC_ENABLE_PYTHON_EXPORT: process.env.NEXT_PUBLIC_ENABLE_PYTHON_EXPORT,
+    // 粗剪视频API配置 - 客户端可用
+    NEXT_PUBLIC_ROUGH_CUT_API_URL: process.env.NEXT_PUBLIC_ROUGH_CUT_API_URL,
+    NEXT_PUBLIC_ROUGH_CUT_API_TIMEOUT: process.env.NEXT_PUBLIC_ROUGH_CUT_API_TIMEOUT,
     // 七牛云配置
     QINIU_ACCESS_KEY: process.env.QINIU_ACCESS_KEY,
     QINIU_SECRET_KEY: process.env.QINIU_SECRET_KEY,

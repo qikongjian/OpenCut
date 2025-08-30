@@ -503,12 +503,29 @@ function ExportButton() {
 
       // 自动下载
       if (result.url) {
-        const a = document.createElement('a');
-        a.href = result.url;
-        a.download = result.filename || 'smartcut-ai-export.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // 🚀 使用统一的下载工具，确保在下载前调用粗剪接口
+        const { downloadExportResult } = await import("@/lib/download-utils");
+        
+        const success = await downloadExportResult(
+          result.url,
+          result.filename || 'smartcut-ai-export.mp4',
+          result.size,
+          async () => {
+            // 下载前的回调：调用粗剪接口
+            try {
+              console.log('🎬 开始调用粗剪接口...');
+              const { exportManager } = await import('@/lib/export/export-manager');
+              await exportManager.callRoughCutAPI(result.url!, result);
+              console.log('✅ 粗剪接口调用成功');
+            } catch (error) {
+              console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+            }
+          }
+        );
+
+        if (!success) {
+          console.warn('自动下载失败，用户需要手动下载');
+        }
 
         // 显示成功消息
         console.log("Export成功:", {

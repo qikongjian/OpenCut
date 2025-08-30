@@ -177,7 +177,8 @@ export function generateTimestampedFilename(baseName: string, extension: string)
 export async function downloadExportResult(
   url: string,
   filename?: string,
-  size?: number
+  size?: number,
+  onBeforeDownload?: () => Promise<void> // 新增：下载前的回调函数
 ): Promise<boolean> {
   const finalFilename = filename || generateTimestampedFilename('export', 'mp4');
   
@@ -187,22 +188,23 @@ export async function downloadExportResult(
     size: size ? `${(size / 1024 / 1024).toFixed(1)}MB` : 'unknown'
   });
   
-  // 🚀 对于七牛云等外部URL，在新标签页打开而不是强制下载
+  // 🚀 对于七牛云等外部URL，也使用强制下载而不是跳转
   if (url.startsWith('http') && !url.includes('localhost')) {
-    console.log('🌐 Opening cloud storage URL in new tab:', url);
+    console.log('🌐 检测到外部URL，使用强制下载:', url);
     
-    try {
-      const newWindow = window.open(url, '_blank');
-      if (newWindow) {
-        console.log('✅ Successfully opened URL in new tab');
-        return true;
-      } else {
-        console.warn('⚠️ Popup blocked, falling back to force download');
-        // 如果弹窗被阻止，回退到强制下载
+    // 🎬 在下载之前先执行粗剪接口调用等操作
+    if (onBeforeDownload) {
+      try {
+        console.log('🎬 执行下载前操作（如粗剪接口调用）...');
+        await onBeforeDownload();
+        console.log('✅ 下载前操作完成');
+      } catch (error) {
+        console.warn('⚠️ 下载前操作失败，但继续下载:', error);
       }
-    } catch (error) {
-      console.warn('⚠️ Failed to open in new tab, falling back:', error);
     }
+    
+    // 直接使用强制下载，不跳转页面
+    console.log('📥 开始强制下载外部URL...');
   }
   
   // 对于本地blob URL或其他URL，使用强制下载

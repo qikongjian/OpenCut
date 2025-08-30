@@ -90,13 +90,13 @@ const roadmapItems: {
 ];
 
 export const metadata: Metadata = {
-  title: "Roadmap - SmartCut Frontend",
+  title: "Roadmap - MovieFlow",
   description:
-    "See what's coming next for SmartCut Frontend - the free, open-source video editor that respects your privacy.",
+    "See what's coming next for MovieFlow - the free, open-source video editor that respects your privacy.",
   openGraph: {
-    title: "SmartCut Frontend Roadmap - What's Coming Next",
+    title: "MovieFlow Roadmap - What's Coming Next",
     description:
-      "See what's coming next for SmartCut Frontend - the free, open-source video editor that respects your privacy.",
+      "See what's coming next for MovieFlow - the free, open-source video editor that respects your privacy.",
     type: "website",
     images: [
       {
@@ -109,9 +109,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SmartCut Frontend Roadmap - What's Coming Next",
+    title: "MovieFlow Roadmap - What's Coming Next",
     description:
-      "See what's coming next for SmartCut Frontend - the free, open-source video editor that respects your privacy.",
+      "See what's coming next for MovieFlow - the free, open-source video editor that respects your privacy.",
     images: ["/open-graph/roadmap.jpg"],
   },
 };

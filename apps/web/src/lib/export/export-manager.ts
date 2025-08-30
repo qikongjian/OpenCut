@@ -126,6 +126,9 @@ export class ExportManager {
       result.cloudProvider = 'qiniu';
     }
     
+    // 🚀 导出成功后不再自动调用粗剪视频接口，改为在下载前调用
+    // 这样可以避免页面跳转后无法获取token的问题
+    
     return result;
   }
 
@@ -155,6 +158,9 @@ export class ExportManager {
     if (result.cloudStorage) {
       result.cloudProvider = 'qiniu';
     }
+    
+    // 🚀 导出成功后不再自动调用粗剪视频接口，改为在下载前调用
+    // 这样可以避免页面跳转后无法获取token的问题
     
     return result;
   }
@@ -199,6 +205,9 @@ export class ExportManager {
     if (result.cloudStorage) {
       result.cloudProvider = 'qiniu';
     }
+    
+    // 🚀 导出成功后不再自动调用粗剪视频接口，改为在下载前调用
+    // 这样可以避免页面跳转后无法获取token的问题
     
     return result;
   }
@@ -469,6 +478,50 @@ export class ExportManager {
   private async ensureInitialized(): Promise<void> {
     if (!this.isInitialized) {
       await this.initialize();
+    }
+  }
+
+  /**
+   * 🚀 调用粗剪视频接口
+   * @param videoUrl 视频URL
+   * @param exportResult 导出结果
+   */
+  public async callRoughCutAPI(videoUrl: string, exportResult: ExportResult): Promise<void> {
+    try {
+      console.log('🎬 开始调用粗剪视频接口...');
+      
+      // 获取项目ID
+      const { getProjectIdFromMultipleSources } = await import('@/lib/project-utils');
+      const projectId = getProjectIdFromMultipleSources();
+      
+      console.log('🔍 粗剪接口调用参数:', {
+        projectId,
+        videoUrl,
+        exportId: exportResult.exportId
+      });
+
+      // 动态导入粗剪服务
+      const { roughCutService } = await import('@/lib/rough-cut-service');
+      
+      // 检查服务配置
+      if (!roughCutService.configured) {
+        console.warn('⚠️ 粗剪视频服务未配置，跳过接口调用');
+        return;
+      }
+
+      // 调用粗剪视频接口
+      const result = await roughCutService.updateTaskResult(projectId, videoUrl);
+      
+      if (result.success) {
+        console.log('✅ 粗剪视频接口调用成功');
+        console.log('📥 返回数据:', result.data);
+      } else {
+        console.warn('⚠️ 粗剪视频接口调用失败:', result.error);
+      }
+
+    } catch (error) {
+      console.error('❌ 粗剪视频接口调用异常:', error);
+      throw error; // 重新抛出错误供上层处理
     }
   }
 

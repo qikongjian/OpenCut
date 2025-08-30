@@ -29,13 +29,13 @@ export function Onboarding() {
   const getStepTitle = () => {
     switch (step) {
       case 0:
-        return "Welcome to SmartCut Frontend Beta! 🎉";
+        return "Welcome to MovieFlow Beta! 🎉";
       case 1:
         return "⚠️ This is a super early beta!";
       case 2:
         return "🦋 Have fun testing!";
       default:
-        return "SmartCut Frontend Onboarding";
+        return "MovieFlow Onboarding";
     }
   };
 
@@ -45,8 +45,8 @@ export function Onboarding() {
         return (
           <div className="space-y-5">
             <div className="space-y-3">
-              <Title title="Welcome to SmartCut Frontend Beta! 🎉" />
-              <Description description="You're among the first to try SmartCut Frontend - the fully open source CapCut alternative." />
+              <Title title="Welcome to MovieFlow Beta! 🎉" />
+              <Description description="You're among the first to try MovieFlow - the fully open source CapCut alternative." />
             </div>
             <NextButton onClick={handleNext}>Next</NextButton>
           </div>
@@ -56,7 +56,7 @@ export function Onboarding() {
           <div className="space-y-5">
             <div className="space-y-3">
               <Title title={getStepTitle()} />
-              <Description description="SmartCut Frontend started just one month ago. There's still a ton of things to do to make this editor amazing." />
+              <Description description="MovieFlow started just one month ago. There's still a ton of things to do to make this editor amazing." />
               <Description description="If you're curious, check out our roadmap [here](https://opencut.app/roadmap)" />
             </div>
             <NextButton onClick={handleNext}>Next</NextButton>
@@ -67,7 +67,7 @@ export function Onboarding() {
           <div className="space-y-5">
             <div className="space-y-3">
               <Title title={getStepTitle()} />
-              <Description description="Join our [Discord](https://discord.gg/zmR9N35cjK), chat with cool people and share feedback to help make SmartCut Frontend the best editor ever." />
+              <Description description="Join our [Discord](https://discord.gg/zmR9N35cjK), chat with cool people and share feedback to help make MovieFlow the best editor ever." />
             </div>
             <NextButton onClick={handleClose}>Finish</NextButton>
           </div>

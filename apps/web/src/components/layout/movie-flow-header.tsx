@@ -100,7 +100,7 @@ export function MovieFlowHeader({
               <span>
                 <h1 className="logo text-2xl font-bold">
                   <GradientText
-                    text="SmartCut"
+                    text="MovieFlow"
                     startPercentage={30}
                     endPercentage={70}
                   />
@@ -109,7 +109,7 @@ export function MovieFlowHeader({
               <span>
                 <h1 className="logo text-2xl font-bold">
                   <GradientText
-                    text="SmartCut"
+                    text="MovieFlow"
                     startPercentage={30}
                     endPercentage={70}
                   />

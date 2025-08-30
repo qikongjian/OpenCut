@@ -7,13 +7,13 @@ import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 
 export const metadata: Metadata = {
-  title: "Terms of Service - SmartCut Frontend",
+  title: "Terms of Service - MovieFlow",
   description:
-    "SmartCut Frontend's Terms of Service. Fair, transparent terms for our free and open-source video editor.",
+    "MovieFlow's Terms of Service. Fair, transparent terms for our free and open-source video editor.",
   openGraph: {
-    title: "Terms of Service - SmartCut Frontend",
+    title: "Terms of Service - MovieFlow",
     description:
-      "SmartCut Frontend's Terms of Service. Fair, transparent terms for our free and open-source video editor.",
+      "MovieFlow's Terms of Service. Fair, transparent terms for our free and open-source video editor.",
     type: "website",
   },
 };
@@ -51,10 +51,10 @@ export default function TermsPage() {
               <CardContent className="p-8 text-base leading-relaxed space-y-8">
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">
-                    Welcome to SmartCut Frontend
+                    Welcome to MovieFlow
                   </h2>
                   <p className="mb-4">
-                    SmartCut Frontend is a free, open-source video editor that runs in
+                    MovieFlow is a free, open-source video editor that runs in
                     your browser. By using our service, you agree to these
                     terms. We've designed these terms to be fair and protect
                     both you and our project.
@@ -70,11 +70,11 @@ export default function TermsPage() {
                     Your Content, Your Rights
                   </h2>
                   <p className="mb-4">
-                    <strong>You own everything you create.</strong> SmartCut Frontend
+                    <strong>You own everything you create.</strong> MovieFlow
                     processes your videos locally on your device, so we never
                     have access to your content. We make no claims to ownership,
                     licensing, or rights over your videos, projects, or any
-                    content you create using SmartCut Frontend.
+                    content you create using MovieFlow.
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
                     <li>
@@ -89,32 +89,32 @@ export default function TermsPage() {
                       You can export and use your content however you choose
                     </li>
                     <li>
-                      No watermarks, no licensing restrictions from SmartCut Frontend
+                      No watermarks, no licensing restrictions from MovieFlow
                     </li>
                   </ul>
                 </section>
 
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">
-                    How You Can Use SmartCut Frontend
+                    How You Can Use MovieFlow
                   </h2>
                   <p className="mb-4">
-                    SmartCut Frontend is free for personal and commercial use. You can:
+                    MovieFlow is free for personal and commercial use. You can:
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
                     <li>
                       Create videos for personal, educational, or commercial
                       purposes
                     </li>
-                    <li>Use SmartCut Frontend for client work and paid projects</li>
-                    <li>Share and distribute videos created with SmartCut Frontend</li>
+                    <li>Use MovieFlow for client work and paid projects</li>
+                    <li>Share and distribute videos created with MovieFlow</li>
                     <li>
-                      Modify and distribute the SmartCut Frontend software (under MIT
+                      Modify and distribute the MovieFlow software (under MIT
                       license)
                     </li>
                   </ul>
                   <p>
-                    <strong>What we ask:</strong> Don't use SmartCut Frontend for illegal
+                    <strong>What we ask:</strong> Don't use MovieFlow for illegal
                     activities, harassment, or creating harmful content. Be
                     respectful of others and follow applicable laws.
                   </p>
@@ -136,7 +136,7 @@ export default function TermsPage() {
                     <li>You can delete your account at any time</li>
                   </ul>
                   <p>
-                    SmartCut Frontend is provided "as is" without warranties. While we
+                    MovieFlow is provided "as is" without warranties. While we
                     strive for reliability, we can't guarantee uninterrupted
                     service.
                   </p>
@@ -147,13 +147,13 @@ export default function TermsPage() {
                     Open Source Benefits
                   </h2>
                   <p className="mb-4">
-                    Because SmartCut Frontend is open source, you have additional rights:
+                    Because MovieFlow is open source, you have additional rights:
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
                     <li>
                       Review our code to see exactly how we handle your data
                     </li>
-                    <li>Self-host SmartCut Frontend on your own servers</li>
+                    <li>Self-host MovieFlow on your own servers</li>
                     <li>Modify the software to suit your needs</li>
                     <li>Contribute improvements back to the community</li>
                   </ul>
@@ -176,7 +176,7 @@ export default function TermsPage() {
                     Third-Party Content
                   </h2>
                   <p className="mb-4">
-                    When using SmartCut Frontend, make sure you have the right to use any
+                    When using MovieFlow, make sure you have the right to use any
                     content you import:
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
@@ -202,7 +202,7 @@ export default function TermsPage() {
                     Limitations and Liability
                   </h2>
                   <p className="mb-4">
-                    SmartCut Frontend is provided free of charge. To the extent permitted
+                    MovieFlow is provided free of charge. To the extent permitted
                     by law:
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
@@ -228,7 +228,7 @@ export default function TermsPage() {
                   <h2 className="text-2xl font-semibold mb-4">
                     Service Changes
                   </h2>
-                  <p className="mb-4">We may update SmartCut Frontend and these terms:</p>
+                  <p className="mb-4">We may update MovieFlow and these terms:</p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
                     <li>
                       We'll notify you of significant changes to these terms
@@ -247,13 +247,13 @@ export default function TermsPage() {
                 <section>
                   <h2 className="text-2xl font-semibold mb-4">Termination</h2>
                   <p className="mb-4">
-                    You can stop using SmartCut Frontend at any time:
+                    You can stop using MovieFlow at any time:
                   </p>
                   <ul className="list-disc pl-6 mb-4 space-y-2">
                     <li>Delete your account through your profile settings</li>
                     <li>Clear your browser data to remove local projects</li>
                     <li>
-                      Your content remains yours even if you stop using SmartCut Frontend
+                      Your content remains yours even if you stop using MovieFlow
                     </li>
                     <li>
                       We may suspend accounts for violations of these terms

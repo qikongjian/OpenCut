@@ -179,9 +179,9 @@ export function AIEditingPanelNew() {
     toast.info(`Locate source video: ${clip.source_clip_id}`);
   };
 
-  // 渲染主要内容
+  // Render main content
   const renderMainContent = () => {
-    // 显示AI剪辑功能
+    // Show AI editing features
     if (!aiEditingData) {
       return (
         <div className="flex flex-col h-full">
@@ -283,7 +283,7 @@ export function AIEditingPanelNew() {
 
     return (
       <div className="flex flex-col h-full">
-        {/* 🎨 Modern editing plan info area */}
+        {/* Modern editing plan info area */}
         <div className="p-4 border-b border-border/40 bg-gradient-to-r from-primary/5 to-chart-4/5">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
@@ -299,7 +299,7 @@ export function AIEditingPanelNew() {
             </Badge>
           </div>
 
-          {/* 🎨 Modern action button group */}
+          {/* Modern action button group */}
           <div className="grid grid-cols-1 gap-2">
             <Button
               onClick={handleShowOriginalVideo}
@@ -352,7 +352,7 @@ export function AIEditingPanelNew() {
           </div>
         </div>
 
-        {/* 🎨 Modern execution progress display */}
+        {/* Modern execution progress display */}
         {isExecutingPlan && (
           <div className="p-4 border-b border-border/40">
             <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/50">
@@ -412,7 +412,7 @@ export function AIEditingPanelNew() {
           })()}
         </div>
 
-        {/* 🎨 Modern clip list */}
+        {/* Modern clip list */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-border/40">
             <h5 className="text-sm font-semibold text-foreground mb-1">Video Clips</h5>
@@ -529,7 +529,7 @@ export function AIEditingPanelNew() {
 
   return (
     <div className="h-full flex flex-col bg-panel">
-      {/* 🎨 Modern header design */}
+      {/* Modern header design */}
       <div className="flex items-center justify-between p-4 border-b border-border/40">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg movieflow-gradient-bg shadow-sm">
@@ -548,7 +548,7 @@ export function AIEditingPanelNew() {
         )}
       </div>
 
-      {/* 主要内容区域 */}
+      {/* Main content area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin">
         {renderMainContent()}
       </div>

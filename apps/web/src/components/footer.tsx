@@ -36,8 +36,8 @@ export function Footer() {
           {/* Brand Section */}
           <div className="md:col-span-1 max-w-sm">
             <div className="flex justify-start items-center gap-2 mb-4">
-              <Image src="/logo.svg" alt="SmartCut Frontend" width={24} height={24} />
-              <span className="font-bold text-lg">SmartCut Frontend</span>
+                      <Image src="/logo.svg" alt="MovieFlow" width={24} height={24} />
+        <span className="font-bold text-lg">MovieFlow</span>
             </div>
             <p className="text-sm md:text-left text-muted-foreground mb-5">
               The open source video editor that gets the job done. Simple,
@@ -132,7 +132,7 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="pt-2 flex flex-col md:flex-row justify-between items-start gap-4">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>© 2025 SmartCut Frontend, All Rights Reserved</span>
+            <span>© 2025 MovieFlow, All Rights Reserved</span>
           </div>
         </div>
       </div>

@@ -11,6 +11,17 @@ export function getProjectIdFromURL(): string | null {
     // 获取当前路径
     const pathname = window.location.pathname;
     
+    // 🚀 优化：支持多种路径格式
+    // 支持路径: /ai-editor/[project_id] 或 /editor/[project_id]
+    const projectIdMatch = pathname.match(/\/(?:editor|ai-editor)\/([^\/]+)/);
+    if (projectIdMatch) {
+      const projectId = projectIdMatch[1];
+      console.log('🔍 从URL路径获取项目ID:', projectId);
+      if (isValidProjectId(projectId)) {
+        return projectId;
+      }
+    }
+    
     // 移除末尾的斜杠
     const cleanPath = pathname.replace(/\/$/, '');
     
@@ -20,6 +31,7 @@ export function getProjectIdFromURL(): string | null {
     
     // 验证项目ID格式（假设是UUID格式）
     if (lastPart && isValidProjectId(lastPart)) {
+      console.log('🔍 从URL最后部分获取项目ID:', lastPart);
       return lastPart;
     }
     
@@ -28,12 +40,14 @@ export function getProjectIdFromURL(): string | null {
     const projectIdParam = urlParams.get('project_id');
     
     if (projectIdParam && isValidProjectId(projectIdParam)) {
+      console.log('🔍 从URL查询参数获取项目ID:', projectIdParam);
       return projectIdParam;
     }
     
+    console.warn('⚠️ 无法从URL获取有效的项目ID');
     return null;
   } catch (error) {
-    console.error('获取项目ID失败:', error);
+    console.error('❌ 获取项目ID失败:', error);
     return null;
   }
 }
@@ -69,8 +83,69 @@ export function getProjectIdWithFallback(): string {
   }
   
   // 如果无法从URL获取，生成临时ID
-  console.warn('无法从URL获取项目ID，使用临时ID');
+  console.warn('⚠️ 无法从URL获取项目ID，使用临时ID');
   return `temp-project-${Date.now()}`;
+}
+
+/**
+ * 🚀 增强版项目ID获取函数 - 支持多种来源
+ * 按优先级从以下来源获取项目ID:
+ * 1. URL路径参数
+ * 2. AI编辑Store
+ * 3. 时间轴Store 
+ * 4. URL查询参数
+ * 5. 生成临时ID
+ * @returns 项目ID
+ */
+export function getProjectIdFromMultipleSources(): string {
+  try {
+    // 方法1: 从URL路径获取项目ID (最优先)
+    const urlProjectId = getProjectIdFromURL();
+    if (urlProjectId) {
+      console.log('🔍 从URL获取项目ID:', urlProjectId);
+      return urlProjectId;
+    }
+
+    // 方法2: 从AI编辑Store中获取项目ID
+    if (typeof window !== 'undefined') {
+      try {
+        // 动态导入以避免SSR问题
+        const aiEditingStoreModule = require('@/stores/ai-editing-store');
+        const aiEditingStore = aiEditingStoreModule.useAIEditingStore?.getState?.();
+        if (aiEditingStore?.aiEditingData?.project_id) {
+          const projectId = aiEditingStore.aiEditingData.project_id;
+          console.log('🔍 从AI编辑store获取项目ID:', projectId);
+          return projectId;
+        }
+      } catch (error) {
+        console.warn('⚠️ 无法从AI编辑store获取项目ID:', error);
+      }
+
+      // 方法3: 从时间轴Store中获取项目ID
+      try {
+        const timelineStoreModule = require('@/stores/timeline-store');
+        const timelineStore = timelineStoreModule.useTimelineStore?.getState?.();
+        if (timelineStore?.projectId) {
+          const projectId = timelineStore.projectId;
+          console.log('🔍 从时间轴store获取项目ID:', projectId);
+          return projectId;
+        }
+      } catch (error) {
+        console.warn('⚠️ 无法从时间轴store获取项目ID:', error);
+      }
+    }
+
+    // 方法4: 使用临时ID作为最后的备选方案
+    const tempId = `temp-project-${Date.now()}`;
+    console.warn('⚠️ 无法获取项目ID，使用临时ID:', tempId);
+    return tempId;
+
+  } catch (error) {
+    console.error('❌ 获取项目ID失败:', error);
+    const fallbackId = `error-project-${Date.now()}`;
+    console.warn('⚠️ 使用错误备选ID:', fallbackId);
+    return fallbackId;
+  }
 }
 
 /**

@@ -114,6 +114,27 @@ export class ExportCallbackManager {
         if (!roughCutResult.success) {
           result.errors?.push(`粗剪接口调用失败: ${roughCutResult.error}`);
         }
+      } else if (options.enableRoughCut && options.videoUrl) {
+        // 🚀 如果没有提供项目ID，尝试从多个来源获取
+        try {
+          const { getProjectIdFromMultipleSources } = await import('@/lib/project-utils');
+          const projectId = getProjectIdFromMultipleSources();
+          
+          const enhancedOptions = {
+            ...options,
+            projectId
+          };
+          
+          const roughCutResult = await this.executeRoughCutCallback(enhancedOptions);
+          result.roughCutSuccess = roughCutResult.success;
+          
+          if (!roughCutResult.success) {
+            result.errors?.push(`粗剪接口调用失败: ${roughCutResult.error}`);
+          }
+        } catch (error) {
+          console.warn('⚠️ 无法获取项目ID进行粗剪接口调用:', error);
+          result.warnings?.push('无法获取项目ID，跳过粗剪接口调用');
+        }
       }
 
       // 执行状态更新回调

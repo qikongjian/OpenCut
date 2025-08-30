@@ -1,7 +1,7 @@
-// ai-editing-store.ts - AI剪辑功能状态管理
-// 此文件包含 AI剪辑计划和一键剪辑功能 的相关代码
-// 文件路径: stores/ai-editing-store.ts
-// 最后更新: 2025/1/8
+// ai-editing-store.ts - AI editing functionality state management
+// This file contains AI editing plan and one-click editing functionality related code
+// File path: stores/ai-editing-store.ts
+// Last updated: 2025/1/8
 
 import { create } from "zustand";
 import { AIEditingData, AIEditingPlan, CreateMediaElement } from "@/types/timeline";
@@ -20,9 +20,9 @@ import { storageService } from "@/lib/storage/storage-service";
 
 
 
-// AI剪辑状态接口定义
+// AI editing state interface definition
 interface AIEditingState {
-  // 状态数据
+  // State data
   aiEditingData: AIEditingData | null;
   currentEditingPlan: AIEditingPlan | null;
   isExecutingPlan: boolean;
@@ -30,11 +30,11 @@ interface AIEditingState {
   isLoadingPlan: boolean;
   currentProcessingClip: string | null;
 
-  // 预览状态
+  // Preview state
   previewClipIndex: number | null;
   isPreviewMode: boolean;
 
-  // 新增：可视化剪辑状态
+  // New: Visual editing state
   isShowingOriginalVideo: boolean;
   originalVideoTrackId: string | null;
   visualEditingState: 'idle' | 'showing-original' | 'executing' | 'completed';
@@ -46,7 +46,7 @@ interface AIEditingState {
     clipIndex?: number;
   }>;
 
-  // 🎨 新增：渐进式加载状态
+  // New: Progressive loading state
   progressiveLoadingState: {
     isVisible: boolean;
     currentItem: number;
@@ -55,7 +55,7 @@ interface AIEditingState {
     stage: 'loading' | 'adding' | 'completed';
   };
   
-  // 操作方法
+  // Operation methods
   loadAIEditingData: (data: AIEditingData) => void;
   setCurrentEditingPlan: (plan: AIEditingPlan) => void;
   executeEditingPlan: () => Promise<void>;
@@ -63,7 +63,7 @@ interface AIEditingState {
   stopPreview: () => void;
   clearAIData: () => void;
 
-  // 新增：可视化剪辑方法
+  // New: Visual editing methods
   showOriginalVideoInTimeline: () => Promise<void>;
   executeVisualEditingPlan: () => Promise<void>;
   updateEditingStep: (stepId: string, status: 'pending' | 'executing' | 'completed') => void;
@@ -72,23 +72,23 @@ interface AIEditingState {
   addAISubtitles: () => Promise<void>;
   ensureSubtitlesAdded: () => Promise<void>;
 
-  // Mock数据生成
+  // Mock data generation
   generateMockData: (projectId: string) => AIEditingData;
 
-  // 新增：真实API调用方法
+  // New: Real API call methods
   generateAIEditingPlanFromAPI: (projectId: string) => Promise<void>;
 
-  // 高性能视频元数据获取
+  // High-performance video metadata retrieval
   getVideoMetadataOptimized: (videoUrl: string, index: number) => Promise<{duration: number, thumbnail: string}>;
 
-  // 内部方法
+  // Internal methods
   adjustTimelineZoomForOriginalVideos: () => number | undefined;
   performVisualEditingAnimation: () => Promise<{success: boolean, type: string}>;
   performOneClickEditingInBackground: () => Promise<any>;
   applyOneClickResultToTimeline: (result: any) => Promise<void>;
 }
 
-// 时间码转换为秒数的工具函数
+// Utility function to convert timecode to seconds
 const timecodeToSeconds = (timecode: string): number => {
   if (!timecode || typeof timecode !== 'string') {
     console.warn('⚠️ 无效的时间码:', timecode);
@@ -359,9 +359,9 @@ const generateDefaultVideoThumbnail = (index: number = 0): string => {
   return canvas.toDataURL('image/jpeg', 0.8);
 };
 
-// 创建AI剪辑状态管理存储
+// Create AI editing state management store
 export const useAIEditingStore = create<AIEditingState>((set, get) => ({
-  // 初始状态
+  // Initial state
   aiEditingData: null,
   currentEditingPlan: null,
   isExecutingPlan: false,

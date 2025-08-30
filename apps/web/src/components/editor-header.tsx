@@ -252,9 +252,9 @@ function ExportButton() {
           // 动态导入粗剪客户端
           const { roughCutClient } = await import("@/lib/rough-cut-client");
           
-          // 从浏览器URL获取当前项目ID
-          const { getProjectIdWithFallback } = await import("@/lib/project-utils");
-          const currentProjectId = getProjectIdWithFallback();
+          // 从多个来源获取当前项目ID
+          const { getProjectIdFromMultipleSources } = await import("@/lib/project-utils");
+          const currentProjectId = getProjectIdFromMultipleSources();
           
           // 调用粗剪接口
           const roughCutResult = await roughCutClient.callRoughCutAPI({
@@ -293,7 +293,16 @@ function ExportButton() {
         const success = await downloadExportResult(
           result.url,
           result.filename || 'opencut-export.mp4',
-          result.size
+          result.size,
+          async () => {
+            // 下载前的回调：调用粗剪接口
+            try {
+              const { exportManager } = await import('@/lib/export/export-manager');
+              await exportManager.callRoughCutAPI(result.url!, result);
+            } catch (error) {
+              console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+            }
+          }
         );
 
         // 显示成功消息

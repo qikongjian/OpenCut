@@ -40,6 +40,20 @@ import {
 import { toast } from "sonner";
 import { downloadExportResult } from "@/lib/download-utils";
 
+/**
+ * 获取阶段显示名称
+ */
+function getStageDisplayName(stage: string): string {
+  const stageNames: Record<string, string> = {
+    'preparing': '准备中',
+    'processing': '处理中',
+    'encoding': '编码中',
+    'finalizing': '最终化',
+    'completed': '已完成'
+  };
+  return stageNames[stage] || stage;
+}
+
 interface ExportButtonProps {
   className?: string;
   variant?: "default" | "outline" | "secondary" | "destructive" | "primary" | "primary-gradient";
@@ -149,7 +163,16 @@ export function ExportButton({
               const success = await downloadExportResult(
                 result.url!,
                 result.filename!,
-                result.size
+                result.size,
+                async () => {
+                  // 下载前的回调：调用粗剪接口
+                  try {
+                    const { exportManager } = await import('@/lib/export/export-manager');
+                    await exportManager.callRoughCutAPI(result.url!, result);
+                  } catch (error) {
+                    console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+                  }
+                }
               );
 
               if (!success) {
@@ -163,10 +186,20 @@ export function ExportButton({
 
         // 🚀 修复：使用统一的下载工具，确保直接下载
         if (result.url) {
+          // 🎬 先调用粗剪接口，再下载
           const success = await downloadExportResult(
             result.url,
             result.filename || 'ai-video-export.mp4',
-            result.size
+            result.size,
+            async () => {
+              // 下载前的回调：调用粗剪接口
+              try {
+                const { exportManager } = await import('@/lib/export/export-manager');
+                await exportManager.callRoughCutAPI(result.url!, result);
+              } catch (error) {
+                console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+              }
+            }
           );
 
           if (!success) {
@@ -219,7 +252,16 @@ export function ExportButton({
               const success = await downloadExportResult(
                 result.url,
                 result.filename || 'export.mp4',
-                result.size
+                result.size,
+                async () => {
+                  // 下载前的回调：调用粗剪接口
+                  try {
+                    const { exportManager } = await import('@/lib/export/export-manager');
+                    await exportManager.callRoughCutAPI(result.url, result);
+                  } catch (error) {
+                    console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+                  }
+                }
               );
 
               if (!success) {
@@ -235,7 +277,16 @@ export function ExportButton({
         const success = await downloadExportResult(
           result.url,
           result.filename || 'export.mp4',
-          result.size
+          result.size,
+          async () => {
+            // 下载前的回调：调用粗剪接口
+            try {
+              const { exportManager } = await import('@/lib/export/export-manager');
+              await exportManager.callRoughCutAPI(result.url, result);
+            } catch (error) {
+              console.warn('⚠️ 粗剪接口调用失败，但继续下载:', error);
+            }
+          }
         );
 
         if (!success) {
@@ -460,12 +511,32 @@ export function ExportButton({
                   />
                 </div>
               </div>
+              
+              {/* 显示当前阶段 */}
+              <div className="text-xs text-muted-foreground">
+                <span>当前阶段: {getStageDisplayName(exportProgress.stage)}</span>
+              </div>
+              
+              {/* 显示详细信息 */}
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>已用时间: {Math.round(exportProgress.elapsedTime)}秒</span>
+                <span>已用时间: {Math.round(exportProgress.elapsedTime / 1000)}秒</span>
                 {exportProgress.estimatedTimeRemaining && (
-                  <span>预计剩余: {Math.round(exportProgress.estimatedTimeRemaining)}秒</span>
+                  <span>预计剩余: {Math.round(exportProgress.estimatedTimeRemaining / 1000)}秒</span>
                 )}
               </div>
+              
+              {/* 显示处理速度等信息 */}
+              {exportProgress.processingSpeed && (
+                <div className="text-xs text-muted-foreground">
+                  <span>处理速度: {exportProgress.processingSpeed.toFixed(1)} 帧/秒</span>
+                </div>
+              )}
+              
+              {exportProgress.currentFrame && (
+                <div className="text-xs text-muted-foreground">
+                  <span>当前帧: {exportProgress.currentFrame}</span>
+                </div>
+              )}
             </div>
             <div className="flex justify-end mt-6">
               <Button
@@ -491,3 +562,4 @@ export function ExportButton({
     </>
   );
 }
+

@@ -2,7 +2,6 @@
 // 此文件提供粗剪视频API的调用服务，用于在视频导出完成后通知粗剪系统
 // 文件路径: lib/rough-cut-service.ts
 
-import { env } from '@/env';
 import { authFetchWithSmartToken, getSmartToken, initializeTokenSystem } from '@/lib/ai-editing-auth';
 
 /**
@@ -44,10 +43,10 @@ export class RoughCutService {
   private isConfigured: boolean;
 
   constructor(config?: Partial<RoughCutServiceConfig>) {
-    // 从环境变量获取配置，支持自定义覆盖
+    // 直接使用硬编码配置，避免环境变量问题
     this.config = {
-      apiUrl: config?.apiUrl || env.ROUGH_CUT_API_URL || 'https://77.smartvideo.py.qikongjian.com/movie/update_task_result',
-      timeout: config?.timeout || env.ROUGH_CUT_API_TIMEOUT || 30000,
+      apiUrl: config?.apiUrl || 'https://77.smartvideo.py.qikongjian.com/movie/update_task_result',
+      timeout: config?.timeout || 30000,
       retryCount: config?.retryCount || 3,
       retryDelay: config?.retryDelay || 1000,
     };
@@ -154,6 +153,7 @@ export class RoughCutService {
    */
   private async callApiWithRetry(taskResult: RoughCutTaskResult): Promise<{ success: boolean; data?: RoughCutApiResponse; error?: string }> {
     let lastError: string = '';
+    let lastStatusCode: number | undefined;
 
     for (let attempt = 1; attempt <= this.config.retryCount; attempt++) {
       try {
@@ -162,25 +162,46 @@ export class RoughCutService {
         const result = await this.callApi(taskResult);
         
         if (result.success) {
+          console.log(`✅ 第${attempt}次调用成功`);
           return result;
         }
 
         lastError = result.error || '未知错误';
+        lastStatusCode = result.statusCode;
+        
+        // 🚀 检查是否是可重试的错误
+        const isRetryable = this.isRetryableError(result.error, lastStatusCode);
+        
+        if (!isRetryable && attempt < this.config.retryCount) {
+          console.warn(`❌ 检测到不可重试错误，停止重试: ${lastError}`);
+          break;
+        }
         
         // 如果不是最后一次尝试，等待后重试
         if (attempt < this.config.retryCount) {
-          console.log(`⏳ 等待 ${this.config.retryDelay}ms 后重试...`);
-          await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
+          const delay = this.calculateRetryDelay(attempt);
+          console.log(`⏳ 等待 ${delay}ms 后重试...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
 
       } catch (error) {
         lastError = error instanceof Error ? error.message : String(error);
         console.warn(`⚠️ 第${attempt}次调用失败:`, lastError);
         
+        // 检查网络错误类型
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            console.warn('⏰ 请求超时');
+          } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+            console.warn('🌐 网络连接错误');
+          }
+        }
+        
         // 如果不是最后一次尝试，等待后重试
         if (attempt < this.config.retryCount) {
-          console.log(`⏳ 等待 ${this.config.retryDelay}ms 后重试...`);
-          await new Promise(resolve => setTimeout(resolve, this.config.retryDelay));
+          const delay = this.calculateRetryDelay(attempt);
+          console.log(`⏳ 等待 ${delay}ms 后重试...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
@@ -192,11 +213,64 @@ export class RoughCutService {
   }
 
   /**
+   * 🚀 判断错误是否可重试
+   * @param error 错误信息
+   * @param statusCode HTTP状态码
+   * @returns 是否可重试
+   */
+  private isRetryableError(error?: string, statusCode?: number): boolean {
+    if (!error) return true;
+    
+    // 网络相关错误通常可重试
+    if (error.includes('timeout') || 
+        error.includes('network') || 
+        error.includes('connection') ||
+        error.includes('ECONNRESET') ||
+        error.includes('ENOTFOUND')) {
+      return true;
+    }
+    
+    // HTTP状态码相关
+    if (statusCode) {
+      // 5xx服务器错误通常可重试
+      if (statusCode >= 500 && statusCode < 600) {
+        return true;
+      }
+      
+      // 429 Too Many Requests 可重试
+      if (statusCode === 429) {
+        return true;
+      }
+      
+      // 4xx客户端错误通常不可重试（除了429）
+      if (statusCode >= 400 && statusCode < 500) {
+        return false;
+      }
+    }
+    
+    return true; // 默认可重试
+  }
+
+  /**
+   * 🚀 计算重试延迟（指数退避）
+   * @param attempt 重试次数
+   * @returns 延迟时间（毫秒）
+   */
+  private calculateRetryDelay(attempt: number): number {
+    // 指数退避：基础延迟 * 2^(attempt-1) + 随机抖动
+    const baseDelay = this.config.retryDelay;
+    const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
+    const jitter = Math.random() * 1000; // 0-1000ms随机抖动
+    
+    return Math.min(exponentialDelay + jitter, 30000); // 最大30秒
+  }
+
+  /**
    * 执行单次API调用
    * @param taskResult 任务结果数据
    * @returns API调用结果
    */
-  private async callApi(taskResult: RoughCutTaskResult): Promise<{ success: boolean; data?: RoughCutApiResponse; error?: string }> {
+  private async callApi(taskResult: RoughCutTaskResult): Promise<{ success: boolean; data?: RoughCutApiResponse; error?: string; statusCode?: number }> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
@@ -224,7 +298,8 @@ export class RoughCutService {
         
         return {
           success: false,
-          error: `API响应错误: ${response.status} ${response.statusText} - ${errorText}`
+          error: `API响应错误: ${response.status} ${response.statusText} - ${errorText}`,
+          statusCode: response.status // 🚀 添加状态码用于重试判断
         };
       }
 
